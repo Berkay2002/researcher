@@ -170,7 +170,7 @@ async function performLLMQualityCheck(
   console.log("[redteam] Performing LLM-based quality assessment...");
 
   const llm = new ChatOpenAI({
-    model: "gpt-4o-mini", // Using available model
+    model: "gpt-5-mini", // GPT-5-mini for well-defined quality assessment task
     temperature: LLM_TEMPERATURE, // Low temperature for consistent evaluation
   });
 

@@ -43,6 +43,30 @@ export const PublishSchema = z.object({
 // ============================================================================
 
 /**
+ * Dynamic question for planner Q&A flow
+ */
+export const QuestionSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  options: z.array(
+    z.object({
+      value: z.string(),
+      label: z.string(),
+      description: z.string().optional(),
+    })
+  ),
+});
+
+/**
+ * User's answer to a planner question
+ */
+export const QuestionAnswerSchema = z.object({
+  questionId: z.string(),
+  selectedOption: z.string().optional(),
+  customAnswer: z.string().optional(),
+});
+
+/**
  * User-provided inputs and configuration
  */
 export const UserInputsSchema = z.object({
@@ -52,7 +76,7 @@ export const UserInputsSchema = z.object({
   modeFinal: z.enum(["auto", "plan"]).optional(),
   approvals: z.array(ApprovalSchema).optional(),
   publish: PublishSchema.optional(),
-  plannerAnswers: z.record(z.string(), z.unknown()).optional(),
+  plannerAnswers: z.array(QuestionAnswerSchema).optional(),
 });
 
 // ============================================================================
@@ -126,6 +150,8 @@ export const DraftSchema = z.object({
 export type Gate = z.infer<typeof GateSchema>;
 export type Approval = z.infer<typeof ApprovalSchema>;
 export type Publish = z.infer<typeof PublishSchema>;
+export type Question = z.infer<typeof QuestionSchema>;
+export type QuestionAnswer = z.infer<typeof QuestionAnswerSchema>;
 export type UserInputs = z.infer<typeof UserInputsSchema>;
 export type Plan = z.infer<typeof PlanSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;

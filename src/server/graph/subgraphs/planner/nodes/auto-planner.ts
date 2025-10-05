@@ -1,29 +1,51 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import type { ParentState } from "../../../state";
-import { PLAN_TEMPLATES } from "../state";
+import {
+  analyzePromptCompleteness,
+  constructDefaultPlan,
+  constructPlanFromPrompt,
+} from "./llm-helpers";
 
 /**
  * Auto Planner Node
  *
- * Generates a default "Deep Technical" plan without user interaction.
- * Used when mode is set to "auto".
+ * Analyzes prompt quality and constructs plan without user interaction.
+ * - If prompt is complete: Build plan directly
+ * - If prompt is incomplete: Build plan with reasonable default assumptions
  *
- * Default strategy:
- * - Deep technical dossier template
- * - Comprehensive sources
- * - Full verification pipeline
+ * Used when mode is set to "auto".
  */
-export function autoPlanner(state: ParentState): Partial<ParentState> {
-  console.log("[autoPlanner] Generating default plan for auto mode...");
+export async function autoPlanner(
+  state: ParentState
+): Promise<Partial<ParentState>> {
+  console.log("[autoPlanner] Starting auto planning...");
 
-  const template = PLAN_TEMPLATES.deep_technical;
+  const { goal } = state.userInputs;
 
-  return {
-    plan: {
-      goal: state.userInputs.goal,
-      deliverable: template.deliverable,
-      dag: template.dag,
-      constraints: template.defaultConstraints,
-    },
-  };
+  if (!goal) {
+    throw new Error("No goal provided in userInputs");
+  }
+
+  console.log(`[autoPlanner] Analyzing prompt: "${goal}"`);
+
+  // Analyze prompt completeness
+  const analysis = await analyzePromptCompleteness(goal);
+
+  if (analysis.isComplete) {
+    console.log("[autoPlanner] Prompt is complete - building plan directly");
+
+    // Construct plan from complete prompt
+    const plan = await constructPlanFromPrompt(goal);
+
+    return { plan };
+  }
+
+  console.log(
+    `[autoPlanner] Prompt incomplete (missing: ${analysis.missingAspects.join(", ")}) - using default assumptions`
+  );
+
+  // Construct plan with default assumptions (auto mode doesn't interrupt)
+  const plan = await constructDefaultPlan(goal);
+
+  return { plan };
 }

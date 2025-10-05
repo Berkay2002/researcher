@@ -1,1 +1,23 @@
-// platform config (ttl, etc.)
+{
+  "graphs": {
+    "research_assistant": {
+      "description": "Multi-agent research assistant with planning, research, fact-checking, and synthesis capabilities",
+      "version": "1.0.0"
+    }
+  },
+  "env": {
+    "LANGCHAIN_TRACING_V2": "true",
+    "LANGCHAIN_PROJECT": "research-assistant"
+  },
+  "dependencies": [
+    "@langchain/langgraph@next",
+    "@langchain/core@next",
+    "@langchain/openai@next",
+    "langchain@next",
+    "zod",
+    "uuid"
+  ],
+  "python_version": null,
+  "dockerfile_lines": null,
+  "dependencies_prebuilt": ["@langchain/langgraph@next"]
+}

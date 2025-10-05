@@ -1,20 +1,22 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { interrupt } from "@langchain/langgraph";
-import type { ParentState } from "../../../state";
+import type { ParentState, QuestionAnswer } from "../../../state";
+import type { InterruptPayload } from "../state";
 import {
-  type Constraints,
-  type InterruptPayload,
-  PLAN_TEMPLATES,
-  type PlanTemplate,
-} from "../state";
+  analyzePromptCompleteness,
+  constructPlanFromAnswers,
+  constructPlanFromPrompt,
+  generateDynamicQuestions,
+} from "./llm-helpers";
 
 /**
  * HITL Planner Node
  *
- * Two-stage human-in-the-loop planning:
- * 1. First stage: Check for template selection, interrupt if needed
- * 2. Second stage: Check for constraints, interrupt if needed
- * 3. Final stage: Construct plan from collected answers
+ * Dynamic question-answer planning flow:
+ * 1. Analyze prompt to identify missing information
+ * 2. Generate dynamic questions with contextual options
+ * 3. Iteratively collect answers through HITL interrupts
+ * 4. Construct plan from collected answers
  *
  * Uses LangGraph 1.0-alpha interrupt() primitive for HITL functionality.
  */
@@ -23,123 +25,86 @@ export async function hitlPlanner(
 ): Promise<Partial<ParentState>> {
   console.log("[hitlPlanner] Starting HITL planning flow...");
 
-  // Check if we have a template selection from first resume
-  const templateChoice = state.userInputs.plannerAnswers?.template as
-    | PlanTemplate
-    | undefined;
+  const { goal } = state.userInputs;
 
-  // Stage 1: Template Selection
-  if (!templateChoice) {
-    console.log("[hitlPlanner] Stage 1: Presenting template options...");
-
-    const payload: InterruptPayload = {
-      stage: "template_selection",
-      question: "Choose a research strategy for your goal:",
-      options: [
-        {
-          value: "quick_scan",
-          label: PLAN_TEMPLATES.quick_scan.name,
-          description: PLAN_TEMPLATES.quick_scan.description,
-        },
-        {
-          value: "systematic_review",
-          label: PLAN_TEMPLATES.systematic_review.name,
-          description: PLAN_TEMPLATES.systematic_review.description,
-        },
-        {
-          value: "competitive_landscape",
-          label: PLAN_TEMPLATES.competitive_landscape.name,
-          description: PLAN_TEMPLATES.competitive_landscape.description,
-        },
-        {
-          value: "deep_technical",
-          label: PLAN_TEMPLATES.deep_technical.name,
-          description: PLAN_TEMPLATES.deep_technical.description,
-        },
-        {
-          value: "custom",
-          label: PLAN_TEMPLATES.custom.name,
-          description: PLAN_TEMPLATES.custom.description,
-        },
-      ],
-      metadata: {
-        goal: state.userInputs.goal,
-      },
-    };
-
-    // Interrupt and wait for user to select template
-    const resumeValue = await interrupt(payload);
-
-    // When resumed, save template choice to state
-    return {
-      userInputs: {
-        ...state.userInputs,
-        plannerAnswers: {
-          ...state.userInputs.plannerAnswers,
-          template: resumeValue.template,
-        },
-      },
-    };
+  if (!goal) {
+    throw new Error("No goal provided in userInputs");
   }
 
-  // Check if we have constraints from second resume
-  const constraintsChoice = state.userInputs.plannerAnswers
-    ?.constraints as Constraints;
+  // Step 1: Analyze prompt completeness
+  const analysis = await analyzePromptCompleteness(goal);
 
-  // Stage 2: Constraints Collection
-  if (!constraintsChoice) {
-    console.log("[hitlPlanner] Stage 2: Collecting constraints...");
+  if (analysis.isComplete) {
+    console.log("[hitlPlanner] Prompt is complete - building plan directly");
+    const plan = await constructPlanFromPrompt(goal);
+    return { plan };
+  }
 
-    const template = PLAN_TEMPLATES[templateChoice];
+  console.log(
+    `[hitlPlanner] Prompt incomplete - missing ${analysis.missingAspects.length} aspects`
+  );
 
+  // Step 2: Generate dynamic questions
+  const questions = await generateDynamicQuestions(goal, analysis);
+
+  if (questions.length === 0) {
+    console.log("[hitlPlanner] No questions generated - building default plan");
+    const plan = await constructPlanFromPrompt(goal);
+    return { plan };
+  }
+
+  console.log(`[hitlPlanner] Generated ${questions.length} questions`);
+
+  // Step 3: Collect answers through iterative interrupts
+  const answers: QuestionAnswer[] = state.userInputs.plannerAnswers || [];
+
+  // Find next unanswered question
+  const answeredQuestionIds = new Set(answers.map((a) => a.questionId));
+  const nextQuestion = questions.find((q) => !answeredQuestionIds.has(q.id));
+
+  if (nextQuestion) {
+    console.log(
+      `[hitlPlanner] Asking question ${answeredQuestionIds.size + 1} of ${questions.length}: "${nextQuestion.text}"`
+    );
+
+    // Create interrupt payload
     const payload: InterruptPayload = {
-      stage: "constraints",
-      question: "Specify constraints for your research:",
+      stage: "question",
+      questionId: nextQuestion.id,
+      questionText: nextQuestion.text,
+      options: nextQuestion.options,
       metadata: {
-        goal: state.userInputs.goal,
-        template: templateChoice,
-        templateName: template.name,
-        suggestedConstraints: template.defaultConstraints,
+        goal,
+        currentQuestion: answeredQuestionIds.size + 1,
+        totalQuestions: questions.length,
+        missingAspects: analysis.missingAspects,
       },
     };
 
-    // Interrupt and wait for user to specify constraints
+    // Interrupt and wait for user answer
     const resumeValue = await interrupt(payload);
 
-    // When resumed, save constraints and build final plan
-    const constraints: Constraints = {
-      ...template.defaultConstraints,
-      ...resumeValue.constraints,
+    // Save answer to state
+    const newAnswer: QuestionAnswer = {
+      questionId: nextQuestion.id,
+      selectedOption: resumeValue.selectedOption as string | undefined,
+      customAnswer: resumeValue.customAnswer as string | undefined,
     };
 
     return {
       userInputs: {
         ...state.userInputs,
-        plannerAnswers: {
-          ...state.userInputs.plannerAnswers,
-          constraints,
-        },
-      },
-      plan: {
-        goal: state.userInputs.goal,
-        deliverable: template.deliverable,
-        dag: template.dag,
-        constraints,
+        plannerAnswers: [...answers, newAnswer],
       },
     };
   }
 
-  // Stage 3: Plan construction - we have both template and constraints
-  console.log("[hitlPlanner] Constructing final plan...");
-  const template = PLAN_TEMPLATES[templateChoice];
-  const finalPlan = {
-    goal: state.userInputs.goal,
-    deliverable: template.deliverable,
-    dag: template.dag,
-    constraints: constraintsChoice,
-  };
+  // Step 4: All questions answered - construct plan
+  console.log(
+    "[hitlPlanner] All questions answered - constructing final plan"
+  );
 
-  return {
-    plan: finalPlan,
-  };
+  const plan = await constructPlanFromAnswers(goal, answers, questions);
+
+  return { plan };
 }

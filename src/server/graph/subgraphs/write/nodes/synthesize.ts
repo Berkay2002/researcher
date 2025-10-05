@@ -72,7 +72,7 @@ export async function synthesize(
 
   // Initialize the LLM with GPT-5-mini for synthesis
   const llm = new ChatOpenAI({
-    model: "gpt-4o-mini", // Using available model as GPT-5-mini placeholder
+    model: "gpt-5-mini", // GPT-5-mini for well-defined synthesis task
     temperature: SYNTHESIS_LLM_TEMPERATURE, // Lower temperature for more consistent synthesis
   });
 
