@@ -18,5 +18,8 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@reui": "https://reui.io/r/{name}.json",
+    "@ai-elements": "https://registry.ai-sdk.dev/{name}.json"
+  }
 }

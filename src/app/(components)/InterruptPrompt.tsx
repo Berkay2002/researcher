@@ -1,7 +1,6 @@
-/** biome-ignore-all assist/source/useSortedAttributes: <It's fine> */
 "use client";
 
-import { useState } from "react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,93 +10,215 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Textarea } from "@/components/ui/textarea";
 import type { InterruptPayload } from "@/server/graph/subgraphs/planner/state";
+import { AlertCircleIcon, HelpCircleIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 
-type InterruptPromptProps = {
+/**
+ * Interrupt Prompt Props
+ */
+export type InterruptPromptProps = {
   interrupt: InterruptPayload;
   onSubmit: (response: unknown) => void;
+  onCancel?: () => void;
   isSubmitting?: boolean;
+  className?: string;
 };
 
 /**
  * Interrupt Prompt Component
  *
- * Displays HITL prompts and collects user responses:
- * - Stage 1: Template selection (radio buttons)
- * - Stage 2: Constraints (form inputs)
+ * Production-ready HITL question handler for Plan mode:
+ * - Displays one LLM-generated question at a time
+ * - Shows 4 contextual options + "Custom" option
+ * - Iterative multi-question flow (1-4 questions total)
+ * - Full validation and error handling
+ * - Accessibility compliance
  */
 export function InterruptPrompt({
   interrupt,
   onSubmit,
-  isSubmitting,
+  onCancel,
+  isSubmitting = false,
+  className,
 }: InterruptPromptProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [constraints, setConstraints] = useState({
-    deadline: "",
-    budget: "",
-    depth: "moderate",
-    sources: "diverse",
-  });
+  const [selectedOption, setSelectedOption] = useState<string>("");
+  const [customAnswer, setCustomAnswer] = useState<string>("");
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleTemplateSubmit = () => {
-    if (!selectedTemplate) {
+  const isCustomSelected = selectedOption === "custom";
+
+  /**
+   * Handle submission with validation
+   */
+  const handleSubmit = useCallback(() => {
+    setValidationError(null);
+
+    // Validation: must select an option
+    if (!selectedOption) {
+      setValidationError("Please select an option");
       return;
     }
-    onSubmit({ template: selectedTemplate });
-  };
 
-  const handleConstraintsSubmit = () => {
-    onSubmit({
-      constraints: {
-        deadline: constraints.deadline || undefined,
-        budget: constraints.budget ? Number(constraints.budget) : undefined,
-        depth: constraints.depth,
-        sources: constraints.sources,
-      },
-    });
-  };
+    // Validation: if custom selected, must provide text
+    if (isCustomSelected && !customAnswer.trim()) {
+      setValidationError("Please enter your custom answer");
+      return;
+    }
 
-  if (interrupt.stage === "template_selection") {
+    // Build response payload
+    const response = {
+      questionId: interrupt.questionId,
+      selectedOption,
+      customAnswer: isCustomSelected ? customAnswer.trim() : undefined,
+    };
+
+    onSubmit(response);
+  }, [
+    selectedOption,
+    customAnswer,
+    isCustomSelected,
+    interrupt.questionId,
+    onSubmit,
+  ]);
+
+  /**
+   * Handle cancel action
+   */
+  const handleCancel = useCallback(() => {
+    if (onCancel) {
+      onCancel();
+    }
+  }, [onCancel]);
+
+  /**
+   * Handle option change
+   */
+  const handleOptionChange = useCallback((value: string) => {
+    setSelectedOption(value);
+    setValidationError(null);
+
+    // Clear custom answer if switching away from custom
+    if (value !== "custom") {
+      setCustomAnswer("");
+    }
+  }, []);
+
+  // Question stage
+  if (interrupt.stage === "question") {
     return (
-      <Card>
+      <Card className={className}>
         <CardHeader>
-          <CardTitle>Choose Research Strategy</CardTitle>
-          <CardDescription>{interrupt.question}</CardDescription>
+          <div className="flex items-start gap-2">
+            <HelpCircleIcon className="mt-1 size-5 shrink-0 text-primary" />
+            <div className="flex-1">
+              <CardTitle className="text-lg">Research Planning</CardTitle>
+              <CardDescription className="mt-2 text-base">
+                {interrupt.questionText}
+              </CardDescription>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {validationError && (
+            <Alert variant="destructive">
+              <AlertCircleIcon className="size-4" />
+              <AlertTitle>Validation Error</AlertTitle>
+              <AlertDescription>{validationError}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Options */}
           <RadioGroup
-            value={selectedTemplate}
-            onValueChange={setSelectedTemplate}
+            value={selectedOption}
+            onValueChange={handleOptionChange}
+            disabled={isSubmitting}
           >
-            {interrupt.options?.map((option) => (
-              <div
-                key={option.value}
-                className="flex items-start space-x-3 space-y-0 py-3"
-              >
-                <RadioGroupItem value={option.value} id={option.value} />
-                <div className="space-y-1">
-                  <Label
-                    htmlFor={option.value}
-                    className="cursor-pointer font-medium"
-                  >
-                    {option.label}
-                  </Label>
-                  <p className="text-muted-foreground text-sm">
-                    {option.description}
-                  </p>
+            {interrupt.options?.map((option) => {
+              const isCustomOption = option.value === "custom";
+
+              return (
+                <div
+                  key={option.value}
+                  className="flex items-start space-x-3 space-y-0 rounded-lg border p-3 transition-colors hover:bg-accent"
+                >
+                  <RadioGroupItem
+                    value={option.value}
+                    id={option.value}
+                    disabled={isSubmitting}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 space-y-1">
+                    <Label
+                      htmlFor={option.value}
+                      className="cursor-pointer font-medium leading-tight"
+                    >
+                      {option.label}
+                    </Label>
+                    {option.description && !isCustomOption && (
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        {option.description}
+                      </p>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </RadioGroup>
+
+          {/* Custom Answer Input */}
+          {isCustomSelected && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+              <Label htmlFor="customAnswer">Your Custom Answer</Label>
+              <Textarea
+                id="customAnswer"
+                placeholder="Enter your specific requirements or answer..."
+                value={customAnswer}
+                onChange={(e) => {
+                  setCustomAnswer(e.target.value);
+                  setValidationError(null);
+                }}
+                disabled={isSubmitting}
+                rows={4}
+                className="resize-none"
+                aria-describedby="custom-help"
+              />
+              <p className="text-muted-foreground text-xs" id="custom-help">
+                Provide as much detail as possible to help tailor the research
+              </p>
+            </div>
+          )}
+
+          {/* Question Metadata (if any) */}
+          {interrupt.metadata?.totalQuestions && (
+            <div className="flex items-center justify-between border-t pt-3 text-muted-foreground text-xs">
+              <span>Question progress</span>
+              <span>
+                {(interrupt.metadata.currentQuestion as number) || 1} of{" "}
+                {interrupt.metadata.totalQuestions}
+              </span>
+            </div>
+          )}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="flex gap-2">
+          {onCancel && (
+            <Button
+              onClick={handleCancel}
+              disabled={isSubmitting}
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+          )}
           <Button
-            onClick={handleTemplateSubmit}
-            disabled={!selectedTemplate || isSubmitting}
-            className="w-full"
+            onClick={handleSubmit}
+            disabled={!selectedOption || isSubmitting}
+            className="flex-1"
+            type="button"
           >
             {isSubmitting ? "Submitting..." : "Continue"}
           </Button>
@@ -106,100 +227,14 @@ export function InterruptPrompt({
     );
   }
 
-  if (interrupt.stage === "constraints") {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Specify Constraints</CardTitle>
-          <CardDescription>{interrupt.question}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="deadline">Deadline (optional)</Label>
-            <Input
-              id="deadline"
-              placeholder="e.g., 3 hours, 1 day"
-              value={constraints.deadline}
-              onChange={(e) =>
-                setConstraints({ ...constraints, deadline: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="budget">Budget USD (optional)</Label>
-            <Input
-              id="budget"
-              type="number"
-              placeholder="e.g., 50"
-              value={constraints.budget}
-              onChange={(e) =>
-                setConstraints({ ...constraints, budget: e.target.value })
-              }
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="depth">Research Depth</Label>
-            <RadioGroup
-              value={constraints.depth}
-              onValueChange={(value) =>
-                setConstraints({ ...constraints, depth: value })
-              }
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="surface" id="depth-surface" />
-                <Label htmlFor="depth-surface">Surface</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="moderate" id="depth-moderate" />
-                <Label htmlFor="depth-moderate">Moderate</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="deep" id="depth-deep" />
-                <Label htmlFor="depth-deep">Deep</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="sources">Source Coverage</Label>
-            <RadioGroup
-              value={constraints.sources}
-              onValueChange={(value) =>
-                setConstraints({ ...constraints, sources: value })
-              }
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="minimal" id="sources-minimal" />
-                <Label htmlFor="sources-minimal">Minimal</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="diverse" id="sources-diverse" />
-                <Label htmlFor="sources-diverse">Diverse</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem
-                  value="comprehensive"
-                  id="sources-comprehensive"
-                />
-                <Label htmlFor="sources-comprehensive">Comprehensive</Label>
-              </div>
-            </RadioGroup>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button
-            onClick={handleConstraintsSubmit}
-            disabled={isSubmitting}
-            className="w-full"
-          >
-            {isSubmitting ? "Submitting..." : "Start Research"}
-          </Button>
-        </CardFooter>
-      </Card>
-    );
-  }
-
-  return null;
+  // Unknown stage (should never happen with current schema)
+  return (
+    <Alert variant="destructive">
+      <AlertCircleIcon className="size-4" />
+      <AlertTitle>Unknown Interrupt Stage</AlertTitle>
+      <AlertDescription>
+        The interrupt stage "{interrupt.stage}" is not recognized.
+      </AlertDescription>
+    </Alert>
+  );
 }

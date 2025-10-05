@@ -38,32 +38,35 @@ npm run start           # Start production server
 The core architecture uses LangGraph's stateful orchestration with checkpointing for memory, HITL (human-in-the-loop), and fault tolerance:
 
 **Parent Graph** ([src/server/graph/index.ts](src/server/graph/index.ts)):
-- Singleton pattern with MemorySaver checkpointer
-- Flow: START → planGate → planner → research → factcheck → writer → END
+- Singleton pattern with MemorySaver checkpointer (see [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md))
+- Flow: START → plan-gate → planner → approvals → research → factcheck → writer → publish-gate → END
 - All invocations require a `thread_id` for thread-level memory
 - Subgraphs inherit the parent checkpointer automatically
+- **Orchestration Gates** for control flow and quality assurance:
+  - **plan-gate** - Decides Auto vs Plan mode based on UI override and cheap signals
+  - **approvals** - Pre-action HITL gate for expensive/risky operations
+  - **publish-gate** - Pre-publish quality gate with deterministic checks and optional HITL
 
 **Subgraphs** (graphs-as-nodes under [src/server/graph/subgraphs/](src/server/graph/subgraphs/)):
 1. **Planner** - Auto path (no HITL) or Plan path (with interrupts)
-   - Conditional routing via `routePlanner()` function
-   - Uses `userInputs.modeOverride` to determine path
-   - Plan templates defined in [planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
+   - Conditional routing based on `userInputs.modeOverride` and plan-gate evaluation
+   - **Auto path**: Selects default plan without user interaction
+   - **Plan path**: Uses `interrupt()` for dynamic multi-question HITL flow (see [07-human-in-the-loop.md](documentation/langgraph/07-human-in-the-loop.md))
+   - Analyzes prompt completeness, generates 1-4 contextual questions with LLM-generated options
+   - Each question has 4 contextual options + "Custom" (5 total), with "All of the above" where appropriate
+   - Iterative interrupt/resume cycles until all questions are answered
+   - Final plan constructed from collected answers
+   - Plan templates and state defined in [planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
 2. **Research** - QueryPlan → MetaSearch → Harvest/Normalize → Dedup
 3. **Factcheck** - Deterministic claim verification
 4. **Writer** - Synthesize → Red-team quality gates
 
 **State Management** ([src/server/graph/state.ts](src/server/graph/state.ts)):
 - Shared state keys: `threadId`, `userInputs`, `plan`, `queries`, `searchResults`, `evidence`, `draft`, `issues`
+- Gate state extensions: `userInputs.gate`, `userInputs.modeFinal`, `userInputs.approvals[]`, `userInputs.publish`
 - Zod schemas for runtime validation with inferred TypeScript types
-- Annotation-based reducers for state merging
+- Annotation-based reducers for state merging (see [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md))
 - Subgraphs can have their own state files (e.g., [planner/state.ts](src/server/graph/subgraphs/planner/state.ts))
-
-**Plan Templates** (5 predefined strategies in Plan mode):
-- **Quick Scan** - Fast overview, 5-10 sources, surface depth
-- **Systematic Review** - Comprehensive analysis, 20-50 sources, deep depth
-- **Competitive Landscape** - Market analysis, 15-30 sources, moderate depth
-- **Deep Technical Dossier** - In-depth technical, 30-100 sources, comprehensive
-- **Custom** - User-defined strategy with custom constraints
 
 ### Next.js App Router Structure
 
@@ -133,11 +136,44 @@ const snap = await graph.getState({
 
 ### Mode Override (Auto vs Plan)
 
-The `userInputs.modeOverride` field controls planner behavior:
-- **Auto**: Planner selects default plan, no interrupts
-- **Plan**: Planner triggers interrupts for template selection and constraints
+The planner behavior is controlled by multiple factors:
+- **UI Override**: The `userInputs.modeOverride` field is respected first if set
+- **Plan-gate Evaluation**: When no UI override, evaluates cheap signals to decide:
+  - Clarity scoring (IR-style heuristic) for prompt quality
+  - Preview coherence check using single Tavily + Exa search
+  - Cost guard with coarse token/time estimates → USD conversion
+  - Threshold policy: Auto if clarity ≥ τ₁ AND coherence ≥ τ₂ AND cost ≤ budget; else Plan
+  - Defaults to Plan-mode on errors for safety
+- **Auto Mode**: Planner runs in auto path (no interrupts), selects default plan
+- **Plan Mode**: Planner runs HITL via `interrupt()`, generates 1-4 dynamic clarifying questions
 
 The UI ModeSwitch component writes to `/api/threads/:id/mode` endpoint which uses `updateState()` to modify the thread.
+
+### Orchestration Gates
+
+The system includes three parent-graph nodes for control flow and quality assurance:
+
+**Plan-gate** ([src/server/graph/nodes/plan-gate.ts](src/server/graph/nodes/plan-gate.ts)):
+- Decides Auto vs Plan mode based on UI override and cheap signals
+- Evaluates prompt clarity, preview coherence, and cost estimates
+- Writes decision metrics to `userInputs.gate` and final mode to `userInputs.modeFinal`
+- Defaults to Plan-mode on errors for safety
+
+**Approvals Gate** ([src/server/graph/nodes/approvals.ts](src/server/graph/nodes/approvals.ts)):
+- Pre-action HITL gate before expensive/risky operations
+- Triggers on cost/latency thresholds, new domains, sensitive topics
+- Uses `interrupt()` with comprehensive summary payload
+- Resume options: approve, edit (constraints), or cancel
+- Persists decision records with timestamps and policy snapshots
+
+**Publish-gate** ([src/server/graph/nodes/publish-gate.ts](src/server/graph/nodes/publish-gate.ts)):
+- Pre-publish quality gate after red-team checks
+- Runs deterministic checks first: citations, recency, completeness
+- Conditional HITL only if checks fail or policy requires manual review
+- Resume options: approve, fix_auto, edit_then_retry, or reject
+- Full audit trail with checkpoint history for compliance
+
+All gates use the `interrupt()` + `Command(resume)` pattern with thread-level checkpointing for fault tolerance.
 
 ### Server-Sent Events (SSE)
 
@@ -216,6 +252,9 @@ This project uses **Ultracite** which enforces Biome rules. Configuration is in 
 - Use `import type` for type imports
 - No TypeScript enums (use string unions or objects)
 - Follow LangGraph patterns from [documentation/langgraph/](documentation/langgraph/) for type safety
+  - See [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md) for state management patterns
+  - See [07-human-in-the-loop.md](documentation/langgraph/07-human-in-the-loop.md) for interrupt/resume patterns
+  - See [11-multi-agent-systems.md](documentation/langgraph/11-multi-agent-systems.md) for subgraph orchestration
 
 **Style:**
 - Use `===` and `!==` (not `==` or `!=`)
@@ -470,13 +509,38 @@ NODE_ENV=development
 - API routes for start/state/resume/mode
 
 **Phase 2 (Planner)**: ✅ Complete
-- Auto and Plan HITL paths
-- Mode override handling
+- Auto and Plan HITL paths with conditional routing
+- Mode override handling with UI switch integration
+- Dynamic multi-question flow in Plan mode:
+  - Prompt analysis for missing aspects (scope, timeframe, depth, use case)
+  - LLM-generated contextual questions with 4 options + "Custom" each
+  - Iterative interrupt/resume cycles until all questions answered
+  - Final plan construction from collected answers
 - Template selection and constraints
+- Plan state management with QuestionAnswer persistence
 
-**Phase 3 (Research)**: 🚧 In Progress
-**Phase 4 (Factcheck & Writer)**: 🚧 In Progress
-**Phase 5 (API & Streaming)**: 🚧 Partial (SSE pending)
+**Phase 2.5 (Orchestration Gates)**: ✅ Complete
+- plan-gate: Planner Mode Decider with UI override and signal-based evaluation
+- approvals: Pre-Action HITL Gate for expensive/risky operations
+- publish-gate: Pre-Publish Release Gate with deterministic checks
+- Full interrupt/resume semantics with thread-level checkpointing
+
+**Phase 3 (Research)**: ✅ Complete
+- QueryPlan expands goal with domain scoping
+- Tavily and Exa parallel search with normalization and deduplication
+- Harvest/Normalize with respectful timeouts and robots compliance
+- Content hashing, chunking, and light reranking (recency/authority)
+
+**Phase 4 (Factcheck & Writer)**: ✅ Complete
+- Deterministic fact-checks for claim verification
+- Writer produces sections with inline citations
+- Red-team quality gates for groundedness and compliance
+
+**Phase 5 (API & Streaming)**: ✅ Complete
+- All route handlers implemented (start, state, resume, mode)
+- SSE streaming endpoint with multi-mode support
+- Proper error handling and graceful stream termination
+
 **Phase 6 (UI)**: 🚧 Partial (core components only)
 **Phase 7 (Ops)**: ⏳ Not Started
 **Phase 8 (Tests)**: ⏳ Not Started
@@ -521,6 +585,7 @@ NODE_ENV=development
 10. **Use LangChain 1.0-alpha (@next) packages** - Don't reference legacy documentation
 11. **Choose appropriate models** - GPT-5 for agentic tasks, GPT-5-mini for defined tasks
 12. **Only OpenAI and Anthropic supported** - Use `@langchain/openai@next` for model access
+13. **Check internal docs first** - Always reference [documentation/langgraph/](documentation/langgraph/) before searching externally
 
 ## References
 

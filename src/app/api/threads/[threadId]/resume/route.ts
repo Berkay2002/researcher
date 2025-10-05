@@ -30,11 +30,17 @@ export async function POST(
     });
 
     // Check if there's another interrupt (multi-stage HITL)
-    if ((result as { __interrupt__?: unknown }).__interrupt__) {
+    // LangGraph adds __interrupt__ at runtime when interrupt() is called
+    const resultWithInterrupt = result as unknown as {
+      __interrupt__?: unknown;
+      __checkpoint_id?: string;
+    };
+
+    if (resultWithInterrupt.__interrupt__) {
       return NextResponse.json(
         {
           threadId,
-          interrupt: (result as { __interrupt__: unknown }).__interrupt__,
+          interrupt: resultWithInterrupt.__interrupt__,
         },
         { status: 202 }
       );
@@ -42,8 +48,7 @@ export async function POST(
 
     return NextResponse.json({
       ok: true,
-      checkpointId:
-        (result as { __checkpoint_id?: string }).__checkpoint_id ?? null,
+      checkpointId: resultWithInterrupt.__checkpoint_id ?? null,
     });
   } catch (error) {
     return NextResponse.json(

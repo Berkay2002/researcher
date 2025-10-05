@@ -6,7 +6,7 @@ This document outlines the product requirements and system design for the resear
 * Two operation modes:
 
   * **Auto-mode**: no questions; immediately runs the plan.
-  * **Plan-mode**: human-in-the-loop (HITL) planning session with “four options + custom” and follow-up constraints.
+  * **Plan-mode**: human-in-the-loop (HITL) planning with dynamic clarifying questions. The planner analyzes the prompt, generates 1-4 specific questions with LLM-generated contextual answer options (4 options + "Custom" per question), and iteratively collects answers to build a tailored research plan.
 * Deterministic plumbing (search/harvest/dedupe) is **not** a chatty agent; reasoning-heavy bits (planning, optional verification) are the only “agentic” parts.
 * **Memory** across steps and resumability via LangGraph **checkpointers** and **threads**—this powers HITL, time-travel, and fault-tolerance. See [Persistence documentation](documentation/langgraph/05-persistence.md) for implementation details. ([LangChain AI][1])
 
@@ -41,8 +41,7 @@ This document outlines the product requirements and system design for the resear
 
 * **UI owns the switch**. The UI sets `mode=auto|plan` in the run config. The graph respects the flag **before** entering Planner.
 * **Auto-mode**: Planner runs in **auto path** (no interrupts), chooses a sensible default plan (e.g., deep-dive with fact-check + writer), then continues.
-* **Plan-mode**: Planner runs **HITL via `interrupt`**, presenting:
-  “Quick Scan / Systematic Review / Competitive Landscape / Deep Technical Dossier / Custom” + a second prompt for constraints (deadline, budget, domains, depth).
+* **Plan-mode**: Planner runs **HITL via `interrupt`**, analyzing the prompt for completeness and generating 1-4 dynamic clarifying questions based on missing aspects (scope, timeframe, depth, use case). Each question has 4 contextual, LLM-generated answer options plus "Custom", with "All of the above" included where appropriate (e.g., scope questions). Questions are presented iteratively via interrupt/resume cycles until all are answered, then the final plan is constructed.
   `interrupt` pauses at a checkpoint; resuming uses **Command(resume=payload)**. This is the current, documented LangGraph HITL pattern. See [Human-in-the-loop documentation](documentation/langgraph/07-human-in-the-loop.md) for implementation details. ([LangChain Docs][6])
 * Optional **auto-gate** (kept even when UI defaults to Auto): use cheap signals (prompt clarity, a 1-shot search preview, cost/risk heuristics) to **flip to Plan-mode** if the prompt is ambiguous or expensive. For parallel preview probes, use **Send API**. ([LangChain AI][3])
 
@@ -91,7 +90,7 @@ Use these **shared keys** so parent↔children stay in sync. (All persisted to t
 
 ## 8) UI/UX requirements (what to build)
 
-* **Mode toggle**: Auto ↔ Plan (writes a flag; Plan opens a two-step planner drawer).
+* **Mode toggle**: Auto ↔ Plan (writes a flag; Plan opens a dynamic multi-question planner drawer).
 * **Answer pane**: streaming narrative with **clickable citation markers** ([1], [2]).
 * **Sources panel (right rail)**: cards show host, date, snippet, **supporting excerpt**, and **why-used**; filters by domain/type/date; pin/unpin. This mirrors the growing norm (ChatGPT Search shows linked sources; Gemini “double-check” highlights verifiability). ([OpenAI][9])
 * **Artifacts pane** (separate work surface): tables/matrices/exports (Claude’s “Artifacts” pattern—keep big outputs editable and persistent next to chat). ([Claude101][10])

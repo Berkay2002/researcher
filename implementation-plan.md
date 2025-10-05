@@ -12,7 +12,7 @@ For the product requirements and system design, see the [project brief](brief.md
 * **Modes:**
 
   * **Auto-mode:** immediate run, no questions.
-  * **Plan-mode:** human-in-the-loop (HITL) planning: “four options + custom,” then constraints.
+  * **Plan-mode:** human-in-the-loop (HITL) planning with dynamic multi-question flow. LLM analyzes prompt completeness, generates 1-4 contextual questions with 4 options + "Custom" each, and iteratively collects answers.
 * **Determinism where possible:** Search, harvest, dedupe, and ranking are **deterministic nodes**; only reasoning-heavy steps (planner, optional verifier) are agentic.
 * **Memory:** Use **LangGraph checkpointers + threads** for durable per-run memory (also powers HITL, time-travel, and fault-tolerance). ([LangChain AI][1])
 
@@ -48,7 +48,7 @@ For the product requirements and system design, see the [project brief](brief.md
 * **Planner behavior:**
 
   * **Auto path:** no `interrupt`; select a default plan (e.g., Deep-Dive) and go.
-  * **Plan path:** `interrupt()` to present "Quick Scan / Systematic Review / Competitive / Deep Technical Dossier / Custom," then a second `interrupt` for constraints. Resume via `Command({ resume })`. ([LangChain Docs][6])
+  * **Plan path:** `interrupt()` iteratively to present dynamic clarifying questions (1-4 questions total) based on prompt analysis. Each question has LLM-generated contextual options (4 + "Custom"), with "All of the above" included where appropriate. Resume via `Command({ resume })` after each answer until all questions are answered. ([LangChain Docs][6])
 * **Approvals gate (pre-action HITL):** Pauses before expensive/risky operations
   * **Triggers:** High cost/latency, new domains, sensitive topics, paywalls, rate limits
   * **Interrupt payload:** Summary with step details, estimates, domains, and risks
@@ -229,18 +229,22 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ [auto-planner node](src/server/graph/subgraphs/planner/nodes/auto-planner.ts) generates "Deep Technical" plan
   - ✅ No user interaction required
 * [x] **Plan path**: `interrupt` → UI → `Command(resume)`; persists answers to state. ([LangChain Docs][6])
-  - ✅ [hitl-planner node](src/server/graph/subgraphs/planner/nodes/hitl-planner.ts) with 2-stage interrupts
-  - ✅ Stage 1: Template selection (5 options: Quick Scan, Systematic, Competitive, Deep Technical, Custom)
-  - ✅ Stage 2: Constraints collection (deadline, budget, depth, sources)
-  - ✅ Answers saved to `userInputs.plannerAnswers`
-  - ✅ Final plan constructed from both stages
+  - ✅ [hitl-planner node](src/server/graph/subgraphs/planner/nodes/hitl-planner.ts) with dynamic multi-question interrupts
+  - ✅ Analyzes prompt for missing aspects (scope, timeframe, depth, use case) via [prompt-analyzer.system.md](src/server/configs/prompts/prompt-analyzer.system.md)
+  - ✅ Generates 1-4 contextual questions with LLM-generated options via [question-generator.system.md](src/server/configs/prompts/question-generator.system.md)
+  - ✅ Each question has 4 contextual options + "Custom" (5 total)
+  - ✅ "All of the above" included where appropriate per question type (e.g., scope questions)
+  - ✅ Iterative interrupt/resume cycles (one question at a time) until all answered
+  - ✅ Answers saved to `userInputs.plannerAnswers` as QuestionAnswer[] array
+  - ✅ Final plan constructed from all collected answers via [plan-constructor.system.md](src/server/configs/prompts/plan-constructor.system.md)
 * [x] **Planner Subgraph** - [src/server/graph/subgraphs/planner/index.ts](src/server/graph/subgraphs/planner/index.ts)
   - ✅ Conditional routing based on `modeOverride`
   - ✅ Routes to `auto-planner` or `hitl-planner`
-* [x] **Plan Templates & Types** - [src/server/graph/subgraphs/planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
-  - ✅ 5 plan templates with DAGs and default constraints
-  - ✅ Constraints schema (deadline, budget, depth, sources)
-  - ✅ Interrupt payload types
+* [x] **Planner State & Types** - [src/server/graph/subgraphs/planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
+  - ✅ PromptAnalysis schema (isComplete, missingAspects, suggestedQuestions)
+  - ✅ Question schema with dynamic options (value, label, description)
+  - ✅ InterruptPayload schema for question interrupts
+  - ✅ QuestionAnswer schema for collected responses
 * [x] **UI Components**
   - ✅ [ModeSwitch](src/app/(components)/ModeSwitch.tsx) - Toggle between Auto/Plan
   - ✅ [InterruptPrompt](src/app/(components)/InterruptPrompt.tsx) - Display options, collect responses
@@ -318,10 +322,22 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ Red-team node: [src/server/graph/subgraphs/write/nodes/redteam.ts](src/server/graph/subgraphs/write/nodes/redteam.ts)
   - ✅ Multi-node flow: START → synthesize → redteam → END
 
-### Phase 5 — API & Streaming
+### Phase 5 — API & Streaming ✅ COMPLETE
 
-* [ ] `/api/threads/start`, `/state`, `/resume`, `/mode` implemented (Route Handlers). ([Next.js][5])
-* [ ] `/api/stream/:threadId` SSE endpoint stable on target infra (or fallback). ([Upstash: Serverless Data Platform][9])
+* [x] `/api/threads/start`, `/state`, `/resume`, `/mode` implemented (Route Handlers). ([Next.js][5])
+  - ✅ All route handlers implemented in Phase 1 & 2
+  - ✅ Full interrupt/resume flow with Command pattern
+  - ✅ State snapshots for time-travel
+  - ✅ Mode switching with updateState()
+* [x] `/api/stream/:threadId` SSE endpoint stable on target infra (or fallback). ([Upstash: Serverless Data Platform][9])
+  - ✅ Implemented in [src/app/api/stream/[threadId]/route.ts](src/app/api/stream/[threadId]/route.ts)
+  - ✅ Multi-mode streaming: `["updates", "messages", "custom"]`
+  - ✅ Event types: node, draft, evidence, queries, citations, issues, llm_token, custom, error, done, keepalive
+  - ✅ Proper SSE headers with keep-alive and timeout protection
+  - ✅ Error handling with graceful stream termination (404, 500)
+  - ✅ Node.js runtime enforcement
+  - ✅ Type-safe implementation (no `any` types)
+  - ✅ Passes Ultracite linting checks
 
 ### Phase 6 — UI
 
@@ -355,7 +371,7 @@ For the product requirements and system design, see the [project brief](brief.md
 | **Research (Query→Search→Harvest)** | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0 compliant; Tavily + Exa fusion.  |
 | **Fact-checker**                    | Claude Code          | ✅         | 2025-01-05        | Deterministic validation; evidence verification. |
 | **Writer + Red-team**               | Claude Code          | ✅         | 2025-01-05        | GPT-4o-mini synthesis; quality gates implemented. |
-| **API & Streaming**                 | Claude Code          | ⏳         | 2025-01-04        | Route Handlers (partial); SSE pending.     |
+| **API & Streaming**                 | Claude Code          | ✅         | 2025-01-05        | All route handlers complete; SSE multi-mode streaming with type safety. |
 | **UI/UX (Sources/Artifacts)**       | Claude Code          | ⏳         | 2025-01-04        | ModeSwitch & InterruptPrompt only.         |
 | **Ops (Cache/Observability)**       | ____________________ | __________ | 2025-xx-xx        | LRU/Redis, metrics, rate limits.           |
 

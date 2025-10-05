@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     if (!validation.success) {
       return NextResponse.json(
-        { error: "Invalid input", details: validation.error.errors },
+        { error: "Invalid input", details: validation.error.issues },
         { status: 400 }
       );
     }
@@ -53,11 +53,16 @@ export async function POST(req: NextRequest) {
     });
 
     // Check if planner hit an interrupt (Plan-mode HITL)
-    if ((result as { __interrupt__?: unknown }).__interrupt__) {
+    // LangGraph adds __interrupt__ at runtime when interrupt() is called
+    const resultWithInterrupt = result as unknown as {
+      __interrupt__?: unknown;
+    };
+
+    if (resultWithInterrupt.__interrupt__) {
       return NextResponse.json(
         {
           threadId,
-          interrupt: (result as { __interrupt__: unknown }).__interrupt__,
+          interrupt: resultWithInterrupt.__interrupt__,
         },
         { status: 202 }
       );

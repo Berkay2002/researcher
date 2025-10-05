@@ -40,4 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.claude
+.claude/not-settings.json
+.claude/settings.json
+.claude/config.yaml
