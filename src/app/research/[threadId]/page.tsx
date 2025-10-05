@@ -4,13 +4,22 @@
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { AppShell, PanelContent } from "@/app/(components)/app-shell";
+import { AppShell } from "@/app/(components)/app-shell";
 import { InterruptPrompt } from "@/app/(components)/InterruptPrompt";
-import { ModeSwitch } from "@/app/(components)/ModeSwitch";
-import { ResearchMessage } from "@/app/(components)/research-message";
+import { ResearchStatusBar } from "@/app/(components)/research-status-bar";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
 import { ThreadList } from "@/app/(components)/thread-list";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/ai-elements/message";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSSEStream } from "@/lib/hooks/use-sse-stream";
 import { useThreadState } from "@/lib/hooks/use-thread-state";
@@ -37,6 +46,7 @@ export default function ThreadViewPage() {
     useState<InterruptPayload | null>(null);
   const [isResumingInterrupt, setIsResumingInterrupt] = useState(false);
   const [interruptError, setInterruptError] = useState<string | null>(null);
+  const [researchStartTime] = useState(Date.now());
 
   // Fetch thread state
   const {
@@ -187,39 +197,6 @@ export default function ThreadViewPage() {
   );
 
   /**
-   * Handle mode change via API
-   */
-  const handleModeChange = useCallback(
-    async (mode: "auto" | "plan") => {
-      if (!threadId) {
-        return;
-      }
-
-      try {
-        const res = await fetch(`/api/threads/${threadId}/mode`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ mode }),
-        });
-
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Mode update failed: ${errorText}`);
-        }
-
-        // Refetch to sync state
-        await refetch();
-      } catch (err) {
-        // Silent fail - mode switch is non-critical
-        console.error("Mode change error:", err);
-      }
-    },
-    [threadId, refetch]
-  );
-
-  /**
    * Toggle pin handler
    */
   const handleTogglePin = useCallback((url: string) => {
@@ -283,25 +260,34 @@ export default function ThreadViewPage() {
     );
   }
 
-  const currentMode = snapshot?.values?.userInputs?.modeOverride || "auto";
-
   return (
     <AppShell
       centerPanel={
         <div className="flex h-full flex-col">
-          {/* Mode Switch (if no interrupt active) */}
-          {!currentInterrupt && (
-            <div className="border-b px-4 py-3">
-              <ModeSwitch
-                disabled={sseStream.status === "streaming"}
-                initialMode={currentMode}
-                onChange={handleModeChange}
-              />
-            </div>
+          {/* Research Status Bar */}
+          {sseStream.sources.length > 0 && (
+            <ResearchStatusBar
+              content={
+                messagesWithDraft.find((msg) => msg.role === "assistant")
+                  ?.content
+              }
+              duration={
+                sseStream.status === "completed"
+                  ? Date.now() - researchStartTime
+                  : undefined
+              }
+              searchCount={snapshot?.values?.queries?.length}
+              sourceCount={sseStream.sources.length}
+              status={
+                sseStream.status === "connecting"
+                  ? "streaming"
+                  : sseStream.status
+              }
+            />
           )}
 
-          {/* Messages */}
-          <PanelContent className="flex-1">
+          {/* Conversation Area */}
+          <Conversation className="flex-1">
             {/* Interrupt Prompt (Plan Mode) */}
             {currentInterrupt && (
               <div className="mb-4">
@@ -319,32 +305,48 @@ export default function ThreadViewPage() {
               </div>
             )}
 
-            {messagesWithDraft.length === 0 ? (
-              <div className="flex h-full items-center justify-center text-center">
-                <div>
-                  <p className="text-muted-foreground">
-                    Waiting for research to begin...
-                  </p>
-                  {sseStream.status === "connecting" && (
-                    <Loader2Icon className="mx-auto mt-4 size-6 animate-spin" />
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-1">
-                {messagesWithDraft.map((message) => (
-                  <ResearchMessage key={message.id} message={message} />
-                ))}
-              </div>
-            )}
+            <ConversationContent>
+              {messagesWithDraft.length === 0 ? (
+                <ConversationEmptyState
+                  description={
+                    sseStream.status === "connecting"
+                      ? "Your research session is starting..."
+                      : "Waiting for research to begin..."
+                  }
+                  icon={
+                    sseStream.status === "connecting" ? (
+                      <Loader2Icon className="size-8 animate-spin" />
+                    ) : undefined
+                  }
+                  title={
+                    sseStream.queries.length > 0
+                      ? `Analyzing ${sseStream.queries.length} ${sseStream.queries.length === 1 ? "query" : "queries"}...`
+                      : "Research Starting"
+                  }
+                />
+              ) : (
+                messagesWithDraft.map((message) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageAvatar
+                      name={message.role === "user" ? "You" : "AI"}
+                      src={message.role === "user" ? "/user.png" : "/ai.png"}
+                    />
+                    <MessageContent variant="flat">
+                      {message.content}
+                    </MessageContent>
+                  </Message>
+                ))
+              )}
+            </ConversationContent>
+          </Conversation>
 
-            {/* Error Display */}
-            {sseStream.error && (
-              <div className="mt-4 rounded-lg border border-destructive bg-destructive/10 p-3">
-                <p className="text-destructive text-sm">{sseStream.error}</p>
-              </div>
-            )}
-          </PanelContent>
+          {/* Error Display */}
+          {sseStream.error && (
+            <Alert className="mx-4 mb-4" variant="destructive">
+              <AlertCircleIcon className="size-4" />
+              <AlertDescription>{sseStream.error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Run Log */}
           <RunLog entries={sseStream.runLog} />
@@ -358,10 +360,22 @@ export default function ThreadViewPage() {
         />
       }
       rightPanel={
-        <SourcesPanel
-          onTogglePin={handleTogglePin}
-          sources={sourcesWithPinned}
-        />
+        sseStream.sources.length > 0 ? (
+          <SourcesPanel
+            citations={
+              sseStream.currentDraftCitations.length > 0
+                ? sseStream.currentDraftCitations.map((cit, idx) => ({
+                    id: `draft-cit-${idx}`,
+                    text: cit.claim,
+                    sources: cit.sources,
+                    position: { start: 0, end: cit.claim.length },
+                  }))
+                : undefined
+            }
+            onTogglePin={handleTogglePin}
+            sources={sourcesWithPinned}
+          />
+        ) : undefined
       }
     />
   );

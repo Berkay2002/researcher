@@ -100,9 +100,7 @@ export async function hitlPlanner(
   }
 
   // Step 4: All questions answered - construct plan
-  console.log(
-    "[hitlPlanner] All questions answered - constructing final plan"
-  );
+  console.log("[hitlPlanner] All questions answered - constructing final plan");
 
   const plan = await constructPlanFromAnswers(goal, answers, questions);
 

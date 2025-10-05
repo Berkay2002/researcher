@@ -1,6 +1,7 @@
 "use client";
 
 import { FilterIcon, PinIcon, XIcon } from "lucide-react";
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import type { SourceCardData } from "@/types/ui";
+import { getFaviconUrl } from "@/lib/utils/favicon";
+import type { CitationData, SourceCardData } from "@/types/ui";
 import { PanelContent, PanelHeader } from "./app-shell";
 import { SourceCard } from "./source-card";
 
@@ -21,6 +24,7 @@ import { SourceCard } from "./source-card";
  */
 export type SourcesPanelProps = {
   sources: SourceCardData[];
+  citations?: CitationData[];
   onTogglePin?: (url: string) => void;
   className?: string;
 };
@@ -34,8 +38,11 @@ export type SourcesPanelProps = {
  * - Show pinned only
  * - Real-time updates as sources arrive
  */
+const FAVICON_SIZE = 16;
+
 export function SourcesPanel({
   sources,
+  citations,
   onTogglePin,
   className,
 }: SourcesPanelProps) {
@@ -135,93 +142,168 @@ export function SourcesPanel({
         title="Sources"
       />
 
-      {/* Filters (collapsible) */}
-      {showFilters && (
-        <div className="space-y-3 border-b px-4 py-3">
-          {/* Search */}
-          <Input
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search sources..."
-            type="search"
-            value={searchQuery}
-          />
+      {/* Tabs */}
+      <Tabs
+        className="flex flex-1 flex-col overflow-hidden"
+        defaultValue="sources"
+      >
+        <TabsList className="w-full rounded-none border-b">
+          <TabsTrigger className="flex-1" value="sources">
+            Sources ({sources.length})
+          </TabsTrigger>
+          <TabsTrigger className="flex-1" value="citations">
+            Citations ({citations?.length || 0})
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Domain Filter */}
-          <Select onValueChange={setDomainFilter} value={domainFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="All domains" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All domains</SelectItem>
-              {uniqueDomains.map((domain) => (
-                <SelectItem key={domain} value={domain}>
-                  {domain}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        {/* Sources Tab */}
+        <TabsContent className="flex-1 overflow-hidden" value="sources">
+          {/* Filters (collapsible) */}
+          {showFilters && (
+            <div className="space-y-3 border-b px-4 py-3">
+              {/* Search */}
+              <Input
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search sources..."
+                type="search"
+                value={searchQuery}
+              />
 
-          {/* Pinned Filter */}
-          <div className="flex items-center justify-between">
-            <Button
-              className={cn("flex-1", showPinnedOnly && "bg-accent")}
-              onClick={() => setShowPinnedOnly(!showPinnedOnly)}
-              size="sm"
-              type="button"
-              variant="outline"
-            >
-              <PinIcon className="mr-2 size-3" />
-              Pinned only ({pinnedCount})
-            </Button>
-          </div>
+              {/* Domain Filter */}
+              <Select onValueChange={setDomainFilter} value={domainFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All domains" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All domains</SelectItem>
+                  {uniqueDomains.map((domain) => (
+                    <SelectItem key={domain} value={domain}>
+                      {domain}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-          {/* Clear Filters */}
-          {activeFilterCount > 0 && (
-            <Button
-              className="w-full"
-              onClick={clearFilters}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <XIcon className="mr-2 size-3" />
-              Clear filters
-            </Button>
+              {/* Pinned Filter */}
+              <div className="flex items-center justify-between">
+                <Button
+                  className={cn("flex-1", showPinnedOnly && "bg-accent")}
+                  onClick={() => setShowPinnedOnly(!showPinnedOnly)}
+                  size="sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <PinIcon className="mr-2 size-3" />
+                  Pinned only ({pinnedCount})
+                </Button>
+              </div>
+
+              {/* Clear Filters */}
+              {activeFilterCount > 0 && (
+                <Button
+                  className="w-full"
+                  onClick={clearFilters}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
+                  <XIcon className="mr-2 size-3" />
+                  Clear filters
+                </Button>
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Sources List */}
-      <PanelContent className="space-y-3">
-        {filteredSources.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              {sources.length === 0
-                ? "No sources yet"
-                : "No sources match your filters"}
-            </p>
-            {activeFilterCount > 0 && (
-              <Button
-                className="mt-4"
-                onClick={clearFilters}
-                size="sm"
-                type="button"
-                variant="outline"
-              >
-                Clear filters
-              </Button>
+          {/* Sources List */}
+          <PanelContent className="space-y-2">
+            {filteredSources.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground text-sm">
+                  {sources.length === 0
+                    ? "No sources yet"
+                    : "No sources match your filters"}
+                </p>
+                {activeFilterCount > 0 && (
+                  <Button
+                    className="mt-4"
+                    onClick={clearFilters}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
+            ) : (
+              filteredSources.map((source) => (
+                <SourceCard
+                  key={source.id}
+                  onTogglePin={onTogglePin}
+                  source={source}
+                />
+              ))
             )}
-          </div>
-        ) : (
-          filteredSources.map((source) => (
-            <SourceCard
-              key={source.id}
-              onTogglePin={onTogglePin}
-              source={source}
-            />
-          ))
-        )}
-      </PanelContent>
+          </PanelContent>
+        </TabsContent>
+
+        {/* Citations Tab */}
+        <TabsContent className="flex-1 overflow-hidden" value="citations">
+          <PanelContent className="space-y-2">
+            {citations && citations.length > 0 ? (
+              citations.map((citation, index) => (
+                <div
+                  className="flex gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-accent/30"
+                  key={citation.id}
+                >
+                  <span className="shrink-0 font-medium font-mono text-xs">
+                    [{index + 1}]
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="line-clamp-2 text-sm leading-tight">
+                      {citation.text}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      {citation.sources.map((sourceUrl) => {
+                        try {
+                          const domain = new URL(sourceUrl).hostname;
+                          return (
+                            <a
+                              className="flex items-center gap-1 text-muted-foreground text-xs hover:underline"
+                              href={sourceUrl}
+                              key={sourceUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              <Image
+                                alt=""
+                                className="size-4 rounded"
+                                height={FAVICON_SIZE}
+                                src={getFaviconUrl(domain, FAVICON_SIZE)}
+                                unoptimized
+                                width={FAVICON_SIZE}
+                              />
+                              <span className="truncate">{domain}</span>
+                            </a>
+                          );
+                        } catch {
+                          return null;
+                        }
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground text-sm">
+                  No citations yet
+                </p>
+              </div>
+            )}
+          </PanelContent>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

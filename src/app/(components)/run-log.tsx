@@ -225,7 +225,9 @@ function getStatusConfig(status: RunLogEntry["status"]): {
     default:
       // This should never happen with the current type definition
       return {
-        icon: <ClockIcon className={cn(ICON_SIZE_CLASS, "text-muted-foreground")} />,
+        icon: (
+          <ClockIcon className={cn(ICON_SIZE_CLASS, "text-muted-foreground")} />
+        ),
         variant: "default",
         label: "Unknown",
       };

@@ -4,7 +4,7 @@
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
+import { getLLM } from "../../../../configs/llm";
 import type {
   Citation,
   Draft,
@@ -14,7 +14,6 @@ import type {
 } from "../../../state";
 
 // Constants for synthesis
-const SYNTHESIS_LLM_TEMPERATURE = 0.3;
 const MAX_CHUNKS_PER_EVIDENCE = 3;
 const MAX_CHUNK_CONTENT_LENGTH = 500;
 const _MIN_WORDS_FOR_CITATION = 50;
@@ -31,7 +30,6 @@ const CONTEXT_WINDOW = 200;
 const EXCERPT_LENGTH = 200;
 const MIN_KEYWORD_LENGTH = 3;
 const MAX_KEYWORDS = 10;
-const MIN_SENTENCE_LENGTH = 20;
 const REPUTABLE_DOMAIN_BONUS = 0.1;
 const CONTENT_LENGTH_THRESHOLD = 1000;
 const CONTENT_LENGTH_BONUS = 0.05;
@@ -42,15 +40,20 @@ const THOUSAND_CHARS_DIVISOR = 1000;
 // Top-level regex literals for performance
 const _CITATION_NEEDED_REGEX = /\[(\d+)\]/g;
 const WORD_SPLIT_REGEX = /\s+/;
-const CITATION_REGEX = /\[Source (\d+)\]/g;
 const KEYWORD_FILTER_REGEX = /\[source \d+\]/gi;
 const SENTENCE_SPLIT_REGEX = /[.!?]+/;
+
+// Constants for citation extraction
+const MIN_SENTENCE_LENGTH_FOR_CITATION = 20;
+const MAX_AUTO_SENTENCES = 5;
+const MIN_WORD_LENGTH_FOR_CITATION = 4;
+const MIN_KEYWORD_MATCH_RATIO = 0.3;
 
 /**
  * Synthesize Node
  *
  * Generates a comprehensive research report using the gathered evidence.
- * Uses GPT-5-mini for well-defined synthesis task.
+ * Uses Gemini 2.5 Flash for well-defined synthesis task.
  */
 export async function synthesize(
   state: ParentState
@@ -70,11 +73,8 @@ export async function synthesize(
   console.log(`[synthesize] Synthesizing report for goal: ${userInputs.goal}`);
   console.log(`[synthesize] Using ${evidence.length} evidence sources`);
 
-  // Initialize the LLM with GPT-5-mini for synthesis
-  const llm = new ChatOpenAI({
-    model: "gpt-5-mini", // GPT-5-mini for well-defined synthesis task
-    temperature: SYNTHESIS_LLM_TEMPERATURE, // Lower temperature for more consistent synthesis
-  });
+  // Initialize the LLM with Gemini 2.5 Flash for synthesis
+  const llm = getLLM("generation");
 
   // Prepare evidence context
   const evidenceContext = prepareEvidenceContext(evidence);
@@ -187,26 +187,112 @@ Please synthesize a comprehensive research report based on the provided evidence
 function extractCitations(text: string, evidence: Evidence[]): Citation[] {
   const citations: Citation[] = [];
 
-  for (const match of text.matchAll(CITATION_REGEX)) {
-    const sourceIndex = Number.parseInt(match[1], 10) - 1;
-    if (sourceIndex >= 0 && sourceIndex < evidence.length) {
-      const source = evidence[sourceIndex];
+  // Try multiple citation formats
+  const citationPatterns = [
+    { regex: /\[Source (\d+)\]/g, name: "Source X" },
+    { regex: /\[(\d+)\]/g, name: "[X]" },
+    { regex: /\[source (\d+)\]/g, name: "source X" },
+    { regex: /\((\d+)\)/g, name: "(X)" },
+    { regex: /\[([A-Za-z]+)\]/g, name: "[Author]" },
+  ];
 
-      // Find relevant excerpt from the source content
-      const excerpt = findRelevantExcerpt(match[0], text, source);
+  // Try each pattern until we find citations
+  for (const pattern of citationPatterns) {
+    for (const match of text.matchAll(pattern.regex)) {
+      let sourceIndex = -1;
 
-      const citation: Citation = {
-        id: `source-${sourceIndex + 1}`,
-        url: source.url,
-        title: source.title,
-        excerpt:
-          excerpt ||
-          `${source.chunks[0]?.content.substring(0, EXCERPT_LENGTH)}...`,
-      };
+      // Handle different extraction methods based on pattern
+      if (pattern.name === "[Author]") {
+        // For author patterns, try to find a matching source by title/URL
+        const author = match[1].toLowerCase();
+        sourceIndex = evidence.findIndex(
+          (e) =>
+            e.title.toLowerCase().includes(author) ||
+            e.url.toLowerCase().includes(author)
+        );
+      } else {
+        // For numeric patterns, extract the number
+        sourceIndex = Number.parseInt(match[1], 10) - 1;
+      }
 
-      // Avoid duplicate citations
-      if (!citations.some((c) => c.id === citation.id)) {
-        citations.push(citation);
+      if (sourceIndex >= 0 && sourceIndex < evidence.length) {
+        const source = evidence[sourceIndex];
+
+        // Find relevant excerpt from the source content
+        const excerpt = findRelevantExcerpt(match[0], text, source);
+
+        const citation: Citation = {
+          id: `source-${sourceIndex + 1}`,
+          url: source.url,
+          title: source.title,
+          excerpt:
+            excerpt ||
+            `${source.chunks[0]?.content.substring(0, EXCERPT_LENGTH)}...`,
+        };
+
+        // Avoid duplicate citations
+        if (!citations.some((c) => c.id === citation.id)) {
+          citations.push(citation);
+        }
+      }
+    }
+
+    // If we found citations with this pattern, don't try others
+    if (citations.length > 0) {
+      break;
+    }
+  }
+
+  // If still no citations found, try to auto-generate them based on content similarity
+  if (citations.length === 0 && evidence.length > 0) {
+    console.log("[synthesize] No citations found, attempting auto-generation");
+
+    // Split text into sentences/paragraphs
+    const sentences = text
+      .split(SENTENCE_SPLIT_REGEX)
+      .filter((s) => s.trim().length > MIN_SENTENCE_LENGTH_FOR_CITATION);
+
+    // For each sentence, find the most relevant evidence
+    for (const sentence of sentences.slice(0, MAX_AUTO_SENTENCES)) {
+      let bestMatch = -1;
+      let bestScore = 0;
+
+      for (let i = 0; i < evidence.length; i++) {
+        const source = evidence[i];
+        const sourceContent = source.chunks
+          .map((c) => c.content)
+          .join(" ")
+          .toLowerCase();
+        const sentenceLower = sentence.toLowerCase();
+
+        // Simple keyword matching score
+        const sentenceWords = sentenceLower.split(WORD_SPLIT_REGEX);
+        const matchingWords = sentenceWords.filter(
+          (word) =>
+            word.length > MIN_WORD_LENGTH_FOR_CITATION &&
+            sourceContent.includes(word)
+        );
+
+        const score = matchingWords.length / sentenceWords.length;
+
+        if (score > bestScore && score > MIN_KEYWORD_MATCH_RATIO) {
+          bestScore = score;
+          bestMatch = i;
+        }
+      }
+
+      if (bestMatch >= 0) {
+        const source = evidence[bestMatch];
+        const citation: Citation = {
+          id: `source-${bestMatch + 1}`,
+          url: source.url,
+          title: source.title,
+          excerpt: `${source.chunks[0]?.content.substring(0, EXCERPT_LENGTH)}...`,
+        };
+
+        if (!citations.some((c) => c.id === citation.id)) {
+          citations.push(citation);
+        }
       }
     }
   }
@@ -244,7 +330,7 @@ function findRelevantExcerpt(
 
   const sentences = sourceContent
     .split(SENTENCE_SPLIT_REGEX)
-    .filter((s) => s.trim().length > MIN_SENTENCE_LENGTH);
+    .filter((s) => s.trim().length > MIN_SENTENCE_LENGTH_FOR_CITATION);
 
   let bestSentence = "";
   let bestScore = 0;

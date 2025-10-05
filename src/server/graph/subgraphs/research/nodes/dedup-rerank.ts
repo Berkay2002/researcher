@@ -54,7 +54,9 @@ export async function dedupRerank(
 
   // Limit to top N if constraints specify max evidence
   const maxEvidence =
-    typeof constraints.maxEvidence === "number" ? constraints.maxEvidence : DEFAULT_MAX_EVIDENCE;
+    typeof constraints.maxEvidence === "number"
+      ? constraints.maxEvidence
+      : DEFAULT_MAX_EVIDENCE;
 
   const limited = reranked.slice(0, maxEvidence);
 

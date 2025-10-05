@@ -1,36 +1,27 @@
 "use client";
 
 import {
-  InlineCitation,
-  InlineCitationCard,
-  InlineCitationCardBody,
-  InlineCitationCardTrigger,
-  InlineCitationCarousel,
-  InlineCitationCarouselContent,
-  InlineCitationCarouselHeader,
-  InlineCitationCarouselIndex,
-  InlineCitationCarouselItem,
-  InlineCitationCarouselNext,
-  InlineCitationCarouselPrev,
-  InlineCitationQuote,
-  InlineCitationSource,
-  InlineCitationText,
-} from "@/components/ai-elements/inline-citation";
-import {
   Message,
   MessageAvatar,
   MessageContent,
 } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
-import type { CitationData, MessageData } from "@/types/ui";
+import type { CitationData, MessageData, SourceCardData } from "@/types/ui";
+import { InlineCitationNumber } from "./inline-citation-number";
+import { ResearchReportCard } from "./research-report-card";
 
 /**
  * Research Message Props
  */
 export type ResearchMessageProps = {
   message: MessageData;
+  sources?: SourceCardData[];
+  isSourcesPanelVisible?: boolean;
+  onToggleSourcesPanel?: () => void;
   className?: string;
 };
+
+const MIN_REPORT_LENGTH = 1000;
 
 /**
  * Research Message Component
@@ -38,9 +29,28 @@ export type ResearchMessageProps = {
  * Displays a chat message with optional inline citations.
  * Wraps the ai-elements Message component with LangGraph types.
  */
-export function ResearchMessage({ message, className }: ResearchMessageProps) {
+export function ResearchMessage({
+  message,
+  sources,
+  isSourcesPanelVisible,
+  onToggleSourcesPanel,
+  className,
+}: ResearchMessageProps) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
+
+  // Check if this is a final report (heuristic: has citations, content > 1000 chars)
+  const isReport =
+    message.citations &&
+    message.citations.length > 0 &&
+    message.content.length > MIN_REPORT_LENGTH;
+
+  // Define a no-op function for the toggle handler if not provided
+  const handleToggleSources =
+    onToggleSourcesPanel ||
+    (() => {
+      // No-op when handler is not provided
+    });
 
   return (
     <Message className={className} from={message.role}>
@@ -48,19 +58,27 @@ export function ResearchMessage({ message, className }: ResearchMessageProps) {
         {/* User message (simple) */}
         {isUser && <p className="text-sm">{message.content}</p>}
 
-        {/* Assistant message with citations */}
-        {isAssistant && (
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            {message.citations && message.citations.length > 0 ? (
-              <MessageWithCitations
-                citations={message.citations}
-                content={message.content}
-              />
-            ) : (
-              <Response>{message.content}</Response>
-            )}
-          </div>
-        )}
+        {/* Assistant message - render as report card or regular message */}
+        {isAssistant &&
+          (isReport ? (
+            <ResearchReportCard
+              content={message.content}
+              isSourcesPanelVisible={Boolean(isSourcesPanelVisible)}
+              onToggleSourcesPanel={handleToggleSources}
+              sources={sources || []}
+            />
+          ) : (
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              {message.citations && message.citations.length > 0 ? (
+                <MessageWithCitations
+                  citations={message.citations}
+                  content={message.content}
+                />
+              ) : (
+                <Response>{message.content}</Response>
+              )}
+            </div>
+          ))}
 
         {/* System message (if any) */}
         {message.role === "system" && (
@@ -101,52 +119,25 @@ function MessageWithCitations({
   content,
   citations,
 }: MessageWithCitationsProps) {
-  // Group citations by text span for rendering
-  const citationMap = new Map<string, CitationData[]>();
-
-  for (const citation of citations) {
-    const existing = citationMap.get(citation.text) || [];
-    citationMap.set(citation.text, [...existing, citation]);
-  }
-
-  // Simple citation rendering (without complex text splitting)
-  // For now, just render content with citations appended
   return (
     <div className="space-y-4">
       <Response>{content}</Response>
 
       {/* Citations Section */}
       {citations.length > 0 && (
-        <div className="space-y-2 border-t pt-4">
-          {citations.map((citation) => (
-            <InlineCitation key={citation.id}>
-              <InlineCitationText>{citation.text}</InlineCitationText>
-              <InlineCitationCard>
-                <InlineCitationCardTrigger sources={citation.sources} />
-                <InlineCitationCardBody>
-                  <InlineCitationCarousel>
-                    <InlineCitationCarouselHeader>
-                      <InlineCitationCarouselPrev />
-                      <InlineCitationCarouselIndex />
-                      <InlineCitationCarouselNext />
-                    </InlineCitationCarouselHeader>
-                    <InlineCitationCarouselContent>
-                      {citation.sources.map((sourceUrl) => (
-                        <InlineCitationCarouselItem key={sourceUrl}>
-                          <InlineCitationSource
-                            title={new URL(sourceUrl).hostname}
-                            url={sourceUrl}
-                          />
-                          <InlineCitationQuote>
-                            {citation.text}
-                          </InlineCitationQuote>
-                        </InlineCitationCarouselItem>
-                      ))}
-                    </InlineCitationCarouselContent>
-                  </InlineCitationCarousel>
-                </InlineCitationCardBody>
-              </InlineCitationCard>
-            </InlineCitation>
+        <div className="flex flex-wrap gap-x-1 border-t pt-3 text-xs">
+          <span className="text-muted-foreground">Citations:</span>
+          {citations.map((citation, idx) => (
+            <span key={citation.id}>
+              <InlineCitationNumber
+                number={idx + 1}
+                sources={citation.sources}
+                text={citation.text}
+              />
+              {idx < citations.length - 1 && (
+                <span className="text-muted-foreground">,</span>
+              )}
+            </span>
           ))}
         </div>
       )}

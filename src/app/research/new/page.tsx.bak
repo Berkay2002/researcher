@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/suspicious/noConsole: <Development> */
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -7,9 +6,6 @@ import { AppShell } from "@/app/(components)/app-shell";
 import { ResearchInput } from "@/app/(components)/research-input";
 import { ThreadList } from "@/app/(components)/thread-list";
 import type { ThreadMetadata } from "@/types/ui";
-
-// HTTP Status Codes
-const HTTP_STATUS_ACCEPTED = 202;
 
 /**
  * New Research Page
@@ -74,19 +70,9 @@ export default function NewResearchPage() {
         throw new Error(`Failed to start research: ${errorText}`);
       }
 
-      const data = (await response.json()) as {
-        threadId: string;
-        interrupt?: unknown;
-      };
+      const data = (await response.json()) as { threadId: string };
 
-      // Handle both immediate start (201) and interrupt (202)
-      if (response.status === HTTP_STATUS_ACCEPTED && data.interrupt) {
-        console.log(
-          "[NewResearch] Thread interrupted, redirecting to handle HITL"
-        );
-      }
-
-      // Navigate to thread view regardless - it will handle interrupts
+      // Navigate to thread view
       router.push(`/research/${data.threadId}`);
     } catch (err) {
       const errorMessage =
@@ -100,21 +86,21 @@ export default function NewResearchPage() {
   return (
     <AppShell
       centerPanel={
-        <div className="flex h-full flex-col overflow-hidden">
+        <div className="flex h-full flex-col">
           {/* Empty space - messages will appear here */}
-          <div className="flex-1 overflow-y-auto" />
+          <div className="flex-1" />
 
           {/* Error Display */}
           {error && (
-            <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+            <div className="mx-auto mb-4 w-full max-w-3xl px-4">
               <div className="rounded-lg border border-destructive bg-destructive/10 p-3">
                 <p className="text-destructive text-sm">{error}</p>
               </div>
             </div>
           )}
 
-          {/* Research Input at bottom - fixed position */}
-          <div className="flex-shrink-0 border-t bg-background p-4">
+          {/* Research Input at bottom */}
+          <div className="border-t bg-background p-4">
             <div className="mx-auto w-full max-w-3xl">
               <ResearchInput
                 isSubmitting={isSubmitting}

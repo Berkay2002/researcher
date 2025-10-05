@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(npx ultracite fix:*)",
-      "Bash(npx ultracite check:*)"
+      "Bash(npx ultracite check:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

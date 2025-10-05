@@ -163,7 +163,84 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
-    // Create SSE response stream
+    // Check if thread is already completed
+    if (snapshot.next && snapshot.next.length === 0) {
+      console.log(`[SSE] Thread ${threadId} already completed, sending final state`);
+      
+      // Create a simple stream that sends the final state and closes
+      const encoder = new TextEncoder();
+      const body = new ReadableStream({
+        start(controller) {
+          // Send the final state if there's a draft
+          if (snapshot.values.draft) {
+            const draftEvent = formatSSE({
+              event: "draft",
+              data: {
+                draft: snapshot.values.draft,
+                node: "writer",
+                timestamp: new Date().toISOString(),
+              },
+            });
+            controller.enqueue(encoder.encode(draftEvent));
+          }
+
+          // Send any evidence
+          if (snapshot.values.evidence && snapshot.values.evidence.length > 0) {
+            const evidenceEvent = formatSSE({
+              event: "evidence",
+              data: {
+                evidence: snapshot.values.evidence,
+                node: "research",
+                timestamp: new Date().toISOString(),
+              },
+            });
+            controller.enqueue(encoder.encode(evidenceEvent));
+          }
+
+          // Send any queries
+          if (snapshot.values.queries && snapshot.values.queries.length > 0) {
+            const queriesEvent = formatSSE({
+              event: "queries",
+              data: {
+                queries: snapshot.values.queries,
+                node: "planner",
+                timestamp: new Date().toISOString(),
+              },
+            });
+            controller.enqueue(encoder.encode(queriesEvent));
+          }
+
+          // Send any issues
+          if (snapshot.values.issues && snapshot.values.issues.length > 0) {
+            const issuesEvent = formatSSE({
+              event: "issues",
+              data: {
+                issues: snapshot.values.issues,
+                node: "redteam",
+                timestamp: new Date().toISOString(),
+              },
+            });
+            controller.enqueue(encoder.encode(issuesEvent));
+          }
+
+          // Send done event
+          controller.enqueue(encoder.encode(formatSSE({ event: "done", data: {} })));
+          controller.close();
+        },
+      });
+
+      return new Response(body, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+          "X-Accel-Buffering": "no",
+        },
+        status: 200,
+      });
+    }
+
+    // Create SSE response stream for in-progress threads
     const encoder = new TextEncoder();
     let keepAliveTimer: NodeJS.Timeout | null = null;
     let timeoutTimer: NodeJS.Timeout | null = null;

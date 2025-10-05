@@ -47,18 +47,18 @@ export async function POST(req: NextRequest) {
 
     console.log(`[API] Starting thread ${threadId} with goal: "${body.goal}"`);
 
-    // Invoke the graph
+    // Execute graph and wait for initial result to check for interrupts
     const result = await graph.invoke(initial, {
       configurable: { thread_id: threadId },
     });
 
-    // Check if planner hit an interrupt (Plan-mode HITL)
-    // LangGraph adds __interrupt__ at runtime when interrupt() is called
+    // Check for interrupt in result (HITL planning in Plan mode)
     const resultWithInterrupt = result as unknown as {
       __interrupt__?: unknown;
     };
 
     if (resultWithInterrupt.__interrupt__) {
+      console.log(`[API] Thread ${threadId} interrupted in Plan mode`);
       return NextResponse.json(
         {
           threadId,
@@ -68,6 +68,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log(`[API] Thread ${threadId} started successfully`);
     return NextResponse.json({ threadId, status: "started" }, { status: 201 });
   } catch (error) {
     console.error("[API] Error starting thread:", error);

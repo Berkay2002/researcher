@@ -2,8 +2,9 @@ import { z } from "zod";
 
 // Environment variable schema for runtime validation
 const envSchema = z.object({
-  // LLM Provider
-  OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
+  // LLM Provider - Using Gemini via OpenAI SDK compatibility
+  GEMINI_API_KEY: z.string().min(1, "Gemini API key is required"),
+  OPENAI_API_KEY: z.string().optional(), // Optional, keeping for potential fallback
 
   // Search APIs
   TAVILY_API_KEY: z.string().min(1, "Tavily API key is required"),
@@ -24,7 +25,9 @@ const envSchema = z.object({
 // Validate and export environment variables
 function validateEnv() {
   try {
-    return envSchema.parse(process.env);
+    const env = envSchema.parse(process.env);
+
+    return env;
   } catch (error) {
     // biome-ignore lint/suspicious/noConsole: Environment validation errors should be logged
     console.error("L Invalid environment variables:", error);
@@ -39,6 +42,7 @@ export const env = validateEnv();
 
 // Export individual variables for convenience
 export const {
+  GEMINI_API_KEY,
   OPENAI_API_KEY,
   TAVILY_API_KEY,
   EXA_API_KEY,

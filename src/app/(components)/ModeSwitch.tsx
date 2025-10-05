@@ -2,7 +2,6 @@
 
 import { InfoIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -66,7 +65,7 @@ export function ModeSwitch({
     <div className={className}>
       <div className="flex items-center gap-3">
         <Label
-          className="cursor-pointer font-medium text-sm"
+          className="cursor-pointer px-2 font-medium text-sm"
           htmlFor="mode-switch"
         >
           {modeConfig.label}
@@ -76,7 +75,6 @@ export function ModeSwitch({
             <TooltipTrigger asChild>
               <div className="relative inline-flex items-center">
                 <Switch
-                  aria-describedby="mode-description"
                   aria-label={`Switch to ${mode === "auto" ? "plan" : "auto"} mode`}
                   checked={mode === "plan"}
                   disabled={disabled}
@@ -90,9 +88,6 @@ export function ModeSwitch({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <span className="text-muted-foreground text-xs" id="mode-description">
-          {modeConfig.description}
-        </span>
         {showHelp && (
           <TooltipProvider>
             <Tooltip>
@@ -116,17 +111,6 @@ export function ModeSwitch({
           </TooltipProvider>
         )}
       </div>
-
-      {/* Help Alert (optional) */}
-      {showHelp && mode === "plan" && (
-        <Alert className="mt-3">
-          <InfoIcon className="size-4" />
-          <AlertDescription className="text-xs">
-            Plan mode will prompt you to choose a research strategy and specify
-            constraints before execution.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   );
 }
@@ -136,7 +120,6 @@ export function ModeSwitch({
  */
 type ModeConfig = {
   label: string;
-  description: string;
   tooltip: string;
 };
 
@@ -144,7 +127,6 @@ function getModeConfig(mode: "auto" | "plan"): ModeConfig {
   if (mode === "auto") {
     return {
       label: "Auto Mode",
-      description: "Immediate execution with default plan",
       tooltip:
         "Research will start immediately with sensible defaults. No human input required.",
     };
@@ -152,7 +134,6 @@ function getModeConfig(mode: "auto" | "plan"): ModeConfig {
 
   return {
     label: "Plan Mode",
-    description: "Guided planning with template selection",
     tooltip:
       "You'll be asked to select a research strategy and specify constraints before execution begins.",
   };

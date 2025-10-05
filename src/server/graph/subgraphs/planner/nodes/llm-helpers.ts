@@ -3,13 +3,13 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
+import { createLLM } from "../../../../configs/llm";
 import type { Plan, Question, QuestionAnswer } from "../../../state";
 import type { PromptAnalysis } from "../state";
 
-// LLM Configuration
-const ANALYSIS_MODEL = "gpt-5"; // GPT-5 for reasoning tasks (agentic)
-const GENERATION_MODEL = "gpt-5-mini"; // GPT-5-mini for well-defined tasks
+// LLM Configuration - Using Gemini via OpenAI SDK compatibility
+const ANALYSIS_MODEL = "gemini-2.5-pro"; // Gemini 2.5 Pro for reasoning tasks (agentic)
+const GENERATION_MODEL = "gemini-2.5-flash"; // Gemini 2.5 Flash for well-defined tasks
 const DEFAULT_TEMPERATURE = 0.3;
 
 // System prompt paths
@@ -26,7 +26,7 @@ async function loadSystemPrompt(filename: string): Promise<string> {
 /**
  * Analyze prompt completeness
  *
- * Uses GPT-4o to identify missing information in user's research prompt
+ * Uses Gemini 2.5 Pro to identify missing information in user's research prompt
  */
 export async function analyzePromptCompleteness(
   goal: string
@@ -35,10 +35,7 @@ export async function analyzePromptCompleteness(
 
   const systemPrompt = await loadSystemPrompt("prompt-analyzer.system.md");
 
-  const llm = new ChatOpenAI({
-    model: ANALYSIS_MODEL,
-    temperature: DEFAULT_TEMPERATURE,
-  }).bind({
+  const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
   });
 
@@ -62,7 +59,7 @@ export async function analyzePromptCompleteness(
 /**
  * Generate dynamic questions based on prompt analysis
  *
- * Uses GPT-4o-mini to create questions with contextual answer options
+ * Uses Gemini 2.5 Flash to create questions with contextual answer options
  */
 export async function generateDynamicQuestions(
   goal: string,
@@ -81,10 +78,7 @@ export async function generateDynamicQuestions(
 
   const systemPrompt = await loadSystemPrompt("question-generator.system.md");
 
-  const llm = new ChatOpenAI({
-    model: GENERATION_MODEL,
-    temperature: DEFAULT_TEMPERATURE,
-  }).bind({
+  const llm = createLLM(GENERATION_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
   });
 
@@ -105,29 +99,42 @@ Respond with a JSON object containing a "questions" array following the schema i
   ]);
 
   const content = response.content as string;
-  const parsed = JSON.parse(content) as { questions: Question[] };
+  console.log("[generateDynamicQuestions] Raw LLM response:", content);
 
+  let parsed: { questions?: Question[] } = {};
+  try {
+    parsed = JSON.parse(content);
+  } catch (error) {
+    console.error("[generateDynamicQuestions] JSON parse failed:", error);
+    console.error("[generateDynamicQuestions] Invalid response:", content);
+    return [];
+  }
+
+  const questions = parsed.questions || [];
   console.log(
-    `[generateDynamicQuestions] Generated ${parsed.questions.length} questions`
+    `[generateDynamicQuestions] Generated ${questions.length} questions`
   );
 
-  return parsed.questions;
+  if (questions.length === 0) {
+    console.warn(
+      "[generateDynamicQuestions] LLM returned no questions - check prompt/schema"
+    );
+  }
+
+  return questions;
 }
 
 /**
  * Construct plan directly from prompt (when complete)
  *
- * Uses GPT-4o to build research plan without Q&A
+ * Uses Gemini 2.5 Pro to build research plan without Q&A
  */
 export async function constructPlanFromPrompt(goal: string): Promise<Plan> {
   console.log("[constructPlanFromPrompt] Building plan from complete prompt");
 
   const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
 
-  const llm = new ChatOpenAI({
-    model: ANALYSIS_MODEL,
-    temperature: DEFAULT_TEMPERATURE,
-  }).bind({
+  const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
   });
 
@@ -162,7 +169,7 @@ Respond with JSON following the schema in the system prompt.`
 /**
  * Construct plan from Q&A answers
  *
- * Uses GPT-4o to synthesize collected answers into research plan
+ * Uses Gemini 2.5 Pro to synthesize collected answers into research plan
  */
 export async function constructPlanFromAnswers(
   goal: string,
@@ -175,10 +182,7 @@ export async function constructPlanFromAnswers(
 
   const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
 
-  const llm = new ChatOpenAI({
-    model: ANALYSIS_MODEL,
-    temperature: DEFAULT_TEMPERATURE,
-  }).bind({
+  const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
   });
 
@@ -235,17 +239,14 @@ Respond with JSON following the schema in the system prompt.`
 /**
  * Construct default plan with assumptions (for auto mode with incomplete prompts)
  *
- * Uses GPT-4o to build plan with best assumptions when user hasn't provided Q&A
+ * Uses Gemini 2.5 Pro to build plan with best assumptions when user hasn't provided Q&A
  */
 export async function constructDefaultPlan(goal: string): Promise<Plan> {
   console.log("[constructDefaultPlan] Building plan with default assumptions");
 
   const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
 
-  const llm = new ChatOpenAI({
-    model: ANALYSIS_MODEL,
-    temperature: DEFAULT_TEMPERATURE,
-  }).bind({
+  const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
   });
 

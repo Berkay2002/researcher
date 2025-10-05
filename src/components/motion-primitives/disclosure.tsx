@@ -1,15 +1,16 @@
-'use client';
-import * as React from 'react';
+/** biome-ignore-all lint/performance/noNamespaceImport: <UI component> */
+"use client";
 import {
   AnimatePresence,
-  motion,
   MotionConfig,
-  Transition,
-  Variant,
-  Variants,
-} from 'motion/react';
-import { createContext, useContext, useState, useId, useEffect } from 'react';
-import { cn } from '@/lib/utils';
+  motion,
+  type Transition,
+  type Variant,
+  type Variants,
+} from "motion/react";
+import * as React from "react";
+import { createContext, useContext, useEffect, useId, useState } from "react";
+import { cn } from "@/lib/utils";
 
 export type DisclosureContextType = {
   open: boolean;
@@ -64,7 +65,7 @@ function DisclosureProvider({
 function useDisclosure() {
   const context = useContext(DisclosureContext);
   if (!context) {
-    throw new Error('useDisclosure must be used within a DisclosureProvider');
+    throw new Error("useDisclosure must be used within a DisclosureProvider");
   }
   return context;
 }
@@ -90,8 +91,8 @@ export function Disclosure({
     <MotionConfig transition={transition}>
       <div className={className}>
         <DisclosureProvider
-          open={openProp}
           onOpenChange={onOpenChange}
+          open={openProp}
           variants={variants}
         >
           {React.Children.toArray(children)[0]}
@@ -113,27 +114,31 @@ export function DisclosureTrigger({
 
   return (
     <>
-      {React.Children.map(children, (child) => {
-        return React.isValidElement(child)
-          ? React.cloneElement(child, {
-              onClick: toggle,
-              role: 'button',
-              'aria-expanded': open,
-              tabIndex: 0,
-              onKeyDown: (e: { key: string; preventDefault: () => void }) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  toggle();
-                }
-              },
-              className: cn(
-                className,
-                (child as React.ReactElement).props.className
-              ),
-              ...(child as React.ReactElement).props,
-            })
-          : child;
-      })}
+      {React.Children.map(children, (child) =>
+        React.isValidElement(child)
+          ? React.cloneElement(
+              child as React.ReactElement<Record<string, unknown>>,
+              {
+                onClick: toggle,
+                role: "button",
+                "aria-expanded": open,
+                tabIndex: 0,
+                onKeyDown: (e: { key: string; preventDefault: () => void }) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggle();
+                  }
+                },
+                className: cn(
+                  className,
+                  ((child as React.ReactElement<Record<string, unknown>>).props
+                    .className as string | undefined) || ""
+                ),
+                ...(child as React.ReactElement<Record<string, unknown>>).props,
+              }
+            )
+          : child
+      )}
     </>
   );
 }
@@ -150,7 +155,7 @@ export function DisclosureContent({
 
   const BASE_VARIANTS: Variants = {
     expanded: {
-      height: 'auto',
+      height: "auto",
       opacity: 1,
     },
     collapsed: {
@@ -165,14 +170,14 @@ export function DisclosureContent({
   };
 
   return (
-    <div className={cn('overflow-hidden', className)}>
+    <div className={cn("overflow-hidden", className)}>
       <AnimatePresence initial={false}>
         {open && (
           <motion.div
+            animate="expanded"
+            exit="collapsed"
             id={uniqueId}
-            initial='collapsed'
-            animate='expanded'
-            exit='collapsed'
+            initial="collapsed"
             variants={combinedVariants}
           >
             {children}

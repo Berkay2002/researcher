@@ -1,5 +1,6 @@
 "use client";
 
+import { type FormEvent, useState } from "react";
 import {
   PromptInput,
   PromptInputBody,
@@ -8,8 +9,6 @@ import {
   PromptInputToolbar,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
-import { cn } from "@/lib/utils";
-import { useState, type FormEvent } from "react";
 import { ModeSwitch } from "./ModeSwitch";
 
 /**
@@ -25,7 +24,7 @@ export type ResearchInputProps = {
  * Research Input Component
  *
  * Main input for starting research sessions.
- * Combines PromptInput with ModeSwitch.
+ * Combines PromptInput with ModeSwitch inside toolbar.
  */
 export function ResearchInput({
   onSubmit,
@@ -52,28 +51,25 @@ export function ResearchInput({
   };
 
   return (
-    <div className={cn("space-y-3", className)}>
-      {/* Mode Switch */}
-      <ModeSwitch initialMode={mode} onChange={setMode} />
-
-      {/* Prompt Input */}
-      <PromptInput onSubmit={handleSubmit}>
-        <PromptInputBody>
-          <PromptInputTextarea
-            placeholder="What would you like to research?"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            disabled={isSubmitting}
-          />
-        </PromptInputBody>
-        <PromptInputToolbar>
-          <PromptInputTools>{/* Tools can go here */}</PromptInputTools>
-          <PromptInputSubmit
-            disabled={isSubmitting || !inputValue.trim()}
-            status={isSubmitting ? "submitted" : undefined}
-          />
-        </PromptInputToolbar>
-      </PromptInput>
-    </div>
+    <PromptInput className={className} onSubmit={handleSubmit}>
+      <PromptInputBody>
+        <PromptInputTextarea
+          disabled={isSubmitting}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="What would you like to research?"
+          value={inputValue}
+        />
+      </PromptInputBody>
+      <PromptInputToolbar>
+        <PromptInputTools>
+          {/* Mode Switch inside toolbar */}
+          <ModeSwitch initialMode={mode} onChange={setMode} />
+        </PromptInputTools>
+        <PromptInputSubmit
+          disabled={isSubmitting || !inputValue.trim()}
+          status={isSubmitting ? "submitted" : undefined}
+        />
+      </PromptInputToolbar>
+    </PromptInput>
   );
 }

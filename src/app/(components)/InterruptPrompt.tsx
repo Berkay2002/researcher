@@ -1,5 +1,7 @@
 "use client";
 
+import { AlertCircleIcon, HelpCircleIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,15 +16,22 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import type { InterruptPayload } from "@/server/graph/subgraphs/planner/state";
-import { AlertCircleIcon, HelpCircleIcon } from "lucide-react";
-import { useCallback, useState } from "react";
+
+/**
+ * Interrupt Response Type
+ */
+export type InterruptResponse = {
+  questionId: string;
+  selectedOption: string;
+  customAnswer?: string;
+};
 
 /**
  * Interrupt Prompt Props
  */
 export type InterruptPromptProps = {
   interrupt: InterruptPayload;
-  onSubmit: (response: unknown) => void;
+  onSubmit: (response: InterruptResponse) => void;
   onCancel?: () => void;
   isSubmitting?: boolean;
   className?: string;
@@ -49,7 +58,7 @@ export function InterruptPrompt({
   const [customAnswer, setCustomAnswer] = useState<string>("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
-  const isCustomSelected = selectedOption === "custom";
+  const isCustomSelected: boolean = selectedOption === "custom";
 
   /**
    * Handle submission with validation
@@ -70,7 +79,7 @@ export function InterruptPrompt({
     }
 
     // Build response payload
-    const response = {
+    const response: InterruptResponse = {
       questionId: interrupt.questionId,
       selectedOption,
       customAnswer: isCustomSelected ? customAnswer.trim() : undefined,
@@ -133,58 +142,63 @@ export function InterruptPrompt({
 
           {/* Options */}
           <RadioGroup
-            value={selectedOption}
-            onValueChange={handleOptionChange}
             disabled={isSubmitting}
+            onValueChange={handleOptionChange}
+            value={selectedOption}
           >
-            {interrupt.options?.map((option) => {
-              const isCustomOption = option.value === "custom";
+            {interrupt.options?.map(
+              (option: {
+                value: string;
+                label: string;
+                description?: string;
+              }) => {
+                const isCustomOption = option.value === "custom";
 
-              return (
-                <div
-                  key={option.value}
-                  className="flex items-start space-x-3 space-y-0 rounded-lg border p-3 transition-colors hover:bg-accent"
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={option.value}
-                    disabled={isSubmitting}
-                    className="mt-1"
-                  />
-                  <div className="flex-1 space-y-1">
-                    <Label
-                      htmlFor={option.value}
-                      className="cursor-pointer font-medium leading-tight"
-                    >
-                      {option.label}
-                    </Label>
-                    {option.description && !isCustomOption && (
-                      <p className="text-muted-foreground text-sm leading-relaxed">
-                        {option.description}
-                      </p>
-                    )}
+                return (
+                  <div
+                    className="flex items-start space-x-3 space-y-0 rounded-lg border p-3 transition-colors hover:bg-accent"
+                    key={option.value}
+                  >
+                    <RadioGroupItem
+                      className="mt-1"
+                      disabled={isSubmitting}
+                      id={option.value}
+                      value={option.value}
+                    />
+                    <div className="flex-1 space-y-1">
+                      <Label
+                        className="cursor-pointer font-medium leading-tight"
+                        htmlFor={option.value}
+                      >
+                        {option.label}
+                      </Label>
+                      {option.description && !isCustomOption && (
+                        <p className="text-muted-foreground text-sm leading-relaxed">
+                          {option.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              }
+            )}
           </RadioGroup>
 
-          {/* Custom Answer Input */}
-          {isCustomSelected && (
-            <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+          {isCustomSelected === true && (
+            <div className="fade-in slide-in-from-top-2 animate-in space-y-2">
               <Label htmlFor="customAnswer">Your Custom Answer</Label>
               <Textarea
+                aria-describedby="custom-help"
+                className="resize-none"
+                disabled={isSubmitting}
                 id="customAnswer"
-                placeholder="Enter your specific requirements or answer..."
-                value={customAnswer}
                 onChange={(e) => {
                   setCustomAnswer(e.target.value);
                   setValidationError(null);
                 }}
-                disabled={isSubmitting}
+                placeholder="Enter your specific requirements or answer..."
                 rows={4}
-                className="resize-none"
-                aria-describedby="custom-help"
+                value={customAnswer}
               />
               <p className="text-muted-foreground text-xs" id="custom-help">
                 Provide as much detail as possible to help tailor the research
@@ -192,13 +206,13 @@ export function InterruptPrompt({
             </div>
           )}
 
-          {/* Question Metadata (if any) */}
-          {interrupt.metadata?.totalQuestions && (
+          {interrupt.metadata?.totalQuestions !== undefined && (
             <div className="flex items-center justify-between border-t pt-3 text-muted-foreground text-xs">
               <span>Question progress</span>
               <span>
-                {(interrupt.metadata.currentQuestion as number) || 1} of{" "}
-                {interrupt.metadata.totalQuestions}
+                {(interrupt.metadata.currentQuestion as number | undefined) ||
+                  1}{" "}
+                of {interrupt.metadata.totalQuestions as number | undefined}
               </span>
             </div>
           )}
@@ -206,8 +220,8 @@ export function InterruptPrompt({
         <CardFooter className="flex gap-2">
           {onCancel && (
             <Button
-              onClick={handleCancel}
               disabled={isSubmitting}
+              onClick={handleCancel}
               type="button"
               variant="outline"
             >
@@ -215,9 +229,9 @@ export function InterruptPrompt({
             </Button>
           )}
           <Button
-            onClick={handleSubmit}
-            disabled={!selectedOption || isSubmitting}
             className="flex-1"
+            disabled={!selectedOption || isSubmitting}
+            onClick={handleSubmit}
             type="button"
           >
             {isSubmitting ? "Submitting..." : "Continue"}

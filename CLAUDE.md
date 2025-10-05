@@ -12,7 +12,7 @@ A research assistant built with Next.js 15 (App Router) and LangGraph that trans
 - TypeScript with strict type safety
 - Biome for formatting/linting (via Ultracite)
 - Tailwind CSS 4 with Radix UI components
-- OpenAI models (GPT-5 for agentic, GPT-5-mini for defined tasks)
+- Google Gemini models via OpenAI SDK (Gemini 2.5 Pro for agentic, Gemini 2.5 Flash for defined tasks)
 
 ## Development Commands
 
@@ -496,8 +496,9 @@ langchain@next                # Main LangChain package
 ```
 
 **Model Usage Guidelines:**
-- **GPT-5** - Use for agentic tasks (planning, reasoning, decision-making)
-- **GPT-5-mini** - Use for well-defined tasks (formatting, extraction, simple transforms)
+- **Gemini 2.5 Pro** - Use for agentic tasks (planning, reasoning, decision-making)
+- **Gemini 2.5 Flash** - Use for well-defined tasks (formatting, extraction, simple transforms)
+- Uses OpenAI SDK compatibility layer (see [google-openai-compatibility.md](google-openai-compatibility.md))
 
 **Documentation:**
 - Updated LangChain docs are in [documentation/langgraph/](documentation/langgraph/)
@@ -508,8 +509,9 @@ langchain@next                # Main LangChain package
 Required environment variables (add to `.env.local`):
 
 ```bash
-# LLM Provider
-OPENAI_API_KEY=...       # Required for GPT-5/GPT-5-mini
+# LLM Provider - Using Gemini via OpenAI SDK compatibility
+GEMINI_API_KEY=...       # Required for Gemini 2.5 Pro/Flash
+OPENAI_API_KEY=...       # Optional, keeping for potential fallback
 
 # Search APIs
 TAVILY_API_KEY=...
@@ -519,6 +521,8 @@ EXA_API_KEY=...
 REDIS_URL=...            # For production caching
 NODE_ENV=development
 ```
+
+**Note:** Get your Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
 **Setup:**
 - Copy `.env.example` to `.env.local` and fill in values
@@ -627,8 +631,8 @@ NODE_ENV=development
 8. **UI components in src/components/ui are linter-exempt** - Don't manually edit generated shadcn components
 9. **Subgraph state files are optional** - Only create if subgraph needs isolated types (like planner/state.ts)
 10. **Use LangChain 1.0-alpha (@next) packages** - Don't reference legacy documentation
-11. **Choose appropriate models** - GPT-5 for agentic tasks, GPT-5-mini for defined tasks
-12. **Only OpenAI and Anthropic supported** - Use `@langchain/openai@next` for model access
+11. **Choose appropriate models** - Gemini 2.5 Pro for agentic tasks, Gemini 2.5 Flash for defined tasks
+12. **Using Gemini via OpenAI SDK** - Use `@langchain/openai@next` with Gemini base URL for compatibility
 13. **Check internal docs first** - Always reference [documentation/langgraph/](documentation/langgraph/) before searching externally
 14. **Be proactive about code quality** - Fix issues immediately when you encounter them (see [Be Proactive section](#be-proactive-fix-issues-when-you-see-them))
 
@@ -642,7 +646,8 @@ NODE_ENV=development
 - [Next.js App Router](https://nextjs.org/docs/app) - Route handlers and SSE
 - [Tavily API](https://docs.tavily.com/documentation/api-reference/introduction) - Search endpoint
 - [Exa API](https://docs.exa.ai/reference/search) - Semantic search
-- [OpenAI API](https://platform.openai.com/docs) - GPT-5 and GPT-5-mini reference
+- [Google AI Gemini API](https://ai.google.dev/gemini-api/docs) - Gemini 2.5 Pro and Flash reference
+- [Gemini OpenAI Compatibility](google-openai-compatibility.md) - Using Gemini with OpenAI SDK
 
 **Important:**
 - **Always reference local [documentation/langgraph/](documentation/langgraph/) for LangGraph patterns**

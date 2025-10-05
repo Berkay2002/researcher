@@ -43,3 +43,5 @@ next-env.d.ts
 .claude/not-settings.json
 .claude/settings.json
 .claude/config.yaml
+
+#.mcp.json

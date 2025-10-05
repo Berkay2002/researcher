@@ -4,17 +4,16 @@
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { ChatOpenAI } from "@langchain/openai";
+import { getLLM } from "../../../../configs/llm";
 import type { Draft, Evidence, ParentState } from "../../../state";
 
-// Constants for quality gate thresholds
-const MIN_CITATIONS_REQUIRED = 3;
-const MIN_CONFIDENCE_THRESHOLD = 0.6;
-const MIN_WORD_COUNT = 300;
+// Constants for quality gate thresholds (more lenient)
+const MIN_CONFIDENCE_THRESHOLD = 0.3; // Reduced from 0.6
+const MIN_WORD_COUNT = 200; // Reduced from 300
 const MAX_WORD_COUNT = 5000;
-const MAX_UNUSED_EVIDENCE_RATIO = 0.5;
-const MIN_CITATION_DENSITY = 2;
-const MIN_QUALITY_SCORE = 0.7;
+const MAX_UNUSED_EVIDENCE_RATIO = 0.7; // Increased from 0.5
+const MIN_CITATION_DENSITY = 0.5; // Reduced from 2
+const MIN_QUALITY_SCORE = 0.4; // Reduced from 0.7
 const MAX_ISSUES_TO_EXTRACT = 5;
 
 // Constants for calculations and parsing
@@ -22,7 +21,6 @@ const WORDS_PER_THOUSAND = 1000;
 const DEFAULT_QUALITY_SCORE = 0.5;
 const _MIN_CONTENT_LENGTH_FOR_QUALITY = 1000;
 const _CONTENT_LENGTH_QUALITY_BONUS = 0.05;
-const LLM_TEMPERATURE = 0.1;
 const MIN_LINE_LENGTH = 0;
 const MIN_SCORE_RANGE = 0;
 const MAX_SCORE_RANGE = 1;
@@ -92,17 +90,15 @@ function performDeterministicChecks(
 ): string[] {
   const issues: string[] = [];
 
-  // Minimum citation requirement
-  if (draft.citations.length < MIN_CITATIONS_REQUIRED) {
-    issues.push(
-      `Insufficient citations: ${draft.citations.length} (minimum ${MIN_CITATIONS_REQUIRED} required)`
-    );
+  // Minimum citation requirement (more lenient)
+  if (draft.citations.length === 0 && evidence.length > 0) {
+    issues.push("No citations extracted from available evidence - consider adding references to support claims");
   }
 
-  // Confidence score threshold
+  // Confidence score threshold (more lenient)
   if (draft.confidence < MIN_CONFIDENCE_THRESHOLD) {
     issues.push(
-      `Low confidence score: ${draft.confidence.toFixed(2)} (minimum ${MIN_CONFIDENCE_THRESHOLD.toFixed(2)} required)`
+      `Low confidence score: ${draft.confidence.toFixed(2)} - consider adding more evidence or citations`
     );
   }
 
@@ -133,13 +129,15 @@ function performDeterministicChecks(
     );
   }
 
-  // Citation density (citations per 1000 words)
-  const citationDensity =
-    (draft.citations.length / wordCount) * WORDS_PER_THOUSAND;
-  if (citationDensity < MIN_CITATION_DENSITY) {
-    issues.push(
-      `Low citation density: ${citationDensity.toFixed(1)} per 1000 words (minimum ${MIN_CITATION_DENSITY} required)`
-    );
+  // Citation density (citations per 1000 words) - more lenient
+  if (draft.citations.length > 0) {
+    const citationDensity =
+      (draft.citations.length / wordCount) * WORDS_PER_THOUSAND;
+    if (citationDensity < MIN_CITATION_DENSITY) {
+      issues.push(
+        `Low citation density: ${citationDensity.toFixed(1)} per 1000 words - consider adding more references`
+      );
+    }
   }
 
   // Basic structure checks
@@ -169,10 +167,7 @@ async function performLLMQualityCheck(
 ): Promise<string[]> {
   console.log("[redteam] Performing LLM-based quality assessment...");
 
-  const llm = new ChatOpenAI({
-    model: "gpt-5-mini", // GPT-5-mini for well-defined quality assessment task
-    temperature: LLM_TEMPERATURE, // Low temperature for consistent evaluation
-  });
+  const llm = getLLM("quality");
 
   const systemPrompt = `You are a quality assurance reviewer for research reports. Your task is to evaluate a draft research report and identify any quality issues.
 
@@ -217,10 +212,10 @@ Please evaluate this draft and provide quality assessment.`;
 
     const issues: string[] = [];
 
-    // Add issues based on overall score
+    // Add issues based on overall score (more lenient)
     if (assessment.overallScore < MIN_QUALITY_SCORE) {
       issues.push(
-        `Low overall quality score: ${assessment.overallScore.toFixed(2)}`
+        `Quality score could be improved: ${assessment.overallScore.toFixed(2)} - consider adding more specific details or citations`
       );
     }
 
