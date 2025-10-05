@@ -1,10 +1,10 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { ParentStateAnnotation } from "../../state";
-import { queryPlan } from "./nodes/query-plan";
-import { metaSearch } from "./nodes/meta-search";
-import { harvest } from "./nodes/harvest";
 import { dedupRerank } from "./nodes/dedup-rerank";
+import { harvest } from "./nodes/harvest";
+import { metaSearch } from "./nodes/meta-search";
+import { queryPlan } from "./nodes/query-plan";
 
 /**
  * Research Subgraph

@@ -211,10 +211,11 @@ This project uses **Ultracite** which enforces Biome rules. Configuration is in 
 - Include `key` props in iterators
 
 **TypeScript:**
-- No `any` types
+- No `any` types (use `Record<string, unknown>` or `z.record(z.unknown())` for flexible data)
 - Use `export type` for types
 - Use `import type` for type imports
 - No TypeScript enums (use string unions or objects)
+- Follow LangGraph patterns from [documentation/langgraph/](documentation/langgraph/) for type safety
 
 **Style:**
 - Use `===` and `!==` (not `==` or `!=`)
@@ -222,6 +223,11 @@ This project uses **Ultracite** which enforces Biome rules. Configuration is in 
 - Use template literals over string concatenation
 - No unused variables or imports
 - No `console` statements (use biome-ignore if needed for development)
+- **No magic numbers** - Extract all numeric literals to named constants with meaningful names
+- **Use `for...of` instead of `forEach`** - Required by Biome for performance
+- **Use `Number.isNaN()` instead of `isNaN()`** - `isNaN` is unsafe due to type coercion
+- **Move regex literals to top level** - Define regex patterns as constants for performance
+- **Avoid `any` types** - Always use proper TypeScript types from state schemas
 
 **Biome Ignore Comments:**
 When you need to bypass Biome rules temporarily (e.g., for development console.logs), use:
@@ -232,6 +238,164 @@ console.log("Debug output");
 // Or for single line:
 // biome-ignore lint/suspicious/noConsole: debugging
 console.log("Debug");
+```
+
+## Common Linting Issues and Solutions
+
+### 1. Magic Numbers
+**Issue**: Hard-coded numeric literals in code
+**Solution**: Extract to meaningful constants
+
+```typescript
+// ❌ Bad
+if (draft.citations.length < 3) {
+  issues.push(`Low confidence score: ${draft.confidence < 0.5}`);
+}
+const density = (count / words) * 1000;
+
+// ✅ Good
+const MIN_CITATIONS_REQUIRED = 3;
+const MIN_CONFIDENCE_THRESHOLD = 0.5;
+const WORDS_PER_THOUSAND = 1000;
+
+if (draft.citations.length < MIN_CITATIONS_REQUIRED) {
+  issues.push(`Low confidence score: ${draft.confidence < MIN_CONFIDENCE_THRESHOLD}`);
+}
+const density = (count / words) * WORDS_PER_THOUSAND;
+```
+
+### 2. forEach Loops
+**Issue**: Using `forEach` instead of `for...of`
+**Solution**: Use `for...of` loops
+
+```typescript
+// ❌ Bad
+items.forEach((item) => {
+  console.log(item);
+});
+
+// ✅ Good
+for (const item of items) {
+  console.log(item);
+}
+```
+
+### 3. Regex Performance
+**Issue**: Inline regex literals in functions
+**Solution**: Move to top-level constants
+
+```typescript
+// ❌ Bad
+function processText(text: string) {
+  const words = text.split(/\s+/);
+  const hasPlaceholder = /todo|placeholder/gi.test(text);
+}
+
+// ✅ Good
+const WORD_SPLIT_REGEX = /\s+/;
+const PLACEHOLDER_REGEX = /todo|placeholder/gi;
+
+function processText(text: string) {
+  const words = text.split(WORD_SPLIT_REGEX);
+  const hasPlaceholder = PLACEHOLDER_REGEX.test(text);
+}
+```
+
+### 4. Type Safety (any types)
+**Issue**: Using `any` instead of proper types
+**Solution**: Import and use defined types from state schemas or use LangGraph patterns
+
+```typescript
+// ❌ Bad
+function processData(draft: { text: string; citations: any[] }, evidence: any[]) {
+  // ...
+}
+
+// ✅ Good - Use defined types from state schemas
+import type { Draft, Evidence } from "../../../state";
+
+function processData(draft: Draft, evidence: Evidence[]) {
+  // ...
+}
+
+// ✅ Good - Use LangGraph patterns for flexible data
+function handleUnknownData(data: Record<string, unknown>): void {
+  // Process flexible data structures
+}
+
+// ✅ Good - Use Zod schemas for validation
+import { z } from "zod";
+
+const flexibleSchema = z.record(z.unknown());
+type FlexibleData = z.infer<typeof flexibleSchema>;
+
+function processFlexibleData(data: FlexibleData): void {
+  // Process validated flexible data
+}
+```
+
+**When `any` is Acceptable (with biome-ignore):**
+Only use `any` when absolutely necessary and always document why:
+
+```typescript
+// biome-ignore lint/suspicious/noAnyType: External API response with unknown structure
+async function fetchExternalData(): Promise<any> {
+  const response = await fetch('/api/external');
+  return response.json(); // Structure unknown at compile time
+}
+
+// biome-ignore lint/suspicious/noAnyType: Legacy integration with untyped library
+function legacyLibraryIntegration(data: any): void {
+  // Working with untyped third-party library
+}
+```
+
+### 5. isNaN vs Number.isNaN
+**Issue**: Using global `isNaN` which does type coercion
+**Solution**: Use `Number.isNaN()`
+
+```typescript
+// ❌ Bad
+if (!isNaN(score) && score >= 0) {
+  // ...
+}
+
+// ✅ Good
+if (!Number.isNaN(score) && score >= 0) {
+  // ...
+}
+```
+
+### 6. Excessive Cognitive Complexity
+**Issue**: Functions with high complexity (>15)
+**Solution**: Extract helper functions or use targeted biome-ignore
+
+```typescript
+// ❌ Bad - Complex function
+function complexFunction(data: any): any {
+  // 20+ lines of complex logic
+}
+
+// ✅ Good - Split into smaller functions
+function validateData(data: any): string[] {
+  // Validation logic
+}
+
+function processData(data: any): any {
+  // Processing logic
+}
+
+function complexFunction(data: any): any {
+  const issues = validateData(data);
+  const processed = processData(data);
+  return { issues, processed };
+}
+
+// Or if complexity is unavoidable:
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex validation logic required
+function complexValidation(data: any): any {
+  // Complex logic that can't be easily split
+}
 ```
 
 ## LangChain 1.0-alpha Environment

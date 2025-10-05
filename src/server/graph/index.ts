@@ -1,5 +1,5 @@
 import { END, MemorySaver, START, StateGraph } from "@langchain/langgraph";
-import { planGate } from "./nodes/planGate";
+import { planGate } from "./nodes/plan-gate";
 import { ParentStateAnnotation } from "./state";
 import { buildFactcheckSubgraph } from "./subgraphs/factcheck";
 import { buildPlannerSubgraph } from "./subgraphs/planner";

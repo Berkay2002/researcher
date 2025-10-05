@@ -1,0 +1,4 @@
+model:
+  provider: anthropic_compatible
+  api_key: "0d22f31001dc4c1da2a17da1989f29e6.rMpz2USTW4QHMBlR"
+  base_url: "https://api.z.ai/api/anthropic"

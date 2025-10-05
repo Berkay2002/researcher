@@ -12,9 +12,11 @@ import {
  * HITL Planner Node
  *
  * Two-stage human-in-the-loop planning:
- * 1. First interrupt: Ask user to select a plan template
- * 2. Second interrupt: Ask for constraints (deadline, budget, depth, etc.)
- * 3. Construct final plan from both answers
+ * 1. First stage: Check for template selection, interrupt if needed
+ * 2. Second stage: Check for constraints, interrupt if needed
+ * 3. Final stage: Construct plan from collected answers
+ *
+ * Uses LangGraph 1.0-alpha interrupt() primitive for HITL functionality.
  */
 export async function hitlPlanner(
   state: ParentState
@@ -65,8 +67,8 @@ export async function hitlPlanner(
       },
     };
 
-    // First interrupt - wait for user to select template
-    const resumeValue = interrupt(payload);
+    // Interrupt and wait for user to select template
+    const resumeValue = await interrupt(payload);
 
     // When resumed, save template choice to state
     return {
@@ -101,8 +103,8 @@ export async function hitlPlanner(
       },
     };
 
-    // Second interrupt - wait for user to specify constraints
-    const resumeValue = interrupt(payload);
+    // Interrupt and wait for user to specify constraints
+    const resumeValue = await interrupt(payload);
 
     // When resumed, save constraints and build final plan
     const constraints: Constraints = {
@@ -127,7 +129,17 @@ export async function hitlPlanner(
     };
   }
 
-  // Stage 3: Plan already constructed (should not reach here in normal flow)
-  console.log("[hitlPlanner] Plan already exists, returning current state...");
-  return {};
+  // Stage 3: Plan construction - we have both template and constraints
+  console.log("[hitlPlanner] Constructing final plan...");
+  const template = PLAN_TEMPLATES[templateChoice];
+  const finalPlan = {
+    goal: state.userInputs.goal,
+    deliverable: template.deliverable,
+    dag: template.dag,
+    constraints: constraintsChoice,
+  };
+
+  return {
+    plan: finalPlan,
+  };
 }

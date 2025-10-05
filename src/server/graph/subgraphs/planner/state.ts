@@ -121,7 +121,7 @@ export const InterruptPayloadSchema = z.object({
       })
     )
     .optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type InterruptPayload = z.infer<typeof InterruptPayloadSchema>;

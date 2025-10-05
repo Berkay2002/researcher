@@ -1,33 +1,19 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { ParentStateAnnotation, type ParentState } from "../../state";
-
-/**
- * Fact-check Subgraph (Stub for Phase 1)
- *
- * Will implement deterministic checks for supporting evidence.
- * For now, returns no issues.
- */
-async function factcheckStub(
-  _state: ParentState
-): Promise<Partial<ParentState>> {
-  console.log("[factcheck] Fact-check stub executing...");
-
-  return {
-    issues: [],
-  };
-}
+import { ParentStateAnnotation } from "../../state";
+import { factcheck } from "./nodes/factcheck";
 
 /**
  * Build Fact-check Subgraph
  *
- * Uses ParentStateAnnotation to inherit state schema and reducers from parent graph
+ * Performs deterministic fact-checking by verifying claims in the draft
+ * have supporting evidence in the research results.
  */
 export function buildFactcheckSubgraph() {
   const builder = new StateGraph(ParentStateAnnotation)
-    .addNode("factcheckStub", factcheckStub)
-    .addEdge(START, "factcheckStub")
-    .addEdge("factcheckStub", END);
+    .addNode("factcheck", factcheck)
+    .addEdge(START, "factcheck")
+    .addEdge("factcheck", END);
 
   return builder.compile();
 }

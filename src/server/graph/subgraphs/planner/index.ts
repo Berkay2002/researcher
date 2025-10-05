@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { END, START, StateGraph } from "@langchain/langgraph";
 import { type ParentState, ParentStateAnnotation } from "../../state";
-import { autoPlanner } from "./nodes/autoPlanner";
-import { hitlPlanner } from "./nodes/hitlPlanner";
+import { autoPlanner } from "./nodes/auto-planner";
+import { hitlPlanner } from "./nodes/hitl-planner";
 
 /**
  * Planner Subgraph

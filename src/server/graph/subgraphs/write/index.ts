@@ -1,35 +1,23 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { ParentStateAnnotation, type ParentState } from "../../state";
-
-/**
- * Writer Subgraph (Stub for Phase 1)
- *
- * Will implement: Synthesize → Red-team gate
- * For now, returns a placeholder draft.
- */
-async function writerStub(_state: ParentState): Promise<Partial<ParentState>> {
-  console.log("[writer] Writer stub executing...");
-
-  return {
-    draft: {
-      text: "This is a placeholder research report.",
-      citations: [],
-      confidence: 0.5,
-    },
-  };
-}
+import { ParentStateAnnotation } from "../../state";
+import { redteam } from "./nodes/redteam";
+import { synthesize } from "./nodes/synthesize";
 
 /**
  * Build Writer Subgraph
  *
- * Uses ParentStateAnnotation to inherit state schema and reducers from parent graph
+ * Implements the full writing pipeline: Synthesize → Red-team gate
+ * - Synthesize: Generate report with citations from evidence
+ * - Redteam: Quality gate checks before publication
  */
 export function buildWriterSubgraph() {
   const builder = new StateGraph(ParentStateAnnotation)
-    .addNode("writerStub", writerStub)
-    .addEdge(START, "writerStub")
-    .addEdge("writerStub", END);
+    .addNode("synthesize", synthesize)
+    .addNode("redteam", redteam)
+    .addEdge(START, "synthesize")
+    .addEdge("synthesize", "redteam")
+    .addEdge("redteam", END);
 
   return builder.compile();
 }

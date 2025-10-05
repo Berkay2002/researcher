@@ -13,9 +13,7 @@ import { PLAN_TEMPLATES } from "../state";
  * - Comprehensive sources
  * - Full verification pipeline
  */
-export async function autoPlanner(
-  state: ParentState
-): Promise<Partial<ParentState>> {
+export function autoPlanner(state: ParentState): Partial<ParentState> {
   console.log("[autoPlanner] Generating default plan for auto mode...");
 
   const template = PLAN_TEMPLATES.deep_technical;

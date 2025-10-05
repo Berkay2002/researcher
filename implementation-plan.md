@@ -20,14 +20,18 @@ For the product requirements and system design, see the [project brief](brief.md
 
 ## 2) Architecture Thread (what exists + how it fits)
 
-* **Parent graph (with checkpointer):** orchestration, mode handling, and global approvals; invoked with `thread_id`. Children inherit persistence automatically unless isolated. ([LangChain AI][1])
+* **Parent graph (with checkpointer):** orchestration, mode handling, and global approvals; invoked with `thread_id`. Subgraphs use `ParentStateAnnotation` to inherit state schema and reducers automatically (alpha-1.0 pattern). ([LangChain AI][1])
 * **Subgraphs (children):**
 
   1. **Planner** (Auto path or HITL path).
   2. **Research** (QueryPlan → MetaSearch → Harvest/Normalize → Dedup; can use Send API for parallel batches). ([LangChain AI][2])
   3. **Fact-check** (deterministic today; can evolve to tool-calling later).
   4. **Writer** (Synthesize → Red-team gate).
-     Subgraphs are graphs used as nodes; they communicate via **shared state keys** or with transform wrappers if schemas differ. ([LangChain AI][3])
+     Subgraphs are created with `StateGraph(ParentStateAnnotation)` pattern; they inherit parent state and checkpointer automatically (alpha-1.0). ([LangChain AI][3])
+* **Orchestration Gates:** Three parent-graph nodes for control flow and quality assurance:
+  - **plan-gate** - Decides Auto vs Plan mode based on UI override and cheap signals
+  - **approvals** - Pre-action HITL gate for expensive/risky operations
+  - **publish-gate** - Pre-publish quality gate with deterministic checks and optional HITL
 * **External data:** **Tavily** (fast agent-oriented web search) and **Exa** (meaning-based + content extraction). We’ll fuse, dedupe, and lightly rerank. ([Tavily Docs][4])
 * **Delivery surface (Next.js App Router):** route handlers for **start / stream / state / resume / mode**. Use **SSE** for progress and partial answers. ([Next.js][5])
 
@@ -36,19 +40,42 @@ For the product requirements and system design, see the [project brief](brief.md
 ## 3) Modes & Gating (UI drives, runtime respects)
 
 * **UI switch is source of truth**: `mode=auto|plan` lands in run config.
+* **Plan-gate (mode decider):** Evaluates UI override and cheap signals to choose Auto vs Plan mode
+  * **UI override wins:** If `modeOverride` is set, it's respected directly
+  * **Signal-based gating:** Computes clarity (IR-style), preview coherence, and cost estimates
+  * **Threshold policy:** Auto if clarity ≥ τ₁ AND coherence ≥ τ₂ AND cost ≤ budget; else Plan
+  * **Error handling:** Defaults to Plan-mode on failures for safety
 * **Planner behavior:**
 
   * **Auto path:** no `interrupt`; select a default plan (e.g., Deep-Dive) and go.
-  * **Plan path:** `interrupt()` to present “Quick Scan / Systematic Review / Competitive / Deep Technical Dossier / Custom,” then a second `interrupt` for constraints. Resume via `Command({ resume })`. ([LangChain Docs][6])
-* **Optional auto-gate (kept simple):** IR-style *prompt sufficiency* (clarity), a one-shot **preview search** coherence check, and a cost/risk estimate. If ambiguous/expensive, flip to Plan-mode—even if the UI defaulted to Auto. Batch the preview using Send API when needed. ([LangChain AI][2])
+  * **Plan path:** `interrupt()` to present "Quick Scan / Systematic Review / Competitive / Deep Technical Dossier / Custom," then a second `interrupt` for constraints. Resume via `Command({ resume })`. ([LangChain Docs][6])
+* **Approvals gate (pre-action HITL):** Pauses before expensive/risky operations
+  * **Triggers:** High cost/latency, new domains, sensitive topics, paywalls, rate limits
+  * **Interrupt payload:** Summary with step details, estimates, domains, and risks
+  * **Resume options:** approve, edit (constraints), or cancel
+  * **Decision record:** Timestamp, signer, policy snapshot persisted to state
+* **Publish-gate (pre-publish quality):** Final validation before export/publish
+  * **Deterministic checks:** Citations present, recency window, section completeness, red-team clean
+  * **Conditional HITL:** Only interrupts if checks fail or policy requires manual review
+  * **Resume options:** approve, fix_auto, edit_then_retry, or reject
+  * **Audit trail:** Full checkpoint history for time-travel and compliance
+* **HITL mechanics:** Gates use `interrupt()` + `Command(resume)` pattern with thread-level checkpointing
+  * Node re-executes from start on resume with provided resume value
+  * Multiple interrupts can be resumed in one shot with interruptId → value mapping
+  * All state changes persisted via checkpointer for fault tolerance
 
 ---
 
-## 4) State & Memory (shared keys; time-travel)
+## 4) State & Memory (Annotation.Root with reducers; time-travel)
 
-* **Thread-scoped memory** (checkpointer): `plan`, `queries`, `searchResults`, `evidence`, `draft`, `issues`, plus `userInputs` (goal, modeOverride, gate metrics, planner answers). Persisted at each super-step for replay, forks, and crash recovery. ([LangChain AI][1])
+* **Thread-scoped memory** (checkpointer): State defined with `Annotation.Root()` containing `threadId`, `userInputs`, `plan`, `queries`, `searchResults`, `evidence`, `draft`, `issues`. Each field has explicit reducers for state merging. Persisted at each super-step for replay, forks, and crash recovery. ([LangChain AI][1])
+* **Gate state extensions:** Additional fields for orchestration gates:
+  - `userInputs.gate` - Plan-gate decision metrics (clarity, coherence, cost, auto)
+  - `userInputs.modeFinal` - Final mode decision after plan-gate processing
+  - `userInputs.approvals[]` - Approval records with timestamps, signers, and policy snapshots
+  - `userInputs.publish` - Publish gate metadata and approval status
 * **Time-travel & forks:** `getState()` to inspect latest or a checkpoint; `updateState()` to fork (e.g., change deliverable) and re-invoke from there. ([LangChain AI][7])
-* **Isolation (only when justified):** if a child must keep raw HTML or private tool traces, give it a different schema (or its own checkpointer) and map summarized results back to parent. ([LangChain AI][3])
+* **Subgraph state inheritance:** Subgraphs use `StateGraph(ParentStateAnnotation)` to automatically inherit schema and reducers. No manual state mapping needed (alpha-1.0 pattern). ([LangChain AI][3])
 
 ---
 
@@ -112,9 +139,12 @@ For the product requirements and system design, see the [project brief](brief.md
 ## 11) Test Strategy (from unit to time-travel)
 
 * **Unit:** gating decisions (Auto vs Plan), merge/dedupe, hashing stability.
+* **Gate testing:** plan-gate threshold logic, approvals trigger conditions, publish-gate deterministic checks.
 * **HITL:** simulate `interrupt` → ensure `Command(resume)` only re-executes the paused node (documented behavior). ([LangChain Docs][6])
+* **Gate HITL behavior:** Interrupt payload generation, resume value handling, decision record persistence.
 * **Parallelism:** Send-API fan-out over N URLs and correct reduction. ([LangChain AI][2])
 * **E2E:** Auto happy path; Plan path; resume after restart; `getState` + `updateState` fork. ([LangChain AI][7])
+* **Gate integration:** Full flow with all gates; error handling and fallback modes; time-travel through gate decisions.
 
 ---
 
@@ -122,14 +152,15 @@ For the product requirements and system design, see the [project brief](brief.md
 
 1. **Wire the parent graph with checkpointer**; stub subgraphs; prove `thread_id` persistence and `getState`. ([LangChain AI][1])
 2. **Planner (Auto & Plan)**: hit an `interrupt` in Plan-mode; resume with UI; confirm plan saved to state. ([LangChain Docs][6])
-3. **Research**: Tavily+Exa fusion, dedupe, harvest, hashing; add small reranker; integrate Send API for bulk. ([Tavily Docs][4])
-4. **Writer & Red-team**: minimal synthesis + checks; ensure citations render.
-5. **Fact-check**: deterministic checks first; leave interface open for future ReAct loop.
-6. **API & SSE**: start/stream/state/resume/mode; handle disconnects gracefully. ([Next.js][11])
-7. **UI**: mode toggle, sources rail, artifacts pane, timeline, run log.
-8. **Ops pass**: caching, metrics, rate limits, robots compliance.
-9. **Beta**: run real prompts; adjust gate thresholds; capture costs and fix flaky hosts.
-10. **1.0**: acceptance checks (below) all green.
+3. **Orchestration Gates**: implement plan-gate, approvals, and publish-gate with full HITL semantics.
+4. **Research**: Tavily+Exa fusion, dedupe, harvest, hashing; add small reranker; integrate Send API for bulk. ([Tavily Docs][4])
+5. **Writer & Red-team**: minimal synthesis + checks; ensure citations render.
+6. **Fact-check**: deterministic checks first; leave interface open for future ReAct loop.
+7. **API & SSE**: start/stream/state/resume/mode; handle disconnects gracefully. ([Next.js][11])
+8. **UI**: mode toggle, sources rail, artifacts pane, timeline, run log.
+9. **Ops pass**: caching, metrics, rate limits, robots compliance.
+10. **Beta**: run real prompts; adjust gate thresholds; capture costs and fix flaky hosts.
+11. **1.0**: acceptance checks (below) all green.
 
 ---
 
@@ -140,12 +171,19 @@ For the product requirements and system design, see the [project brief](brief.md
 * **State snapshots** visible via `getState`; can **fork** via `updateState` and re-run. ([LangChain AI][7])
 * Sources panel shows **title, host, date, snippet, supporting excerpt, link, why-used**; pins work.
 * SSE stream stabilizes on target infra (or graceful polling fallback). ([Upstash: Serverless Data Platform][9])
+* **Gate-specific acceptance checks:**
+  * **plan-gate**: UI override respected; signal-based decisions follow thresholds; defaults to Plan on errors
+  * **approvals**: Triggers on cost/risk thresholds; interrupt payload shows summary; resume with approve/edit/cancel works
+  * **publish-gate**: Deterministic checks run first; conditional HITL works; approval metadata stamped correctly
+  * **HITL behavior**: All interrupt/resume operations work with thread-level checkpointing; state persists across pauses
+  * **Time-travel**: Can retrieve any checkpoint and fork from any gate decision point
 
 ---
 
 ## 14) External References (for implementers)
 
 * **LangGraph — Persistence / Threads / Checkpointers**; **HITL (interrupt/Command)**; **Subgraphs**; **Graph API & Send API**. ([LangChain AI][1])
+* **Gate Implementation Details** — Complete specifications for plan-gate, approvals, and publish-gate with state schemas, decision rules, and HITL patterns. ([implementation-for-gates.md](implementation-for-gates.md))
 * **Next.js App Router — Route Handlers** (server endpoints & streaming). ([Next.js][5])
 * **Tavily API** (base URL, search endpoint & credit model). **Exa API** (search & content extraction). ([Tavily Docs][4])
 
@@ -168,9 +206,10 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ `langchain@1.0.0-alpha.7`
   - ✅ `uuid@13.0.0`
 * [x] **State Schema** - [src/server/graph/state.ts](src/server/graph/state.ts)
-  - ✅ Full `ParentState` with all shared keys
+  - ✅ `ParentStateAnnotation` defined with `Annotation.Root()` (alpha-1.0 pattern)
+  - ✅ All state fields have explicit reducers for merging behavior
   - ✅ Zod schemas for runtime validation
-  - ✅ TypeScript types for all entities
+  - ✅ TypeScript types inferred from Zod schemas
 * [x] **Stub Nodes Created**
   - ✅ [planGate](src/server/graph/nodes/planGate.ts) - Pass-through (will add auto-gate in Phase 2.5)
   - ✅ [research](src/server/graph/subgraphs/research/index.ts) - Stub (Phase 3)
@@ -187,17 +226,17 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ `userInputs.modeOverride` controls routing in planner subgraph
   - ✅ [PATCH /api/threads/:id/mode](src/app/api/threads/[threadId]/mode/route.ts) implemented
 * [x] **Auto path**: emits default DAG with deliverable.
-  - ✅ [autoPlanner node](src/server/graph/subgraphs/planner/nodes/autoPlanner.ts) generates "Deep Technical" plan
+  - ✅ [auto-planner node](src/server/graph/subgraphs/planner/nodes/auto-planner.ts) generates "Deep Technical" plan
   - ✅ No user interaction required
 * [x] **Plan path**: `interrupt` → UI → `Command(resume)`; persists answers to state. ([LangChain Docs][6])
-  - ✅ [hitlPlanner node](src/server/graph/subgraphs/planner/nodes/hitlPlanner.ts) with 2-stage interrupts
+  - ✅ [hitl-planner node](src/server/graph/subgraphs/planner/nodes/hitl-planner.ts) with 2-stage interrupts
   - ✅ Stage 1: Template selection (5 options: Quick Scan, Systematic, Competitive, Deep Technical, Custom)
   - ✅ Stage 2: Constraints collection (deadline, budget, depth, sources)
   - ✅ Answers saved to `userInputs.plannerAnswers`
   - ✅ Final plan constructed from both stages
 * [x] **Planner Subgraph** - [src/server/graph/subgraphs/planner/index.ts](src/server/graph/subgraphs/planner/index.ts)
   - ✅ Conditional routing based on `modeOverride`
-  - ✅ Routes to `autoPlanner` or `hitlPlanner`
+  - ✅ Routes to `auto-planner` or `hitl-planner`
 * [x] **Plan Templates & Types** - [src/server/graph/subgraphs/planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
   - ✅ 5 plan templates with DAGs and default constraints
   - ✅ Constraints schema (deadline, budget, depth, sources)
@@ -205,8 +244,44 @@ For the product requirements and system design, see the [project brief](brief.md
 * [x] **UI Components**
   - ✅ [ModeSwitch](src/app/(components)/ModeSwitch.tsx) - Toggle between Auto/Plan
   - ✅ [InterruptPrompt](src/app/(components)/InterruptPrompt.tsx) - Display options, collect responses
-* [ ] Optional: auto-gate (clarity, preview coherence, cost).
-  - ⏳ Deferred to Phase 2.5 (optional enhancement)
+
+### Phase 2.5 — Orchestration Gates ✅ COMPLETE
+
+* [x] **plan-gate.ts** - Planner Mode Decider (Auto ↔ Plan)
+  - ✅ Evaluates UI override first, then computes gating signals
+  - ✅ Clarity scoring (IR-style heuristic) for longer, time-scoped prompts
+  - ✅ Preview coherence check using single Tavily + Exa search
+  - ✅ Cost guard with coarse token/time estimates → USD conversion
+  - ✅ Threshold policy: τ₁ (clarity) and τ₂ (coherence) parameters
+  - ✅ Writes `{gate: {clarity, coherence, usd, auto}, modeFinal}` to state
+  - ✅ Defaults to Plan-mode on errors for safety
+  - ✅ Implemented in [src/server/graph/nodes/plan-gate.ts](src/server/graph/nodes/plan-gate.ts)
+* [x] **approvals.ts** - Pre-Action Approval Gate (before expensive/risky steps)
+  - ✅ Triggers on cost/latency thresholds, new domains, sensitive verticals
+  - ✅ Paywall detection and robots.txt risk assessment
+  - ✅ Uses `interrupt()` with comprehensive summary payload
+  - ✅ Resume via `Command(resume)` with approve/edit/cancel options
+  - ✅ Merges edits into plan.constraints and persists decision records
+  - ✅ Supports multiple parallel interrupts with interruptId → value mapping
+  - ✅ Implemented in [src/server/graph/nodes/approvals.ts](src/server/graph/nodes/approvals.ts)
+* [x] **publish-gate.ts** - Pre-Publish Release Gate (after red-team, before export)
+  - ✅ Runs deterministic checks first: citations, recency, completeness, red-team clean
+  - ✅ Skips HITL if all checks pass and policy allows auto-publish
+  - ✅ Interrupt payload with summary, preview, sources sample
+  - ✅ Resume options: approve, fix_auto, edit_then_retry, reject
+  - ✅ Stamps approval metadata and routes back appropriately
+  - ✅ Full audit trail with checkpoint history for compliance
+  - ✅ Implemented in [src/server/graph/nodes/publish-gate.ts](src/server/graph/nodes/publish-gate.ts)
+* [x] **Gate Integration** - Parent graph wiring with LangGraph v1-alpha patterns
+  - ✅ Updated flow: START → plan-gate → planner → approvals → research → factcheck → writer → publish-gate → END
+  - ✅ All gates use `interrupt()` + `Command(resume)` with thread-level checkpointing
+  - ✅ Subgraphs inherit updated state automatically (alpha-1.0 pattern)
+  - ✅ Time-travel and fork support via `getState()` and `updateState()`
+  - ✅ Error handling with graceful fallbacks to safe modes
+* [x] **State Schema Updates** - Extended for gate operations
+  - ✅ Added `userInputs.gate`, `userInputs.modeFinal`, `userInputs.approvals[]`, `userInputs.publish`
+  - ✅ Updated [src/server/graph/state.ts](src/server/graph/state.ts) with explicit reducers
+  - ✅ Zod schemas for runtime validation of gate payloads
 
 ### Phase 3 — Research Subgraph ✅ COMPLETE
 
@@ -231,11 +306,17 @@ For the product requirements and system design, see the [project brief](brief.md
 * [x] Research subgraph assembly
   - ✅ Wired linear flow: [src/server/graph/subgraphs/research/index.ts](src/server/graph/subgraphs/research/index.ts)
   - ✅ Flow: QueryPlan → MetaSearch → Harvest → DedupRerank
+  - ✅ Uses `StateGraph(ParentStateAnnotation)` for automatic state inheritance (alpha-1.0 pattern)
 
-### Phase 4 — Fact-check & Writer
+### Phase 4 — Fact-check & Writer ✅ COMPLETE
 
-* [ ] Deterministic fact-checks (support/contradict/missing) at least on a sample of claims.
-* [ ] Writer produces sections + inline citations; Red-team enforces minimal quality gates.
+* [x] Deterministic fact-checks (support/contradict/missing) at least on a sample of claims.
+  - ✅ Implemented in [src/server/graph/subgraphs/factcheck/nodes/factcheck.ts](src/server/graph/subgraphs/factcheck/nodes/factcheck.ts)
+  - ✅ Validates citations against evidence, checks claim patterns, enforces thresholds
+* [x] Writer produces sections + inline citations; Red-team enforces minimal quality gates.
+  - ✅ Synthesize node: [src/server/graph/subgraphs/write/nodes/synthesize.ts](src/server/graph/subgraphs/write/nodes/synthesize.ts)
+  - ✅ Red-team node: [src/server/graph/subgraphs/write/nodes/redteam.ts](src/server/graph/subgraphs/write/nodes/redteam.ts)
+  - ✅ Multi-node flow: START → synthesize → redteam → END
 
 ### Phase 5 — API & Streaming
 
@@ -268,11 +349,12 @@ For the product requirements and system design, see the [project brief](brief.md
 
 | Agent / Module                      | Owner                | Signature  | Date (YYYY-MM-DD) | Notes                                      |
 | ----------------------------------- | -------------------- | ---------- | ----------------- | ------------------------------------------ |
-| **Parent Orchestrator (Graph)**     | Claude Code          | ✅         | 2025-01-04        | Checkpointer on; threads required.         |
-| **Planner (Auto/Plan HITL)**        | Claude Code          | ✅         | 2025-01-04        | UI decides mode; `interrupt/Command` path. |
-| **Research (Query→Search→Harvest)** | Claude Code          | ✅         | 2025-01-05        | Tavily + Exa fusion; dedupe & rerank.      |
-| **Fact-checker**                    | ____________________ | __________ | 2025-xx-xx        | Deterministic v1; pluggable later.         |
-| **Writer + Red-team**               | ____________________ | __________ | 2025-xx-xx        | Inline citations; quality gates.           |
+| **Parent Orchestrator (Graph)**     | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0: `Annotation.Root()` pattern.    |
+| **Planner (Auto/Plan HITL)**        | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0: `StateGraph(ParentStateAnnotation)`; LangGraph 1.0-alpha interrupt() primitive; kebab-case filenames. |
+| **Orchestration Gates**             | Claude Code          | ✅         | 2025-01-05        | plan-gate, approvals, publish-gate with full HITL semantics; interrupt() + Command(resume) pattern. |
+| **Research (Query→Search→Harvest)** | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0 compliant; Tavily + Exa fusion.  |
+| **Fact-checker**                    | Claude Code          | ✅         | 2025-01-05        | Deterministic validation; evidence verification. |
+| **Writer + Red-team**               | Claude Code          | ✅         | 2025-01-05        | GPT-4o-mini synthesis; quality gates implemented. |
 | **API & Streaming**                 | Claude Code          | ⏳         | 2025-01-04        | Route Handlers (partial); SSE pending.     |
 | **UI/UX (Sources/Artifacts)**       | Claude Code          | ⏳         | 2025-01-04        | ModeSwitch & InterruptPrompt only.         |
 | **Ops (Cache/Observability)**       | ____________________ | __________ | 2025-xx-xx        | LRU/Redis, metrics, rate limits.           |
