@@ -3,7 +3,7 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
-import { searchAll } from "../../../../services/searchGateway";
+import { searchAll } from "../../../../services/search-gateway";
 import type { ParentState } from "../../../state";
 
 /**
