@@ -225,6 +225,50 @@ export default function userProfile() { }
 
 This project uses **Ultracite** which enforces Biome rules. Configuration is in [biome.json](biome.json). Full rules are documented in [.claude/CLAUDE.md](.claude/CLAUDE.md).
 
+### Be Proactive: Fix Issues When You See Them
+
+**Agents should be reactive and proactive** - when you encounter code quality issues while working on a task, fix them immediately rather than leaving them for later:
+
+**Common issues to fix immediately:**
+- **Naming convention violations** - Rename files/components that don't follow kebab-case/PascalCase
+- **Magic numbers** - Extract hardcoded numbers to named constants
+- **Lint errors** - Fix any Biome violations you encounter
+- **Type safety issues** - Replace `any` types with proper TypeScript types
+- **Next.js violations** - Replace `<img>` with `<Image>`, `<head>` with Metadata API
+- **Accessibility issues** - Add missing `type` attributes to buttons, add keyboard handlers
+- **Performance issues** - Replace `forEach` with `for...of`, move regex to top level
+- **Import organization** - Clean up unused imports and organize them properly
+
+**Example proactive fixes:**
+```typescript
+// If you see this while working on a feature:
+if (results.length > 10) { // Magic number!
+  // ... existing code
+}
+
+// Fix it immediately by extracting the constant:
+const MAX_RESULTS_THRESHOLD = 10; // Add at top of file
+if (results.length > MAX_RESULTS_THRESHOLD) {
+  // ... existing code
+}
+```
+
+```typescript
+// If you encounter a misnamed component:
+export default function userProfile() { } // Wrong casing
+
+// Fix it immediately:
+export default function UserProfile() { } // Proper PascalCase
+// And rename the file from user-profile.tsx to UserProfile.tsx
+```
+
+**Why this matters:**
+- Prevents technical debt accumulation
+- Maintains code quality standards across the entire codebase
+- Reduces the need for dedicated "cleanup" tasks
+- Ensures consistent code quality regardless of who works on the code
+- Makes code reviews more focused on logic rather than style issues
+
 **Biome Configuration Highlights:**
 - Extends: `ultracite`
 - Ignored paths: `node_modules`, `.next`, `dist`, `build`, `src/components/ui`
@@ -586,6 +630,7 @@ NODE_ENV=development
 11. **Choose appropriate models** - GPT-5 for agentic tasks, GPT-5-mini for defined tasks
 12. **Only OpenAI and Anthropic supported** - Use `@langchain/openai@next` for model access
 13. **Check internal docs first** - Always reference [documentation/langgraph/](documentation/langgraph/) before searching externally
+14. **Be proactive about code quality** - Fix issues immediately when you encounter them (see [Be Proactive section](#be-proactive-fix-issues-when-you-see-them))
 
 ## References
 
