@@ -12,6 +12,10 @@ const ANALYSIS_MODEL = "gemini-2.5-pro"; // Gemini 2.5 Pro for reasoning tasks (
 const GENERATION_MODEL = "gemini-2.5-flash"; // Gemini 2.5 Flash for well-defined tasks
 const DEFAULT_TEMPERATURE = 0.3;
 
+// Logging constants
+const LOG_PREVIEW_LENGTH = 500; // Characters to show in log previews
+const LOG_ERROR_PREVIEW_LENGTH = 200; // Characters to show in error previews
+
 // System prompt paths
 const PROMPTS_DIR = join(process.cwd(), "src", "server", "configs", "prompts");
 
@@ -99,18 +103,65 @@ Respond with a JSON object containing a "questions" array following the schema i
   ]);
 
   const content = response.content as string;
-  console.log("[generateDynamicQuestions] Raw LLM response:", content);
+  console.log(
+    "[generateDynamicQuestions] Raw LLM response length:",
+    content.length
+  );
+  console.log(
+    "[generateDynamicQuestions] First 500 chars:",
+    content.substring(0, LOG_PREVIEW_LENGTH)
+  );
 
-  let parsed: { questions?: Question[] } = {};
+  let questions: Question[] = [];
   try {
-    parsed = JSON.parse(content);
+    const parsed = JSON.parse(content);
+    console.log(
+      "[generateDynamicQuestions] Parsed successfully, type:",
+      Array.isArray(parsed) ? "array" : typeof parsed
+    );
+
+    // Handle both formats: raw array [...] or wrapped { questions: [...] }
+    if (Array.isArray(parsed)) {
+      questions = parsed;
+      console.log(
+        "[generateDynamicQuestions] Using raw array format, items:",
+        parsed.length
+      );
+    } else if (parsed.questions && Array.isArray(parsed.questions)) {
+      questions = parsed.questions;
+      console.log(
+        "[generateDynamicQuestions] Using wrapped format, items:",
+        parsed.questions.length
+      );
+    } else {
+      console.error(
+        "[generateDynamicQuestions] Unexpected response format:",
+        typeof parsed,
+        Object.keys(parsed)
+      );
+      return [];
+    }
+
+    // Strip any extra fields (like 'aspect') that aren't in QuestionSchema
+    questions = questions.map((q) => ({
+      id: q.id,
+      text: q.text,
+      options: q.options,
+    }));
+    console.log(
+      "[generateDynamicQuestions] Questions after field stripping:",
+      questions.length
+    );
   } catch (error) {
     console.error("[generateDynamicQuestions] JSON parse failed:", error);
-    console.error("[generateDynamicQuestions] Invalid response:", content);
+    console.error("[generateDynamicQuestions] Content length:", content.length);
+    console.error(
+      "[generateDynamicQuestions] Content preview:",
+      content.substring(0, LOG_ERROR_PREVIEW_LENGTH)
+    );
     return [];
   }
 
-  const questions = parsed.questions || [];
   console.log(
     `[generateDynamicQuestions] Generated ${questions.length} questions`
   );

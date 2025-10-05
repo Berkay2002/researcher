@@ -78,6 +78,7 @@ export function useSSEStream({
   const eventSourceRef = useRef<EventSource | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
+  const isCompletedRef = useRef(false);
 
   const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY_MS = 2000;
@@ -95,6 +96,9 @@ export function useSSEStream({
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+
+    // Reset completion state
+    isCompletedRef.current = false;
 
     setState((prev) => ({ ...prev, status: "idle" }));
   }, []);
@@ -172,6 +176,9 @@ export function useSSEStream({
         }
 
         case "done": {
+          // Mark as completed to prevent reconnections
+          isCompletedRef.current = true;
+
           // Finalize current draft as message
           setState((prev) => {
             const finalMessages: MessageData[] = [...prev.messages];
@@ -254,6 +261,15 @@ export function useSSEStream({
       return;
     }
 
+    // Don't reconnect if already streaming or completed
+    if (
+      state.status === "streaming" ||
+      state.status === "completed" ||
+      isCompletedRef.current
+    ) {
+      return;
+    }
+
     // Close existing connection
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
@@ -272,6 +288,14 @@ export function useSSEStream({
 
     // Generic message handler
     eventSource.onmessage = (event) => {
+      // Skip token metadata messages that cause errors
+      if (
+        event.data.includes("completion_tokens") ||
+        event.data.includes("total_tokens")
+      ) {
+        return;
+      }
+
       const parsed = parseSSEMessage(event.data);
 
       if (!parsed) {
@@ -285,6 +309,11 @@ export function useSSEStream({
     eventSource.onerror = () => {
       eventSource.close();
       eventSourceRef.current = null;
+
+      // Don't attempt reconnection if stream was completed
+      if (isCompletedRef.current) {
+        return;
+      }
 
       // Attempt reconnection
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
@@ -309,12 +338,17 @@ export function useSSEStream({
         onError?.(errorMessage);
       }
     };
-  }, [threadId, onError, handleSSEEvent]);
+  }, [threadId, state.status, onError, handleSSEEvent]);
 
   /**
    * Auto-connect on mount if enabled
    */
   useEffect(() => {
+    // Reset completion state when threadId changes
+    if (threadId) {
+      isCompletedRef.current = false;
+    }
+
     if (autoConnect && threadId) {
       connect();
     }

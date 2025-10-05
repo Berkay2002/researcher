@@ -1,6 +1,5 @@
 "use client";
 
-import type { ChatStatus, FileUIPart } from "ai";
 import {
   ImageIcon,
   Loader2Icon,
@@ -48,9 +47,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import type { ChatStatus, FileAttachment } from "@/types/ui";
 
 type AttachmentsContext = {
-  files: (FileUIPart & { id: string })[];
+  files: (FileAttachment & { id: string })[];
   add: (files: File[] | FileList) => void;
   remove: (id: string) => void;
   clear: () => void;
@@ -73,7 +73,7 @@ export const usePromptInputAttachments = () => {
 };
 
 export type PromptInputAttachmentProps = HTMLAttributes<HTMLDivElement> & {
-  data: FileUIPart & { id: string };
+  data: FileAttachment;
   className?: string;
 };
 
@@ -121,7 +121,7 @@ export type PromptInputAttachmentsProps = Omit<
   HTMLAttributes<HTMLDivElement>,
   "children"
 > & {
-  children: (attachment: FileUIPart & { id: string }) => React.ReactNode;
+  children: (attachment: FileAttachment) => React.ReactNode;
 };
 
 export function PromptInputAttachments({
@@ -192,7 +192,7 @@ export const PromptInputActionAddAttachments = ({
 
 export type PromptInputMessage = {
   text?: string;
-  files?: FileUIPart[];
+  files?: FileAttachment[];
 };
 
 export type PromptInputProps = Omit<
@@ -231,7 +231,7 @@ export const PromptInput = ({
   children,
   ...props
 }: PromptInputProps) => {
-  const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
+  const [items, setItems] = useState<FileAttachment[]>([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const anchorRef = useRef<HTMLSpanElement>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -296,7 +296,7 @@ export const PromptInput = ({
             message: "Too many files. Some were not added.",
           });
         }
-        const next: (FileUIPart & { id: string })[] = [];
+        const next: FileAttachment[] = [];
         for (const file of capped) {
           next.push({
             id: nanoid(),
@@ -419,7 +419,7 @@ export const PromptInput = ({
 
     // Convert blob URLs to data URLs asynchronously
     Promise.all(
-      items.map(async ({ id, ...item }) => {
+      items.map(async (item) => {
         if (item.url?.startsWith("blob:")) {
           return {
             ...item,
@@ -428,7 +428,7 @@ export const PromptInput = ({
         }
         return item;
       })
-    ).then((files: FileUIPart[]) => {
+    ).then((files: FileAttachment[]) => {
       onSubmit({ text, files }, event);
       clear();
     });
@@ -436,7 +436,7 @@ export const PromptInput = ({
 
   const ctx = useMemo<AttachmentsContext>(
     () => ({
-      files: items.map((item) => ({ ...item, id: item.id })),
+      files: items,
       add,
       remove,
       clear,

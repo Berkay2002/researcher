@@ -160,6 +160,8 @@ export type MessageData = {
     node?: string;
     confidence?: number;
     streaming?: boolean;
+    isInterrupt?: boolean;
+    interruptData?: unknown;
   };
 };
 
@@ -249,6 +251,7 @@ export type ThreadStateSnapshot = {
     issues?: string[];
   };
   next: string[];
+  interrupt?: unknown; // Interrupt payload from LangGraph
   checkpointId: string;
   metadata?: {
     createdAt: string;
@@ -387,6 +390,30 @@ const MINUTE_MS = SECONDS_IN_MINUTE * MS_IN_SECOND;
 const HOUR_MS = SECONDS_IN_MINUTE * MINUTE_MS;
 const DAY_MS = HOURS_IN_DAY * HOUR_MS;
 const WEEK_MS = DAYS_IN_WEEK * DAY_MS;
+
+// ============================================================================
+// Chat and Prompt Input Types (LangGraph compatible)
+// ============================================================================
+
+/**
+ * Chat status for UI components (replaces Vercel AI SDK ChatStatus)
+ */
+export type ChatStatus = "idle" | "submitted" | "streaming" | "error";
+
+/**
+ * File attachment for prompt input (replaces Vercel AI SDK FileUIPart)
+ */
+export type FileAttachment = {
+  id: string;
+  type: "file";
+  url: string;
+  mediaType?: string;
+  filename?: string;
+};
+
+// ============================================================================
+// Timestamp Formatting
+// ============================================================================
 
 /**
  * Format timestamp for display

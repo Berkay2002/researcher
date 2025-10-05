@@ -1,11 +1,11 @@
-import type { UIMessage } from "ai";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentProps, HTMLAttributes } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import type { MessageData } from "@/types/ui";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
-  from: UIMessage["role"];
+  from: MessageData["role"];
 };
 
 export const Message = ({ className, from, ...props }: MessageProps) => (

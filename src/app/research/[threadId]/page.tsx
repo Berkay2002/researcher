@@ -5,7 +5,10 @@ import { AlertCircleIcon, Loader2Icon } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AppShell } from "@/app/(components)/app-shell";
-import { InterruptPrompt } from "@/app/(components)/InterruptPrompt";
+import {
+  InterruptPrompt,
+  type InterruptResponse,
+} from "@/app/(components)/InterruptPrompt";
 import { ResearchStatusBar } from "@/app/(components)/research-status-bar";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
@@ -20,6 +23,13 @@ import {
   MessageAvatar,
   MessageContent,
 } from "@/components/ai-elements/message";
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputToolbar,
+} from "@/components/ai-elements/prompt-input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSSEStream } from "@/lib/hooks/use-sse-stream";
 import { useThreadState } from "@/lib/hooks/use-thread-state";
@@ -44,9 +54,10 @@ export default function ThreadViewPage() {
   const [pinnedSources, setPinnedSources] = useState<Set<string>>(new Set());
   const [currentInterrupt, setCurrentInterrupt] =
     useState<InterruptPayload | null>(null);
-  const [isResumingInterrupt, setIsResumingInterrupt] = useState(false);
-  const [interruptError, setInterruptError] = useState<string | null>(null);
   const [researchStartTime] = useState(Date.now());
+  const [inputValue, setInputValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
 
   // Fetch thread state
   const {
@@ -75,10 +86,9 @@ export default function ThreadViewPage() {
       }
     : null;
 
-  // Combine SSE messages with initial message
-  const allMessages: MessageData[] = initialMessage
-    ? [initialMessage, ...sseStream.messages]
-    : sseStream.messages;
+  // Combine all messages: initial + SSE (interrupts are handled separately)
+  let allMessages: MessageData[] = initialMessage ? [initialMessage] : [];
+  allMessages = [...allMessages, ...sseStream.messages];
 
   // Add current streaming draft as temporary message
   const messagesWithDraft: MessageData[] = sseStream.currentDraft
@@ -113,35 +123,15 @@ export default function ThreadViewPage() {
   /**
    * Detect interrupts from thread state
    */
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Complexity is acceptable for main page component>
   useEffect(() => {
-    if (snapshot?.next && snapshot.next.length > 0) {
-      // Check if we're at an interrupt point
-      // LangGraph sets next to [] when interrupted
-      const hasInterrupt = snapshot.next.includes("__interrupt__");
-
-      if (hasInterrupt && snapshot.values) {
-        // Extract interrupt from state (assuming it's in a specific location)
-        // This depends on how your planner stores interrupts
-        const interruptData = (snapshot.values as Record<string, unknown>)
-          .__interrupt__ as InterruptPayload | undefined;
-
-        if (interruptData) {
-          setCurrentInterrupt(interruptData);
-        }
-      }
-    } else if (snapshot?.next && snapshot.next.length === 0) {
-      // Empty next array typically means we're at an interrupt
-      // Try to extract interrupt from values
-      const stateValues = snapshot.values as Record<string, unknown>;
-      const interrupt = stateValues.__interrupt__ as
-        | InterruptPayload
-        | undefined;
-
-      if (interrupt) {
-        setCurrentInterrupt(interrupt);
-      }
+    if (snapshot?.interrupt) {
+      // Interrupt data is now directly in snapshot.interrupt
+      setCurrentInterrupt(snapshot.interrupt as InterruptPayload);
+      setHasActiveInterrupt(true);
+    } else {
+      // Clear interrupt if none present
+      setCurrentInterrupt(null);
+      setHasActiveInterrupt(false);
     }
   }, [snapshot]);
 
@@ -149,13 +139,13 @@ export default function ThreadViewPage() {
    * Handle interrupt response submission
    */
   const handleInterruptSubmit = useCallback(
-    async (response: unknown) => {
+    async (response: InterruptResponse) => {
       if (!threadId) {
         return;
       }
 
-      setIsResumingInterrupt(true);
-      setInterruptError(null);
+      setIsSubmitting(true);
+      setHasActiveInterrupt(false);
 
       try {
         const res = await fetch(`/api/threads/${threadId}/resume`, {
@@ -179,21 +169,52 @@ export default function ThreadViewPage() {
         // Check if there's another interrupt (multi-stage HITL)
         if (data.interrupt) {
           setCurrentInterrupt(data.interrupt);
+          setHasActiveInterrupt(true);
         } else {
           setCurrentInterrupt(null);
+          setHasActiveInterrupt(false);
         }
 
         // Refetch thread state to get updated data
         await refetch();
       } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : "Failed to resume";
-        setInterruptError(errorMessage);
+        console.error("Failed to resume interrupt:", err);
+        setHasActiveInterrupt(true); // Restore interrupt on error
       } finally {
-        setIsResumingInterrupt(false);
+        setIsSubmitting(false);
       }
     },
     [threadId, refetch]
+  );
+
+  /**
+   * Handle prompt submission (for regular chat only, interrupts are handled by InterruptPrompt)
+   */
+  const handlePromptSubmit = useCallback(
+    (message: { text?: string }) => {
+      if (!(threadId && message.text?.trim())) {
+        return;
+      }
+
+      // Don't allow regular message submission when there's an active interrupt
+      if (hasActiveInterrupt) {
+        return;
+      }
+
+      setIsSubmitting(true);
+      setInputValue("");
+
+      try {
+        // Submit as a regular message (for future chat functionality)
+        // This could be extended to handle additional user inputs during research
+        console.log("Regular message submitted:", message.text);
+      } catch (err) {
+        console.error("Failed to submit message:", err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [threadId, hasActiveInterrupt]
   );
 
   /**
@@ -217,6 +238,32 @@ export default function ThreadViewPage() {
   const handleDeleteThread = useCallback((deletedThreadId: string) => {
     setThreads((prev) => prev.filter((t) => t.threadId !== deletedThreadId));
   }, []);
+
+  /**
+   * Get empty state description based on current state
+   */
+  const getEmptyStateDescription = () => {
+    if (currentInterrupt) {
+      return "Please respond to the question above to continue planning your research.";
+    }
+    if (sseStream.status === "connecting") {
+      return "Your research session is starting...";
+    }
+    return "Waiting for research to begin...";
+  };
+
+  /**
+   * Get empty state title based on current state
+   */
+  const getEmptyStateTitle = () => {
+    if (currentInterrupt) {
+      return "Planning Your Research";
+    }
+    if (sseStream.queries.length > 0) {
+      return `Analyzing ${sseStream.queries.length} ${sseStream.queries.length === 1 ? "query" : "queries"}...`;
+    }
+    return "Research Starting";
+  };
 
   /**
    * Load threads from localStorage (simple persistence)
@@ -288,54 +335,49 @@ export default function ThreadViewPage() {
 
           {/* Conversation Area */}
           <Conversation className="flex-1">
-            {/* Interrupt Prompt (Plan Mode) */}
-            {currentInterrupt && (
-              <div className="mb-4">
-                <InterruptPrompt
-                  interrupt={currentInterrupt}
-                  isSubmitting={isResumingInterrupt}
-                  onSubmit={handleInterruptSubmit}
-                />
-                {interruptError && (
-                  <Alert className="mt-4" variant="destructive">
-                    <AlertCircleIcon className="size-4" />
-                    <AlertDescription>{interruptError}</AlertDescription>
-                  </Alert>
-                )}
-              </div>
-            )}
-
             <ConversationContent>
-              {messagesWithDraft.length === 0 ? (
+              {messagesWithDraft.length === 0 && !hasActiveInterrupt ? (
                 <ConversationEmptyState
-                  description={
-                    sseStream.status === "connecting"
-                      ? "Your research session is starting..."
-                      : "Waiting for research to begin..."
-                  }
+                  description={getEmptyStateDescription()}
                   icon={
                     sseStream.status === "connecting" ? (
                       <Loader2Icon className="size-8 animate-spin" />
                     ) : undefined
                   }
-                  title={
-                    sseStream.queries.length > 0
-                      ? `Analyzing ${sseStream.queries.length} ${sseStream.queries.length === 1 ? "query" : "queries"}...`
-                      : "Research Starting"
-                  }
+                  title={getEmptyStateTitle()}
                 />
               ) : (
-                messagesWithDraft.map((message) => (
-                  <Message from={message.role} key={message.id}>
-                    <MessageAvatar
-                      name={message.role === "user" ? "You" : "AI"}
-                      src={message.role === "user" ? "/user.png" : "/ai.png"}
-                    />
-                    <MessageContent variant="flat">
-                      {message.content}
-                    </MessageContent>
-                  </Message>
-                ))
+                <>
+                  {messagesWithDraft.map((message) => (
+                    <Message from={message.role} key={message.id}>
+                      <MessageAvatar
+                        name={message.role === "user" ? "You" : "AI"}
+                        src={message.role === "user" ? "/user.png" : "/ai.png"}
+                      />
+                      <MessageContent variant="flat">
+                        {message.content}
+                      </MessageContent>
+                    </Message>
+                  ))}
+
+                  {/* Render interrupt as part of the conversation */}
+                  {hasActiveInterrupt && currentInterrupt && (
+                    <Message
+                      from="assistant"
+                      key={`interrupt-${currentInterrupt.questionId}`}
+                    >
+                      <MessageAvatar name="AI" src="/ai.png" />
+                      <MessageContent variant="flat">
+                        <InterruptPrompt
+                          className="mt-2"
+                          interrupt={currentInterrupt}
+                          isSubmitting={isSubmitting}
+                          onSubmit={handleInterruptSubmit}
+                        />
+                      </MessageContent>
+                    </Message>
+                  )}
+                </>
               )}
             </ConversationContent>
           </Conversation>
@@ -346,6 +388,30 @@ export default function ThreadViewPage() {
               <AlertCircleIcon className="size-4" />
               <AlertDescription>{sseStream.error}</AlertDescription>
             </Alert>
+          )}
+
+          {/* Prompt Input - Hide when there's an active interrupt */}
+          {!hasActiveInterrupt && (
+            <div className="flex-shrink-0 border-t bg-background p-4">
+              <div className="mx-auto w-full max-w-3xl">
+                <PromptInput onSubmit={handlePromptSubmit}>
+                  <PromptInputBody>
+                    <PromptInputTextarea
+                      disabled={isSubmitting}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      placeholder="What would you like to know?"
+                      value={inputValue}
+                    />
+                  </PromptInputBody>
+                  <PromptInputToolbar>
+                    <PromptInputSubmit
+                      disabled={isSubmitting || !inputValue.trim()}
+                      status={isSubmitting ? "submitted" : undefined}
+                    />
+                  </PromptInputToolbar>
+                </PromptInput>
+              </div>
+            </div>
           )}
 
           {/* Run Log */}

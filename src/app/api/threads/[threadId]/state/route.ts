@@ -31,9 +31,18 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
+    // Extract interrupt data from snapshot.tasks if present
+    const tasks = snapshot.tasks ?? [];
+    const interruptTask = tasks.find(
+      (t: { interrupts?: unknown[] }) => t.interrupts && t.interrupts.length > 0
+    ) as { interrupts?: { value?: unknown }[] } | undefined;
+
+    const interruptData = interruptTask?.interrupts?.[0]?.value;
+
     return NextResponse.json({
       values: snapshot.values,
       next: snapshot.next ?? [],
+      interrupt: interruptData ?? null,
       checkpointId:
         (snapshot as { config?: { configurable?: { checkpoint_id?: string } } })
           .config?.configurable?.checkpoint_id ?? null,
