@@ -143,12 +143,15 @@ export class TavilyClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Tavily Extract API error (${response.status}): ${errorText}`);
+        throw new Error(
+          `Tavily Extract API error (${response.status}): ${errorText}`
+        );
       }
 
       const data = await response.json();
       return data.results as TavilyExtractResult[];
     } catch (error) {
+      // biome-ignore lint/suspicious/noConsole: Error logging for development
       console.error("[TavilyClient] Extract failed:", error);
       throw error;
     }

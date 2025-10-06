@@ -108,7 +108,7 @@ export const UnifiedSearchDocSchema = z.object({
   content: z.string().nullable().optional(), // filled only after enrichment
   highlights: z.array(z.string()).optional(),
   author: z.string().nullable().optional(),
-  publishedAt: z.string().optional(), // ISO
+  publishedAt: z.string().nullable().optional(), // ISO
   providerScore: z.number().nullable().optional(),
   score: z.number().nullable().optional(), // normalized 0–1 after batch norm
   favicon: z.string().nullable().optional(),

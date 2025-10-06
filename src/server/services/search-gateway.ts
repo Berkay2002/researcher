@@ -5,6 +5,52 @@ import { getTavilyClient } from "../tools/tavily";
 import { shortHash } from "../utils/hashing";
 import { normalizeUrl } from "../utils/url";
 
+// Domain resolution utilities
+const TOPIC_DOMAIN_MAP: Record<string, string[]> = {
+  finance: ["reuters.com", "bloomberg.com", "wsj.com", "ft.com", "sec.gov"],
+  technology: [
+    "techcrunch.com",
+    "arstechnica.com",
+    "theverge.com",
+    "wired.com",
+  ],
+  health: [
+    "nih.gov",
+    "who.int",
+    "mayoclinic.org",
+    "webmd.com",
+    "healthline.com",
+  ],
+  science: [
+    "nature.com",
+    "science.org",
+    "sciencedaily.com",
+    "phys.org",
+    "arxiv.org",
+  ],
+  news: ["reuters.com", "ap.org", "bbc.com", "npr.org", "cnn.com"],
+};
+
+/**
+ * Resolve domain filters from topics or validate FQDNs
+ */
+function resolveDomainFilters(domains: string[]): string[] {
+  const resolved: string[] = [];
+
+  for (const domain of domains) {
+    // Check if it's a topic
+    if (TOPIC_DOMAIN_MAP[domain.toLowerCase()]) {
+      resolved.push(...TOPIC_DOMAIN_MAP[domain.toLowerCase()]);
+    } else if (domain.includes(".")) {
+      // It's already a FQDN
+      resolved.push(domain.toLowerCase());
+    }
+    // Skip invalid entries
+  }
+
+  return [...new Set(resolved)]; // Deduplicate
+}
+
 // Constants for search gateway configuration
 const DEFAULT_MAX_RESULTS = 10;
 const SEARCH_PROVIDERS_COUNT = 2;
@@ -53,6 +99,10 @@ export async function searchAll(
     throw new Error("Query is required for discovery mode");
   }
 
+  // Resolve domain filters
+  const include = resolveDomainFilters(includeDomains);
+  const exclude = resolveDomainFilters(excludeDomains);
+
   // Calculate results per provider (split evenly)
   const resultsPerProvider = Math.ceil(maxResults / SEARCH_PROVIDERS_COUNT);
 
@@ -61,21 +111,21 @@ export async function searchAll(
     searchTavily({
       query,
       maxResults: resultsPerProvider,
-      includeDomains,
-      excludeDomains,
+      includeDomains: include,
+      excludeDomains: exclude,
       mode,
     }),
     searchExa({
       query,
       maxResults: resultsPerProvider,
-      includeDomains,
-      excludeDomains,
+      includeDomains: include,
+      excludeDomains: exclude,
       mode,
     }),
   ]);
 
   // Combine results
-  const combined: UnifiedSearchDoc[] = [];
+  let combined: UnifiedSearchDoc[] = [];
 
   if (tavilyResults.status === "fulfilled") {
     combined.push(...tavilyResults.value);
@@ -83,6 +133,38 @@ export async function searchAll(
 
   if (exaResults.status === "fulfilled") {
     combined.push(...exaResults.value);
+  }
+
+  // Retry without filters if no results and we had include domains
+  if (combined.length === 0 && include.length > 0) {
+    console.warn(
+      "[searchGateway] No results with domain filters - retrying without filters"
+    );
+
+    const retryResults = await Promise.allSettled([
+      searchTavily({
+        query,
+        maxResults: resultsPerProvider,
+        includeDomains: [],
+        excludeDomains: exclude,
+        mode,
+      }),
+      searchExa({
+        query,
+        maxResults: resultsPerProvider,
+        includeDomains: [],
+        excludeDomains: exclude,
+        mode,
+      }),
+    ]);
+
+    combined = [];
+    if (retryResults[0].status === "fulfilled") {
+      combined.push(...retryResults[0].value);
+    }
+    if (retryResults[1].status === "fulfilled") {
+      combined.push(...retryResults[1].value);
+    }
   }
 
   // Deduplicate by normalized URL
@@ -157,11 +239,11 @@ async function searchTavily(
       title: r.title,
       excerpt: r.snippet,
       content: null, // No full content in discovery mode
-      publishedAt: r.publishedAt,
+      publishedAt: r.publishedAt ?? null,
       providerScore: r.score,
       score: null, // Will be normalized later
       fetchedAt: new Date().toISOString(),
-      sourceMeta: {},
+      sourceMeta: r, // Keep raw provider record
     }));
   } catch (error) {
     // Log error but don't throw - allow other provider to succeed
@@ -194,7 +276,12 @@ async function searchExa(
       maxResults,
       includeDomains,
       excludeDomains,
-      text: mode === "discovery" ? { maxCharacters: 500 } : undefined,
+      contents:
+        mode === "discovery"
+          ? {
+              highlights: { numSentences: 1, highlightsPerUrl: 1 },
+            }
+          : undefined,
     };
 
     const results = await exa.search(searchOptions);
@@ -208,11 +295,11 @@ async function searchExa(
       title: r.title,
       excerpt: r.snippet,
       content: null, // No full content in discovery mode
-      publishedAt: r.publishedAt,
+      publishedAt: r.publishedAt ?? null,
       providerScore: r.score,
       score: null, // Will be normalized later
       fetchedAt: new Date().toISOString(),
-      sourceMeta: {},
+      sourceMeta: r, // Keep raw provider record
     }));
   } catch (error) {
     console.error("[searchGateway] Exa search failed:", error);
@@ -226,45 +313,23 @@ async function searchExa(
 async function enrichUrlsTavily(urls: string[]): Promise<UnifiedSearchDoc[]> {
   try {
     const tavily = getTavilyClient();
-    const results: UnifiedSearchDoc[] = [];
+    const extracted = await tavily.extract(urls);
 
-    // Process URLs in batches to avoid rate limits
-    for (const url of urls) {
-      try {
-        const searchResults = await tavily.search({
-          query: url, // Use URL as query to get specific content
-          maxResults: 1,
-          searchDepth: "basic",
-          includeRawContent: true,
-        });
-
-        if (searchResults.length > 0) {
-          const result = searchResults[0];
-          results.push({
-            id: shortHash(result.url),
-            provider: "tavily" as const,
-            query: url,
-            url: result.url,
-            hostname: new URL(result.url).hostname,
-            title: result.title,
-            excerpt: result.snippet,
-            content: result.content || null,
-            publishedAt: result.publishedAt,
-            providerScore: result.score,
-            score: null,
-            fetchedAt: new Date().toISOString(),
-            sourceMeta: {},
-          });
-        }
-      } catch (error) {
-        console.error(
-          `[searchGateway] Tavily enrichment failed for ${url}:`,
-          error
-        );
-      }
-    }
-
-    return results;
+    return extracted.map((r) => ({
+      id: shortHash(r.url),
+      provider: "tavily" as const,
+      query: r.url,
+      url: r.url,
+      hostname: new URL(r.url).hostname,
+      title: r.title ?? null,
+      excerpt: r.content ? r.content.slice(0, EXCERPT_LENGTH) : null,
+      content: r.content ?? null,
+      publishedAt: r.published_date ?? null,
+      providerScore: null,
+      score: null,
+      fetchedAt: new Date().toISOString(),
+      sourceMeta: r, // Keep raw provider record
+    }));
   } catch (error) {
     console.error("[searchGateway] Tavily enrichment failed:", error);
     return [];
@@ -292,11 +357,11 @@ async function enrichUrlsExa(urls: string[]): Promise<UnifiedSearchDoc[]> {
       title: result.title,
       excerpt: result.text?.slice(0, EXCERPT_LENGTH) || null,
       content: result.text || null,
-      publishedAt: result.publishedDate,
+      publishedAt: result.publishedDate ?? null,
       providerScore: result.score,
       score: null,
       fetchedAt: new Date().toISOString(),
-      sourceMeta: {},
+      sourceMeta: result, // Keep raw provider record
     }));
   } catch (error) {
     console.error("[searchGateway] Exa enrichment failed:", error);
