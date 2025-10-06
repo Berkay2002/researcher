@@ -355,7 +355,9 @@ src/server/                       # Server-side code
 │       ├── research/            # Research subgraph
 │       │   ├── index.ts         # Research graph definition
 │       │   └── nodes/
+│       │       ├── assess-candidates.ts # Candidate assessment
 │       │       ├── dedup-rerank.ts # Result deduplication and reranking
+│       │       ├── harvest-selected.ts # Selected source harvesting
 │       │       ├── harvest.ts   # Content harvesting
 │       │       ├── meta-search.ts # Meta-search coordination
 │       │       └── query-plan.ts # Query planning
