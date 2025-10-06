@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <Needed> */
 import { Command } from "@langchain/langgraph";
 import { type NextRequest, NextResponse } from "next/server";
 import { getGraph } from "@/server/graph";
@@ -29,26 +30,40 @@ export async function POST(
       configurable: { thread_id: threadId },
     });
 
-    // Check if there's another interrupt (multi-stage HITL)
-    // LangGraph adds __interrupt__ at runtime when interrupt() is called
-    const resultWithInterrupt = result as unknown as {
-      __interrupt__?: unknown;
-      __checkpoint_id?: string;
-    };
+    // Read state after invoke to detect fresh interrupts (multi-stage HITL)
+    const snapshot = await graph.getState({
+      configurable: { thread_id: threadId },
+    });
 
-    if (resultWithInterrupt.__interrupt__) {
+    // Extract interrupt data from state (same logic as /state route)
+    const interruptFromTasks =
+      Array.isArray(snapshot.tasks) &&
+      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
+        ?.interrupts?.[0]?.value ??
+        null);
+
+    const interruptFromTop = (snapshot as any).interrupts?.[0]?.value ?? null;
+    const interruptFromValues = (snapshot.values as any).__interrupt__ ?? null;
+    const interruptData =
+      interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? null;
+
+    if (interruptData) {
       return NextResponse.json(
         {
           threadId,
-          interrupt: resultWithInterrupt.__interrupt__,
+          interrupt: interruptData,
         },
         { status: 202 }
       );
     }
 
+    const resultWithCheckpoint = result as unknown as {
+      __checkpoint_id?: string;
+    };
+
     return NextResponse.json({
       ok: true,
-      checkpointId: resultWithInterrupt.__checkpoint_id ?? null,
+      checkpointId: resultWithCheckpoint.__checkpoint_id ?? null,
     });
   } catch (error) {
     return NextResponse.json(

@@ -315,7 +315,23 @@ export function useSSEStream({
         return;
       }
 
-      // Attempt reconnection
+      // Check if this is a 409 (interrupt) response by examining the readyState
+      // EventSource doesn't expose HTTP status, but we can detect patterns
+      // When server returns 409, EventSource will error with readyState = 2 (CLOSED)
+      // and won't attempt reconnection - this is expected behavior for interrupts
+
+      // For interrupt (409) responses, don't attempt reconnection
+      // The UI will handle reconnecting when the interrupt is resolved
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setState((prev) => ({
+          ...prev,
+          status: "idle",
+          error: null, // Clear error for expected interrupt
+        }));
+        return;
+      }
+
+      // Attempt reconnection for other errors
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts.current += 1;
 

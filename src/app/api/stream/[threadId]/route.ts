@@ -203,6 +203,34 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
+    // Check if thread is interrupted (paused) vs completed
+    // Use the same comprehensive interrupt detection as the /state route
+    const hasInterrupt =
+      // Check tasks for interrupt metadata (new LangGraph versions)
+      Array.isArray((snapshot as unknown as Record<string, unknown>).tasks) &&
+      ((snapshot as unknown as Record<string, unknown>).tasks as Record<string, unknown>[]).some(
+        (t: Record<string, unknown>) => Array.isArray(t.interrupts) && (t.interrupts as unknown[]).length > 0
+      ) ||
+      // Check for explicit interrupts array (some LangGraph versions)
+      Array.isArray((snapshot as unknown as Record<string, unknown>).interrupts) &&
+      ((snapshot as unknown as Record<string, unknown>).interrupts as unknown[]).length > 0 ||
+      // Check for __interrupt__ in values (legacy/compatibility)
+      Boolean((snapshot.values as Record<string, unknown>).__interrupt__);
+
+    // If thread is interrupted, don't start SSE stream
+    if (hasInterrupt) {
+      console.log(
+        `[SSE] Thread ${threadId} is paused by interrupt, not starting stream`
+      );
+      return NextResponse.json(
+        {
+          status: "interrupted",
+          message: "Thread is paused and waiting for user input"
+        },
+        { status: 409 } // Conflict - indicates the resource is in a conflicting state
+      );
+    }
+
     // Check if thread is already completed
     if (snapshot.next && snapshot.next.length === 0) {
       console.log(
@@ -334,6 +362,7 @@ export async function GET(
             }, STREAM_TIMEOUT_MS);
 
             // Start streaming from graph with multiple modes
+            // For Auto mode threads that were only seeded, this will start the actual execution
             const stream = await graph.stream(null, {
               configurable: { thread_id: threadId },
               streamMode: ["updates", "messages", "custom"],

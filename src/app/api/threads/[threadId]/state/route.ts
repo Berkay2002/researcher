@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
+/** biome-ignore-all lint/suspicious/noExplicitAny: <> */
 import { type NextRequest, NextResponse } from "next/server";
 import { getGraph } from "@/server/graph";
 
@@ -31,13 +32,23 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
-    // Extract interrupt data from snapshot.tasks if present
-    const tasks = snapshot.tasks ?? [];
-    const interruptTask = tasks.find(
-      (t: { interrupts?: unknown[] }) => t.interrupts && t.interrupts.length > 0
-    ) as { interrupts?: { value?: unknown }[] } | undefined;
+    // Extract interrupt data from multiple possible locations in LangGraph state
+    // Check tasks for interrupt metadata (new LangGraph versions)
+    const interruptFromTasks =
+      Array.isArray(snapshot.tasks) &&
+      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
+        ?.interrupts?.[0]?.value ??
+        null);
 
-    const interruptData = interruptTask?.interrupts?.[0]?.value;
+    // Check for explicit interrupts array (some LangGraph versions)
+    const interruptFromTop = (snapshot as any).interrupts?.[0]?.value ?? null;
+
+    // Check for __interrupt__ in values (legacy/compatibility)
+    const interruptFromValues = (snapshot.values as any).__interrupt__ ?? null;
+
+    // Use the first available interrupt source
+    const interruptData =
+      interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? null;
 
     return NextResponse.json({
       values: snapshot.values,

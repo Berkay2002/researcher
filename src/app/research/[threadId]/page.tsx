@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/suspicious/noConsole: <Development> */
+/** biome-ignore-all lint/complexity/useSimplifiedLogicExpression: <Need Complexity> */
 "use client";
 
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
@@ -47,6 +48,7 @@ import type { MessageData, SourceCardData, ThreadMetadata } from "@/types/ui";
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Complexity is acceptable for main page component>
 export default function ThreadViewPage() {
+  const RESUME_CONNECT_DELAY_MS = 100; // Delay after resume before reconnecting SSE
   const params = useParams();
   const threadId = params?.threadId as string | undefined;
 
@@ -70,10 +72,10 @@ export default function ThreadViewPage() {
     autoFetch: true,
   });
 
-  // Connect to SSE stream
+  // Connect to SSE stream (don't auto-connect, will manage manually based on thread state)
   const sseStream = useSSEStream({
     threadId: threadId || null,
-    autoConnect: true,
+    autoConnect: false,
   });
 
   // Build initial message from goal
@@ -136,6 +138,34 @@ export default function ThreadViewPage() {
   }, [snapshot]);
 
   /**
+   * Manage SSE connection based on thread state
+   * Only connect when thread is actively running (not interrupted, not completed)
+   */
+  useEffect(() => {
+    if (!threadId || !snapshot) {
+      return;
+    }
+
+    const hasInterrupt = Boolean(snapshot.interrupt);
+    const isCompleted = Boolean(snapshot.next && snapshot.next.length === 0);
+    const shouldStream = !hasInterrupt && !isCompleted;
+
+    if (shouldStream && sseStream.status === "idle") {
+      // Connect only when thread is running and SSE is idle
+      sseStream.connect();
+    } else if (!shouldStream) {
+      // Disconnect when interrupted or completed
+      sseStream.disconnect();
+    }
+  }, [
+    threadId,
+    snapshot,
+    sseStream.status,
+    sseStream.connect,
+    sseStream.disconnect,
+  ]);
+
+  /**
    * Handle interrupt response submission
    */
   const handleInterruptSubmit = useCallback(
@@ -173,6 +203,11 @@ export default function ThreadViewPage() {
         } else {
           setCurrentInterrupt(null);
           setHasActiveInterrupt(false);
+
+          // If no new interrupt, the graph can continue running - start SSE
+          setTimeout(() => {
+            sseStream.connect();
+          }, RESUME_CONNECT_DELAY_MS);
         }
 
         // Refetch thread state to get updated data
@@ -184,7 +219,7 @@ export default function ThreadViewPage() {
         setIsSubmitting(false);
       }
     },
-    [threadId, refetch]
+    [threadId, refetch, sseStream.connect]
   );
 
   /**
