@@ -26,6 +26,11 @@ npm run format          # Format code with Biome
 npx ultracite check     # Check for issues without fixing
 npx ultracite fix       # Auto-fix code quality issues
 
+# Targeted Code Quality (Recommended)
+npx ultracite check src/app/(components)/thread-history-panel.tsx  # Check specific file
+npx ultracite fix src/app/(components)/thread-history-panel.tsx    # Fix specific file
+npx ultracite check src                                                  # Check specific directory
+
 # Production
 npm run build           # Build for production (NEVER run with localhost:3000 active)
 npm run start           # Start production server
@@ -322,6 +327,35 @@ console.log("Debug output");
 // biome-ignore lint/suspicious/noConsole: debugging
 console.log("Debug");
 ```
+
+### Targeted Linting with Ultracite
+
+For efficient development, it's recommended to run Ultracite checks on specific files or directories rather than the entire codebase:
+
+```bash
+# Check a specific file
+npx ultracite check src/app/(components)/thread-history-panel.tsx
+
+# Fix issues in a specific file
+npx ultracite fix src/app/(components)/thread-history-panel.tsx
+
+# Check an entire directory
+npx ultracite check src
+
+# Check multiple specific files
+npx ultracite check src/app/(components)/thread-history-panel.tsx src/app/(components)/thread-list.tsx
+```
+
+**Benefits of targeted linting:**
+- Faster feedback loop when working on specific components
+- Reduced cognitive load by focusing on relevant files
+- Easier to fix issues incrementally
+- Better integration with iterative development workflows
+
+**Best practices:**
+- Run `npx ultracite check <file>` before committing changes to a specific file
+- Use `npx ultracite fix <file>` to automatically fix issues in the file you're working on
+- Run full project checks (`npx ultracite check`) before creating pull requests
 
 ## Common Linting Issues and Solutions
 

@@ -14,6 +14,8 @@ import { getGraph } from "@/server/graph";
  * - 404: Thread not found
  * - 500: Server error
  */
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Needs to check multiple possible interrupt locations>
 export async function GET(
   _: NextRequest,
   { params }: { params: Promise<{ threadId: string }> }
@@ -50,17 +52,24 @@ export async function GET(
     const interruptFromTasksDirect =
       Array.isArray(snapshot.tasks) &&
       ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
-        ?.interrupts?.[0] ?? null);
+        ?.interrupts?.[0] ??
+        null);
 
     // Use the first available interrupt source
     const interruptData =
-      interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? interruptFromTasksDirect ?? null;
+      interruptFromTasks ??
+      interruptFromTop ??
+      interruptFromValues ??
+      interruptFromTasksDirect ??
+      null;
 
     console.log("[API] Interrupt detection results:");
     console.log(`- From tasks: ${interruptFromTasks ? "FOUND" : "null"}`);
     console.log(`- From top: ${interruptFromTop ? "FOUND" : "null"}`);
     console.log(`- From values: ${interruptFromValues ? "FOUND" : "null"}`);
-    console.log(`- From tasks direct: ${interruptFromTasksDirect ? "FOUND" : "null"}`);
+    console.log(
+      `- From tasks direct: ${interruptFromTasksDirect ? "FOUND" : "null"}`
+    );
     console.log(`- Final result: ${interruptData ? "FOUND" : "null"}`);
 
     return NextResponse.json({

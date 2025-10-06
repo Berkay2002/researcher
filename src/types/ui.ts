@@ -179,6 +179,27 @@ export type CitationData = {
 };
 
 /**
+ * Thread history entry for API and storage
+ */
+export type ThreadHistoryEntry = {
+  id: string;
+  title: string;
+  goal: string;
+  mode: "auto" | "plan";
+  status: "started" | "running" | "completed" | "interrupted" | "error";
+  createdAt: string;
+  updatedAt: string;
+  lastActivity?: string;
+  checkpointId?: string;
+  metadata?: {
+    step?: string;
+    progress?: number;
+    citations?: number;
+    sources?: number;
+  };
+};
+
+/**
  * Thread metadata for thread list
  */
 export type ThreadMetadata = {

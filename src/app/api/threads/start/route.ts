@@ -6,6 +6,33 @@ import { getGraph } from "@/server/graph";
 import { UserInputsSchema } from "@/server/graph/state";
 
 /**
+ * Create a thread history entry
+ */
+async function createThreadHistoryEntry(data: {
+  id: string;
+  goal: string;
+  mode: "auto" | "plan";
+  status: "started" | "running" | "completed" | "interrupted" | "error";
+  metadata?: any;
+}) {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/history`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      console.warn("[API] Failed to create thread history entry:", await response.text());
+    }
+  } catch (error) {
+    console.warn("[API] Error creating thread history entry:", error);
+  }
+}
+
+/**
  * POST /api/threads/start
  *
  * Starts a new research thread or continues an existing one.
@@ -48,6 +75,14 @@ export async function POST(req: NextRequest) {
 
     console.log(`[API] Starting thread ${threadId} with goal: "${body.goal}"`);
 
+    // Create thread history entry
+    await createThreadHistoryEntry({
+      id: threadId,
+      goal: body.goal,
+      mode: validation.data.modeOverride || "auto",
+      status: "started",
+    });
+
     // Check if we're in Plan mode (need to run and check for interrupts)
     if (validation.data.modeOverride === "plan") {
       // First seed the initial state like Auto mode
@@ -79,6 +114,18 @@ export async function POST(req: NextRequest) {
 
       if (interruptData) {
         console.log(`[API] Thread ${threadId} interrupted in Plan mode`);
+
+        // Update thread history to interrupted status
+        await createThreadHistoryEntry({
+          id: threadId,
+          goal: body.goal,
+          mode: validation.data.modeOverride || "plan",
+          status: "interrupted",
+          metadata: {
+            step: "planner",
+          },
+        });
+
         return NextResponse.json(
           {
             threadId,
