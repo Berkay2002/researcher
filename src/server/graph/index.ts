@@ -49,13 +49,12 @@ function buildParentGraph() {
   // Build parent graph
   const builder = new StateGraph(ParentStateAnnotation)
     .addNode("planGate", planGate)
-    .addNode("planner", planner)
+    .addNode("planner", planner, { ends: ["planner", "research"] })
     .addNode("research", research)
     .addNode("factcheck", factcheck)
     .addNode("writer", writer)
     .addEdge(START, "planGate")
     .addEdge("planGate", "planner")
-    .addEdge("planner", "research")
     .addEdge("research", "factcheck")
     .addEdge("factcheck", "writer")
     .addEdge("writer", END);

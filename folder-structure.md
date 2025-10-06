@@ -311,6 +311,121 @@ Server-side functionality including:
 - `store/`: Data persistence layers
 - `tools/`: Tool integrations (Exa, Tavily)
 
+## Server Directory Structure
+
+```
+src/server/                       # Server-side code
+├── configs/                      # Configuration files
+│   ├── env.ts                   # Environment variable validation with Zod
+│   ├── langgraph.json           # LangGraph configuration
+│   ├── llm.ts                   # LLM provider configuration
+│   └── prompts/                 # System prompts for various agents
+│       ├── factcheck.system.md  # Fact-checking agent system prompt
+│       ├── plan-constructor.system.md # Plan construction system prompt
+│       ├── planner.system.md    # Planner agent system prompt
+│       ├── prompt-analyzer.system.md # Prompt analysis system prompt
+│       ├── question-generator.system.md # Question generation system prompt
+│       └── writer.system.md     # Writer agent system prompt
+├── grandchildren/                # Grandchild graphs/nodes (reusable components)
+│   └── crawler/                 # Web crawling functionality
+│       ├── index.ts             # Crawler graph definition
+│       └── nodes/               # Crawler node implementations
+│           ├── fetch.ts         # Web page fetching
+│           ├── normalize.ts     # Content normalization
+│           └── parse.ts         # Content parsing
+├── graph/                       # Main graph definitions
+│   ├── index.ts                 # Parent graph orchestration with Postgres checkpointer
+│   ├── state.ts                 # Parent state type definitions
+│   ├── nodes/                   # Main graph nodes
+│   │   ├── approvals.ts         # Human approval workflows
+│   │   ├── plan-gate.ts         # Plan validation gate
+│   │   └── publish-gate.ts      # Publication validation gate
+│   └── subgraphs/               # Specialized subgraphs
+│       ├── factcheck/           # Fact-checking subgraph
+│       │   ├── index.ts         # Fact-check graph definition
+│       │   └── nodes/
+│       │       └── factcheck.ts # Fact-check implementation
+│       ├── planner/             # Planning subgraph
+│       │   ├── index.ts         # Planner graph definition
+│       │   ├── state.ts         # Planner state types
+│       │   └── nodes/
+│       │       ├── auto-planner.ts # Automated planning
+│       │       ├── hitl-planner.ts # Human-in-the-loop planning
+│       │       └── llm-helpers.ts # LLM utility functions
+│       ├── research/            # Research subgraph
+│       │   ├── index.ts         # Research graph definition
+│       │   └── nodes/
+│       │       ├── dedup-rerank.ts # Result deduplication and reranking
+│       │       ├── harvest.ts   # Content harvesting
+│       │       ├── meta-search.ts # Meta-search coordination
+│       │       └── query-plan.ts # Query planning
+│       └── write/               # Writing subgraph
+│           ├── index.ts         # Writer graph definition
+│           └── nodes/
+│               ├── redteam.ts   # Content review and validation
+│               └── synthesize.ts # Content synthesis
+├── services/                    # External service integrations
+│   ├── cost-estimator.ts        # API cost estimation
+│   ├── harvest.ts               # Content harvesting service
+│   ├── logging.ts               # Logging service
+│   ├── provenance.ts            # Content provenance tracking
+│   ├── rerank.ts                # Result reranking service
+│   ├── search-gateway.ts        # Unified search interface for Tavily/Exa
+│   └── cache/                   # Caching implementations
+│       ├── lru.ts               # In-memory LRU cache
+│       └── redis.ts             # Redis cache adapter
+├── store/                       # Data persistence
+│   ├── longTerm/                # Long-term storage
+│   │   ├── index.ts             # Long-term storage interface
+│   │   └── adapters/            # Storage adapters
+│   │       ├── postgres.ts      # PostgreSQL adapter
+│   │       └── redis.ts         # Redis adapter
+│   └── schemas/                 # Data schemas
+│       └── userPrefs.ts         # User preferences schema
+├── tools/                       # Tool integrations
+│   ├── exa.ts                   # Exa search API client
+│   └── tavily.ts                # Tavily search API client
+├── types/                       # Server-side type definitions
+│   ├── domain.ts                # Domain-specific types
+│   ├── evidence.ts              # Evidence-related types
+│   └── prompts.ts               # Prompt-related types
+└── utils/                       # Server utilities
+    ├── hashing.ts               # Cryptographic hashing utilities
+    ├── text.ts                  # Text processing utilities
+    └── url.ts                   # URL normalization utilities
+```
+
+### Server Components Explained
+
+#### `/configs`
+Contains all configuration files for the server-side application:
+- [`env.ts`](src/server/configs/env.ts:1) validates environment variables using Zod schema
+- [`llm.ts`](src/server/configs/llm.ts:1) configures language model providers
+- [`prompts/`](src/server/configs/prompts/) stores system prompts for different AI agents
+
+#### `/graph`
+Core LangGraph orchestration:
+- [`index.ts`](src/server/graph/index.ts:1) builds the parent graph with Postgres checkpointer
+- [`state.ts`](src/server/graph/state.ts:1) defines state types for the graph
+- [`nodes/`](src/server/graph/nodes/) contains main workflow nodes
+- [`subgraphs/`](src/server/graph/subgraphs/) implements specialized workflows for planning, research, fact-checking, and writing
+
+#### `/services`
+External service integrations:
+- [`search-gateway.ts`](src/server/services/search-gateway.ts:1) provides unified search across Tavily and Exa
+- [`harvest.ts`](src/server/services/harvest.ts:1) handles content harvesting from search results
+- [`cache/`](src/server/services/cache/) implements caching strategies
+
+#### `/store`
+Data persistence layer:
+- [`longTerm/`](src/server/store/longTerm/) manages long-term storage with adapters for PostgreSQL and Redis
+- [`schemas/`](src/server/store/schemas/) defines data schemas for persistence
+
+#### `/tools`
+External API integrations:
+- [`exa.ts`](src/server/tools/exa.ts:1) implements the Exa search API client
+- [`tavily.ts`](src/server/tools/tavily.ts:1) implements the Tavily search API client
+
 ### `/src/lib`
 Shared utilities and hooks for client-side functionality.
 
