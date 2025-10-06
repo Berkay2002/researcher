@@ -195,8 +195,10 @@ For the product requirements and system design, see the [project brief](brief.md
 
 * [x] Parent graph compiled with **checkpointer**; `thread_id` required on invocations. ([LangChain AI][1])
   - ✅ Implemented in [src/server/graph/index.ts](src/server/graph/index.ts)
-  - ✅ Uses `MemorySaver` checkpointer for thread-level persistence
+  - ✅ **Updated to use `PostgresSaver` checkpointer for persistent thread-level storage**
+  - ✅ **Neon database integration with full schema bootstrapping**
   - ✅ All subgraphs inherit parent checkpointer
+  - ✅ **Plan mode interrupts now persist across server restarts**
 * [x] `getState` / `updateState` smoke tests (time-travel + fork). ([LangChain AI][7])
   - ✅ `GET /api/threads/:id/state` returns state snapshots
   - ✅ `PATCH /api/threads/:id/mode` uses `updateState()` for mode changes
@@ -204,6 +206,7 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ `@langchain/langgraph@1.0.0-alpha.5`
   - ✅ `@langchain/core@1.0.0-alpha.6`
   - ✅ `langchain@1.0.0-alpha.7`
+  - ✅ `@langchain/langgraph-checkpoint-postgres@0.1.2`
   - ✅ `uuid@13.0.0`
 * [x] **State Schema** - [src/server/graph/state.ts](src/server/graph/state.ts)
   - ✅ `ParentStateAnnotation` defined with `Annotation.Root()` (alpha-1.0 pattern)
@@ -215,6 +218,12 @@ For the product requirements and system design, see the [project brief](brief.md
   - ✅ [research](src/server/graph/subgraphs/research/index.ts) - Stub (Phase 3)
   - ✅ [factcheck](src/server/graph/subgraphs/factcheck/index.ts) - Stub (Phase 4)
   - ✅ [writer](src/server/graph/subgraphs/write/index.ts) - Stub (Phase 4)
+* [x] **Neon Postgres Persistence Implementation**
+  - ✅ **Database setup script**: [scripts/setup-persistence.ts](scripts/setup-persistence.ts) with schema bootstrapping
+  - ✅ **Graph factory updated**: [src/server/graph/index.ts](src/server/graph/index.ts) uses `PostgresSaver` instead of `MemorySaver`
+  - ✅ **Connection singleton**: Cached Postgres connection for performance
+  - ✅ **Environment configuration**: `DATABASE_URL` with SSL-enabled Neon connection
+  - ✅ **Plan mode persistence tested**: Interrupts survive server restarts and persist across API calls
 * [x] **API Routes Implemented**
   - ✅ [POST /api/threads/start](src/app/api/threads/start/route.ts) - Start threads, handle interrupts
   - ✅ [GET /api/threads/:id/state](src/app/api/threads/[threadId]/state/route.ts) - Get state snapshots
@@ -365,7 +374,7 @@ For the product requirements and system design, see the [project brief](brief.md
 
 | Agent / Module                      | Owner                | Signature  | Date (YYYY-MM-DD) | Notes                                      |
 | ----------------------------------- | -------------------- | ---------- | ----------------- | ------------------------------------------ |
-| **Parent Orchestrator (Graph)**     | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0: `Annotation.Root()` pattern.    |
+| **Parent Orchestrator (Graph)**     | Claude Code          | ✅         | 2025-01-06        | Alpha-1.0: `Annotation.Root()` pattern; **Neon Postgres persistence implemented**.    |
 | **Planner (Auto/Plan HITL)**        | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0: `StateGraph(ParentStateAnnotation)`; LangGraph 1.0-alpha interrupt() primitive; kebab-case filenames. |
 | **Orchestration Gates**             | Claude Code          | ✅         | 2025-01-05        | plan-gate, approvals, publish-gate with full HITL semantics; interrupt() + Command(resume) pattern. |
 | **Research (Query→Search→Harvest)** | Claude Code          | ✅         | 2025-01-05        | Alpha-1.0 compliant; Tavily + Exa fusion.  |

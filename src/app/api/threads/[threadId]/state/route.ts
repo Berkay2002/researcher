@@ -32,15 +32,36 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
-    // In LangGraph 1.0-alpha, when interrupt() is called, the interrupt data
-    // is often stored directly in the snapshot at the top level as a 'interrupt' property
-    // This is different from older versions where it was nested in tasks or values
-    const interruptFromSnapshot = (snapshot as any).interrupt ?? null;
+    // Extract interrupt data from multiple possible locations in LangGraph state
+    // Check tasks for interrupt metadata (new LangGraph versions)
+    const interruptFromTasks =
+      Array.isArray(snapshot.tasks) &&
+      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
+        ?.interrupts?.[0]?.value ??
+        null);
 
-    console.log("[API] Found interrupt in snapshot:", interruptFromSnapshot ? "YES" : "NO");
+    // Check for explicit interrupts array (some LangGraph versions)
+    const interruptFromTop = (snapshot as any).interrupts?.[0]?.value ?? null;
 
-    // Use the interrupt from snapshot (most common in LangGraph 1.0-alpha)
-    const interruptData = interruptFromSnapshot;
+    // Check for __interrupt__ in values (legacy/compatibility)
+    const interruptFromValues = (snapshot.values as any).__interrupt__ ?? null;
+
+    // Additional: Check if the interrupt is stored directly in tasks without .value wrapper
+    const interruptFromTasksDirect =
+      Array.isArray(snapshot.tasks) &&
+      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
+        ?.interrupts?.[0] ?? null);
+
+    // Use the first available interrupt source
+    const interruptData =
+      interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? interruptFromTasksDirect ?? null;
+
+    console.log("[API] Interrupt detection results:");
+    console.log(`- From tasks: ${interruptFromTasks ? "FOUND" : "null"}`);
+    console.log(`- From top: ${interruptFromTop ? "FOUND" : "null"}`);
+    console.log(`- From values: ${interruptFromValues ? "FOUND" : "null"}`);
+    console.log(`- From tasks direct: ${interruptFromTasksDirect ? "FOUND" : "null"}`);
+    console.log(`- Final result: ${interruptData ? "FOUND" : "null"}`);
 
     return NextResponse.json({
       values: snapshot.values,

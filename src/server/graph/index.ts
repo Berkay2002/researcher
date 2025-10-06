@@ -1,4 +1,5 @@
-import { END, MemorySaver, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph } from "@langchain/langgraph";
+import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { planGate } from "./nodes/plan-gate";
 import { ParentStateAnnotation } from "./state";
 import { buildFactcheckSubgraph } from "./subgraphs/factcheck";
@@ -13,15 +14,32 @@ import { buildWriterSubgraph } from "./subgraphs/write";
 let compiled: ReturnType<typeof buildParentGraph> | null = null;
 
 /**
+ * Postgres checkpointer (singleton)
+ * Cached after first call to avoid recreating connections
+ */
+let checkpointerSingleton: PostgresSaver | null = null;
+
+/**
  * Build the parent orchestration graph
  *
  * Flow: START -> planGate -> planner -> research -> factcheck -> writer -> END
  *
  * - All invocations require a thread_id
- * - MemorySaver provides checkpointing for HITL, time-travel, and fault-tolerance
+ * - PostgresSaver provides persistent checkpointing for HITL, time-travel, and fault-tolerance
  * - Subgraphs inherit the checkpointer automatically
  */
 function buildParentGraph() {
+  // Get or create the Postgres checkpointer
+  if (!checkpointerSingleton) {
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error(
+        "DATABASE_URL environment variable is required for persistence"
+      );
+    }
+    checkpointerSingleton = PostgresSaver.fromConnString(databaseUrl);
+  }
+
   // Build subgraphs
   const planner = buildPlannerSubgraph();
   const research = buildResearchSubgraph();
@@ -42,14 +60,14 @@ function buildParentGraph() {
     .addEdge("factcheck", "writer")
     .addEdge("writer", END);
 
-  // Compile with checkpointer for thread-level memory
-  return builder.compile({ checkpointer: new MemorySaver() });
+  // Compile with Postgres checkpointer for persistent thread-level memory
+  return builder.compile({ checkpointer: checkpointerSingleton });
 }
 
 /**
  * Get the compiled parent graph (singleton pattern)
  *
- * @returns Compiled parent graph with checkpointer
+ * @returns Compiled parent graph with Postgres checkpointer
  */
 export function getGraph() {
   if (!compiled) {
