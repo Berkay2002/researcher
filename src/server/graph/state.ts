@@ -1,5 +1,6 @@
 import { Annotation } from "@langchain/langgraph";
 import { z } from "zod";
+import type { PromptAnalysis } from "./subgraphs/planner/state";
 
 // ============================================================================
 // Core Domain Types
@@ -161,6 +162,19 @@ export type Citation = z.infer<typeof CitationSchema>;
 export type Draft = z.infer<typeof DraftSchema>;
 
 // ============================================================================
+// Planning Session Types
+// ============================================================================
+
+/**
+ * Cached planning session for reusing analysis and questions
+ */
+export type PlanningSession = {
+  analysis?: PromptAnalysis;
+  questions?: Question[];
+  answers?: QuestionAnswer[];
+};
+
+// ============================================================================
 // LangGraph 1.0-alpha State Annotation
 // ============================================================================
 
@@ -187,6 +201,13 @@ export const ParentStateAnnotation = Annotation.Root({
   // Replaces entire plan when updated (no merging)
   plan: Annotation<Plan | null>({
     reducer: (_, next) => next,
+    default: () => null,
+  }),
+
+  // Persistent planner cache
+  // Merges planning session data to preserve analysis and questions
+  planning: Annotation<PlanningSession | null>({
+    reducer: (prev, next) => ({ ...prev, ...next }),
     default: () => null,
   }),
 

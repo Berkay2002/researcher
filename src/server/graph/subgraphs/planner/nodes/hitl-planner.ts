@@ -2,7 +2,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { Command, interrupt } from "@langchain/langgraph";
 import type { ParentState, QuestionAnswer } from "../../../state";
-import type { InterruptPayload } from "../state";
+
 import {
   analyzePromptCompleteness,
   constructPlanFromAnswers,
@@ -14,113 +14,63 @@ export async function hitlPlanner(
   state: ParentState
 ): Promise<Partial<ParentState> | Command<"planner" | "research">> {
   console.log("[hitlPlanner] Starting HITL planning flow...");
-
   const { goal } = state.userInputs;
   if (!goal) {
     throw new Error("No goal provided in userInputs");
   }
 
-  // 1) Analyze completeness
-  const analysis = await analyzePromptCompleteness(goal);
+  // 1) Reuse cached analysis/questions if present
+  const planning = state.planning ?? {};
+  const analysis = planning.analysis ?? (await analyzePromptCompleteness(goal));
 
-  // If complete, build plan and jump straight to research
   if (analysis.isComplete) {
-    console.log("[hitlPlanner] Prompt is complete - building plan directly");
     const plan = await constructPlanFromPrompt(goal);
     return new Command({
-      update: { plan },
-      goto: "research",
-      graph: Command.PARENT, // we're inside the planner subgraph; route in parent
-    });
-  }
-
-  console.log(
-    `[hitlPlanner] Prompt incomplete - missing ${analysis.missingAspects.length} aspects`
-  );
-
-  // 2) Make questions
-  const questions = await generateDynamicQuestions(goal, analysis);
-  if (questions.length === 0) {
-    console.log("[hitlPlanner] No questions generated - building default plan");
-    const plan = await constructPlanFromPrompt(goal);
-    return new Command({
-      update: { plan },
+      update: { plan, planning: { ...planning, analysis } },
       goto: "research",
       graph: Command.PARENT,
     });
   }
 
-  console.log(`[hitlPlanner] Generated ${questions.length} questions`);
+  const questions = planning.questions ?? (await generateDynamicQuestions(goal, analysis));
+  const answers: QuestionAnswer[] = (planning.answers ?? []).filter(a => questions.some(q => q.id === a.questionId));
 
-  // Answers already provided so far (persisted in state)
-  const answers: QuestionAnswer[] = state.userInputs.plannerAnswers || [];
-  const answeredIds = new Set(answers.map((a) => a.questionId));
-  const nextQuestion = questions.find((q) => !answeredIds.has(q.id));
+  // 2) Find next unanswered question from the STABLE array
+  const answeredIds = new Set(answers.map(a => a.questionId));
+  const next = questions.find(q => !answeredIds.has(q.id));
 
-  if (nextQuestion) {
-    console.log(
-      `[hitlPlanner] Asking question ${answeredIds.size + 1} of ${questions.length}: "${nextQuestion.text}"`
-    );
-
-    const payload: InterruptPayload = {
+  if (next) {
+    const resume = await interrupt({
       stage: "question",
-      questionId: nextQuestion.id,
-      questionText: nextQuestion.text,
-      options: nextQuestion.options,
+      questionId: next.id,
+      questionText: next.text,
+      options: next.options,
       metadata: {
         goal,
-        currentQuestion: answeredIds.size + 1,
+        currentQuestion: questions.findIndex(q => q.id === next.id) + 1,
         totalQuestions: questions.length,
         missingAspects: analysis.missingAspects,
       },
-    };
+    });
 
-    // Pause; on resume this returns the user's choice
-    const resumeValue = await interrupt(payload);
+    const updatedAnswers = [...answers, { questionId: next.id, ...resume }];
 
-    const newAnswer: QuestionAnswer = {
-      questionId: nextQuestion.id,
-      selectedOption: resumeValue.selectedOption as string | undefined,
-      customAnswer: resumeValue.customAnswer as string | undefined,
-    };
-    const updatedAnswers = [...answers, newAnswer];
-
-    // If more remain, loop back into planner
-    const stillUnanswered = questions.some(
-      (q) => !updatedAnswers.some((a) => a.questionId === q.id)
-    );
-
-    if (stillUnanswered) {
-      return new Command({
-        update: {
-          userInputs: { ...state.userInputs, plannerAnswers: updatedAnswers },
-        },
-        goto: "planner", // self-loop
-        graph: Command.PARENT, // because planner is a subgraph node in parent
-      });
-    }
-
-    // Otherwise, finalize plan and continue to research
-    const plan = await constructPlanFromAnswers(
-      goal,
-      updatedAnswers,
-      questions
-    );
+    // 3) Persist everything and loop back into planner until finished
     return new Command({
-      update: {
-        userInputs: { ...state.userInputs, plannerAnswers: updatedAnswers },
-        plan,
-      },
-      goto: "research",
+      update: { planning: { analysis, questions, answers: updatedAnswers } },
+      goto: "planner",
       graph: Command.PARENT,
     });
   }
 
-  // Safety: all answered but no plan yet
-  console.log("[hitlPlanner] All questions answered - constructing final plan");
+  // 4) All answered → construct plan once, then leave the planner
   const plan = await constructPlanFromAnswers(goal, answers, questions);
   return new Command({
-    update: { plan },
+    update: {
+      plan,
+      planning: { analysis, questions, answers },
+      userInputs: { ...state.userInputs, plannerAnswers: answers }, // optional mirror for UI/history
+    },
     goto: "research",
     graph: Command.PARENT,
   });

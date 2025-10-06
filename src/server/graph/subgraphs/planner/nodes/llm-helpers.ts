@@ -61,6 +61,32 @@ export async function analyzePromptCompleteness(
 }
 
 /**
+ * Normalize raw questions from LLM to stable IDs
+ *
+ * Ensures consistent question IDs even if LLM slightly renames them
+ */
+function normalizeQuestions(raw: Record<string, unknown>[]): Question[] {
+  return raw.map((q, i) => {
+    const base =
+      (typeof q.id === "string" && q.id.trim()) ||
+      (typeof q.aspect === "string" && `q${i + 1}_${q.aspect.toLowerCase().replace(/\W+/g, "_")}`) ||
+      `q${i + 1}`;
+
+    return {
+      id: base,
+      text: String(q.text ?? "").trim(),
+      options: Array.isArray(q.options)
+        ? q.options.map((o: Record<string, unknown>) => ({
+            value: String(o.value ?? "").trim(),
+            label: String(o.label ?? "").trim(),
+            description: typeof o.description === "string" ? o.description : undefined,
+          }))
+        : [],
+    };
+  });
+}
+
+/**
  * Generate dynamic questions based on prompt analysis
  *
  * Uses Gemini 2.5 Flash to create questions with contextual answer options
@@ -121,14 +147,15 @@ Respond with a JSON object containing a "questions" array following the schema i
     );
 
     // Handle both formats: raw array [...] or wrapped { questions: [...] }
+    let rawQuestions: Record<string, unknown>[] = [];
     if (Array.isArray(parsed)) {
-      questions = parsed;
+      rawQuestions = parsed;
       console.log(
         "[generateDynamicQuestions] Using raw array format, items:",
         parsed.length
       );
     } else if (parsed.questions && Array.isArray(parsed.questions)) {
-      questions = parsed.questions;
+      rawQuestions = parsed.questions;
       console.log(
         "[generateDynamicQuestions] Using wrapped format, items:",
         parsed.questions.length
@@ -142,14 +169,10 @@ Respond with a JSON object containing a "questions" array following the schema i
       return [];
     }
 
-    // Strip any extra fields (like 'aspect') that aren't in QuestionSchema
-    questions = questions.map((q) => ({
-      id: q.id,
-      text: q.text,
-      options: q.options,
-    }));
+    // Normalize questions to stable IDs
+    questions = normalizeQuestions(rawQuestions);
     console.log(
-      "[generateDynamicQuestions] Questions after field stripping:",
+      "[generateDynamicQuestions] Questions after normalization:",
       questions.length
     );
   } catch (error) {
