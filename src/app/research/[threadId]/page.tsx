@@ -425,6 +425,9 @@ export default function ThreadViewPage() {
             </Alert>
           )}
 
+          {/* Run Log */}
+          <RunLog entries={sseStream.runLog} />
+
           {/* Prompt Input - Hide when there's an active interrupt */}
           {!hasActiveInterrupt && (
             <div className="flex-shrink-0 border-t bg-background p-4">
@@ -448,9 +451,6 @@ export default function ThreadViewPage() {
               </div>
             </div>
           )}
-
-          {/* Run Log */}
-          <RunLog entries={sseStream.runLog} />
         </div>
       }
       leftPanel={
