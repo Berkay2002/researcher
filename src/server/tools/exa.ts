@@ -27,15 +27,19 @@ type ExaResult = z.infer<typeof ExaResultSchema>;
 export type ExaSearchOptions = {
   query: string;
   maxResults?: number;
-  type?: "keyword" | "neural" | "auto";
-  category?: "company" | "research paper" | "news" | "pdf" | "tweet";
+  type?: "keyword" | "neural" | "fast" | "auto";
+  category?: "company" | "research paper" | "news" | "pdf" | "github" | "tweet" | "personal site" | "linkedin profile" | "financial report";
   includeDomains?: string[];
   excludeDomains?: string[];
   startPublishedDate?: string;
+  endPublishedDate?: string;
+  startCrawlDate?: string;
+  endCrawlDate?: string;
+  userLocation?: string;
   contents?: {
     highlights?: { numSentences?: number; highlightsPerUrl?: number };
-    summary?: boolean;
-    text?: { maxCharacters?: number };
+    summary?: boolean | { query?: string; schema?: Record<string, unknown> };
+    text?: boolean | { maxCharacters?: number; includeHtmlTags?: boolean };
   };
 };
 
@@ -85,6 +89,10 @@ export class ExaClient {
       includeDomains = [],
       excludeDomains = [],
       startPublishedDate,
+      endPublishedDate,
+      startCrawlDate,
+      endCrawlDate,
+      userLocation,
     } = options;
 
     try {
@@ -104,7 +112,10 @@ export class ExaClient {
           excludeDomains:
             excludeDomains.length > 0 ? excludeDomains : undefined,
           startPublishedDate,
-          useAutoprompt: true,
+          endPublishedDate,
+          startCrawlDate,
+          endCrawlDate,
+          userLocation,
           contents: options.contents || {
             highlights: { numSentences: 1, highlightsPerUrl: 1 }
           },

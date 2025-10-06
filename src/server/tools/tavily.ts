@@ -28,7 +28,7 @@ export type TavilySearchOptions = {
   searchDepth?: "basic" | "advanced";
   includeDomains?: string[];
   excludeDomains?: string[];
-  includeRawContent?: boolean;
+  includeRawContent?: boolean | "markdown" | "text";
 };
 
 // ============================================================================
@@ -48,8 +48,10 @@ export type TavilySearchResult = {
 export type TavilyExtractResult = {
   url: string;
   title?: string;
-  content?: string;
+  raw_content?: string;
   published_date?: string;
+  images?: string[];
+  favicon?: string;
 };
 
 // ============================================================================
@@ -91,9 +93,9 @@ export class TavilyClient {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          api_key: this.apiKey,
           query,
           max_results: maxResults,
           search_depth: searchDepth,
@@ -126,18 +128,32 @@ export class TavilyClient {
   /**
    * Extract content from specific URLs
    */
-  async extract(urls: string[] | string): Promise<TavilyExtractResult[]> {
+  async extract(
+    urls: string[] | string,
+    opts?: {
+      format?: "markdown" | "text";
+      extractDepth?: "basic" | "advanced";
+      includeImages?: boolean;
+      includeFavicon?: boolean;
+      timeout?: number; // seconds, 1–60
+    }
+  ): Promise<TavilyExtractResult[]> {
     const urlList = Array.isArray(urls) ? urls : [urls];
 
     try {
-      const response = await fetch(`${this.baseUrl}/v1/extract`, {
+      const response = await fetch(`${this.baseUrl}/extract`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${this.apiKey}`,
         },
         body: JSON.stringify({
-          api_key: this.apiKey,
           urls: urlList,
+          format: opts?.format ?? "markdown",
+          extract_depth: opts?.extractDepth ?? "basic",
+          include_images: opts?.includeImages ?? false,
+          include_favicon: opts?.includeFavicon ?? false,
+          timeout: opts?.timeout,
         }),
       });
 
