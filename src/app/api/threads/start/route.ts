@@ -50,7 +50,10 @@ export async function POST(req: NextRequest) {
 
     // Check if we're in Plan mode (need to run and check for interrupts)
     if (validation.data.modeOverride === "plan") {
-      // Execute graph and wait for initial result
+      // First seed the initial state like Auto mode
+      await graph.updateState({ configurable: { thread_id: threadId } }, initial);
+
+      // Then execute graph and wait for initial result
       // biome-ignore lint/correctness/noUnusedVariables: <Result is not used>
       const result = await graph.invoke(initial, {
         configurable: { thread_id: threadId },
