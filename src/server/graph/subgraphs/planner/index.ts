@@ -13,7 +13,10 @@ import { hitlPlanner } from "./nodes/hitl-planner";
  */
 function routePlanner(state: ParentState): string {
   const mode = state.userInputs.modeOverride ?? "auto";
-  console.log(`[planner] Routing to ${mode} mode...`);
+  // Only log when first entering the mode, not on subsequent self-loops
+  if (!state.planning?.questions) {
+    console.log(`[planner] Routing to ${mode} mode...`);
+  }
   return mode === "plan" ? "hitlPlanner" : "autoPlanner";
 }
 

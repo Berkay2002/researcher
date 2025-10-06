@@ -1,6 +1,11 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: <Needed> */
+/** biome-ignore-all lint/suspicious/noConsole: <> */
 import { Command } from "@langchain/langgraph";
 import { type NextRequest, NextResponse } from "next/server";
+import {
+  getThreadHistoryEntry,
+  setThreadHistoryEntry,
+} from "@/lib/store/thread-history";
 import { getGraph } from "@/server/graph";
 
 /**
@@ -46,6 +51,27 @@ export async function POST(
     const interruptFromValues = (snapshot.values as any).__interrupt__ ?? null;
     const interruptData =
       interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? null;
+
+    // Update thread status to "running" during multi-step HITL
+    const threadStatus = interruptData ? "interrupted" : "running";
+    try {
+      // Get existing thread entry to preserve required fields
+      const existingEntry = await getThreadHistoryEntry(threadId);
+      if (existingEntry) {
+        await setThreadHistoryEntry({
+          ...existingEntry,
+          status: threadStatus,
+          updatedAt: new Date().toISOString(),
+          lastActivity: new Date().toISOString(),
+        });
+      }
+    } catch (historyError) {
+      // Don't fail the request if history update fails
+      console.warn(
+        "[API] Failed to update thread history status:",
+        historyError
+      );
+    }
 
     if (interruptData) {
       return NextResponse.json(

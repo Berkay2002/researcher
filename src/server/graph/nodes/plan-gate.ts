@@ -133,7 +133,8 @@ function estimateCostUsd(goal: string): number {
     AVG_QUERIES_PER_GOAL * AVG_TOKENS_PER_RESPONSE * COST_PER_TOKEN;
 
   // Complexity multiplier based on goal length and complexity
-  const complexityMultiplier = COMPLEXITY_BASE_MULTIPLIER + wordCount / WORD_COUNT_DIVISOR;
+  const complexityMultiplier =
+    COMPLEXITY_BASE_MULTIPLIER + wordCount / WORD_COUNT_DIVISOR;
 
   return (queryCost + llmCost) * complexityMultiplier;
 }
@@ -200,7 +201,10 @@ export async function planGate(
     }
 
     if (modeOverride === "plan") {
-      console.log("[planGate] Using explicit Plan mode override");
+      // Only log when first entering plan mode, not on subsequent resumes
+      if (!state.planning?.questions) {
+        console.log("[planGate] Using explicit Plan mode override");
+      }
       return {
         userInputs: {
           ...userInputs,
