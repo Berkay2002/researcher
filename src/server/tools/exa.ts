@@ -8,6 +8,8 @@ const ExaResultSchema = z.object({
   url: z.string(),
   title: z.string(),
   text: z.string().optional(),
+  highlights: z.array(z.string()).optional(),
+  summary: z.string().optional(),
   publishedDate: z.string().optional(),
   score: z.number().optional(),
 });
@@ -30,6 +32,11 @@ export type ExaSearchOptions = {
   includeDomains?: string[];
   excludeDomains?: string[];
   startPublishedDate?: string;
+  contents?: {
+    highlights?: { numSentences?: number; highlightsPerUrl?: number };
+    summary?: boolean;
+    text?: { maxCharacters?: number };
+  };
 };
 
 // ============================================================================
@@ -89,17 +96,17 @@ export class ExaClient {
         },
         body: JSON.stringify({
           query,
-          num_results: maxResults,
+          numResults: maxResults,
           type,
           category,
-          include_domains:
+          includeDomains:
             includeDomains.length > 0 ? includeDomains : undefined,
-          exclude_domains:
+          excludeDomains:
             excludeDomains.length > 0 ? excludeDomains : undefined,
-          start_published_date: startPublishedDate,
-          use_autoprompt: true,
-          text: {
-            max_characters: 500,
+          startPublishedDate,
+          useAutoprompt: true,
+          contents: options.contents || {
+            highlights: { numSentences: 1, highlightsPerUrl: 1 }
           },
         }),
       });
@@ -122,13 +129,60 @@ export class ExaClient {
   }
 
   /**
+   * Get contents for specific URLs
+   */
+  async getContents(
+    urls: string[],
+    options: { text?: boolean } = {}
+  ): Promise<ExaResult[]> {
+    const { text = true } = options;
+
+    try {
+      const response = await fetch(`${this.baseUrl}/contents`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": this.apiKey,
+        },
+        body: JSON.stringify({
+          urls,
+          text,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Exa API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.results as ExaResult[];
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        throw new Error(`Exa response validation failed: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Normalize Exa result to common format
    */
   private normalizeResult(result: ExaResult): ExaSearchResult {
+    // Use highlights or summary for snippet, fallback to text
+    let snippet = "";
+    if (Array.isArray(result.highlights) && result.highlights.length > 0) {
+      snippet = result.highlights.join(" … ");
+    } else if (result.summary) {
+      snippet = result.summary;
+    } else if (result.text) {
+      snippet = result.text.slice(0, MAX_SNIPPET_LENGTH);
+    }
+
     return {
       url: result.url,
       title: result.title,
-      snippet: result.text?.slice(0, MAX_SNIPPET_LENGTH) || "", // Limit snippet length
+      snippet,
       publishedAt: result.publishedDate,
       score: result.score,
       source: "exa",

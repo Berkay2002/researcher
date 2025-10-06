@@ -28,6 +28,7 @@ export type TavilySearchOptions = {
   searchDepth?: "basic" | "advanced";
   includeDomains?: string[];
   excludeDomains?: string[];
+  includeRawContent?: boolean;
 };
 
 // ============================================================================
@@ -38,9 +39,17 @@ export type TavilySearchResult = {
   url: string;
   title: string;
   snippet: string;
+  content?: string;
   publishedAt?: string;
   score?: number;
   source: "tavily";
+};
+
+export type TavilyExtractResult = {
+  url: string;
+  title?: string;
+  content?: string;
+  published_date?: string;
 };
 
 // ============================================================================
@@ -74,6 +83,7 @@ export class TavilyClient {
       searchDepth = "basic",
       includeDomains = [],
       excludeDomains = [],
+      includeRawContent = false,
     } = options;
 
     try {
@@ -91,7 +101,7 @@ export class TavilyClient {
             includeDomains.length > 0 ? includeDomains : undefined,
           exclude_domains:
             excludeDomains.length > 0 ? excludeDomains : undefined,
-          include_raw_content: false,
+          include_raw_content: includeRawContent,
           include_images: false,
         }),
       });
@@ -114,6 +124,37 @@ export class TavilyClient {
   }
 
   /**
+   * Extract content from specific URLs
+   */
+  async extract(urls: string[] | string): Promise<TavilyExtractResult[]> {
+    const urlList = Array.isArray(urls) ? urls : [urls];
+
+    try {
+      const response = await fetch(`${this.baseUrl}/v1/extract`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          api_key: this.apiKey,
+          urls: urlList,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Tavily Extract API error (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.results as TavilyExtractResult[];
+    } catch (error) {
+      console.error("[TavilyClient] Extract failed:", error);
+      throw error;
+    }
+  }
+
+  /**
    * Normalize Tavily result to common format
    */
   private normalizeResult(result: TavilyResult): TavilySearchResult {
@@ -121,6 +162,7 @@ export class TavilyClient {
       url: result.url,
       title: result.title,
       snippet: result.content.slice(0, MAX_SNIPPET_LENGTH), // Limit snippet length
+      content: result.content, // Full content if includeRawContent was true
       publishedAt: result.published_date,
       score: result.score,
       source: "tavily",

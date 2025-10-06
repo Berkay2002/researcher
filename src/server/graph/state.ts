@@ -95,7 +95,31 @@ export const PlanSchema = z.object({
 });
 
 /**
- * Search result from external APIs
+ * Provider-agnostic canonical record for two-pass search
+ */
+export const UnifiedSearchDocSchema = z.object({
+  id: z.string(),
+  provider: z.enum(["tavily", "exa"]),
+  query: z.string(),
+  url: z.string(),
+  hostname: z.string(),
+  title: z.string().nullable().optional(),
+  excerpt: z.string().nullable().optional(), // snippet / highlights joined
+  content: z.string().nullable().optional(), // filled only after enrichment
+  highlights: z.array(z.string()).optional(),
+  author: z.string().nullable().optional(),
+  publishedAt: z.string().optional(), // ISO
+  providerScore: z.number().nullable().optional(),
+  score: z.number().nullable().optional(), // normalized 0–1 after batch norm
+  favicon: z.string().nullable().optional(),
+  images: z.array(z.string()).optional(),
+  rank: z.number().optional(),
+  fetchedAt: z.string(),
+  sourceMeta: z.record(z.string(), z.unknown()).optional(),
+});
+
+/**
+ * Search result from external APIs (legacy, for backward compatibility)
  */
 export const SearchResultSchema = z.object({
   url: z.string(),
@@ -114,8 +138,8 @@ export const ChunkSchema = z.object({
 });
 
 /**
- Processed evidence with content hashes
- */
+  Processed evidence with content hashes
+  */
 export const EvidenceSchema = z.object({
   url: z.string(),
   title: z.string(),
@@ -155,11 +179,34 @@ export type Question = z.infer<typeof QuestionSchema>;
 export type QuestionAnswer = z.infer<typeof QuestionAnswerSchema>;
 export type UserInputs = z.infer<typeof UserInputsSchema>;
 export type Plan = z.infer<typeof PlanSchema>;
+export type UnifiedSearchDoc = z.infer<typeof UnifiedSearchDocSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type Chunk = z.infer<typeof ChunkSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Citation = z.infer<typeof CitationSchema>;
 export type Draft = z.infer<typeof DraftSchema>;
+
+// ============================================================================
+// Research State for Two-Pass Search
+// ============================================================================
+
+/**
+ * Research state for the two-pass search architecture
+ */
+export const ResearchStateSchema = z.object({
+  // Phase A (discovery)
+  queries: z.array(z.string()).optional(),
+  discovery: z.array(UnifiedSearchDocSchema).optional(),
+  // Phase B (reason/curate)
+  selected: z.array(z.string()).optional(), // array of doc ids (chosen for enrichment)
+  rationale: z.string().optional(), // why these were chosen (LLM string)
+  // Phase C (enrichment)
+  enriched: z.array(UnifiedSearchDocSchema).optional(), // same docs but with `content` hydrated
+  // Phase D (final)
+  final: z.array(UnifiedSearchDocSchema).optional(), // dedup + authority/recency re-rank
+});
+
+export type ResearchState = z.infer<typeof ResearchStateSchema>;
 
 // ============================================================================
 // Planning Session Types
@@ -225,7 +272,14 @@ export const ParentStateAnnotation = Annotation.Root({
     default: () => [],
   }),
 
-  // Processed evidence with content
+  // Research state for two-pass search architecture
+  // Replaces entire research state when updated
+  research: Annotation<ResearchState | null>({
+    reducer: (_, next) => next,
+    default: () => null,
+  }),
+
+  // Processed evidence with content (legacy, for backward compatibility)
   // Accumulates processed documents after harvesting
   evidence: Annotation<Evidence[]>({
     reducer: (prev, next) => [...(prev ?? []), ...next],
