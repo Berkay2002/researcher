@@ -46,16 +46,32 @@ function buildParentGraph() {
   const factcheck = buildFactcheckSubgraph();
   const writer = buildWriterSubgraph();
 
-  // Build parent graph
+
+  // Build parent graph with namespace collision protection
+  const CHANNELS = new Set(Object.keys(ParentStateAnnotation.spec));
+
+  function assertNoNameClash(name: string) {
+    if (CHANNELS.has(name)) {
+      throw new Error(`Node name "${name}" clashes with state channel`);
+    }
+  }
+
+  // Verify node names don't clash with state channels
+  assertNoNameClash("planGate");
+  assertNoNameClash("planner");
+  assertNoNameClash("researchFlow");
+  assertNoNameClash("factcheck");
+  assertNoNameClash("writer");
+
   const builder = new StateGraph(ParentStateAnnotation)
     .addNode("planGate", planGate)
-    .addNode("planner", planner, { ends: ["planner", "research"] })
-    .addNode("research", research)
+    .addNode("planner", planner, { ends: ["planner", "researchFlow"] })
+    .addNode("researchFlow", research)
     .addNode("factcheck", factcheck)
     .addNode("writer", writer)
     .addEdge(START, "planGate")
     .addEdge("planGate", "planner")
-    .addEdge("research", "factcheck")
+    .addEdge("researchFlow", "factcheck")
     .addEdge("factcheck", "writer")
     .addEdge("writer", END);
 

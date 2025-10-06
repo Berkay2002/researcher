@@ -8,6 +8,9 @@ const BATCH_SIZE = 5; // Exa has a 5 req/sec limit
 const BATCH_DELAY_MS = 1000; // 1 second between batches
 const MAX_RESULTS_PER_QUERY = 10;
 
+// Regex for URL normalization (defined at top level to avoid performance issues)
+const TRAILING_SLASH_REGEX = /\/+$/u;
+
 /**
  * MetaSearch Node
  *
@@ -43,11 +46,15 @@ export async function metaSearch(
 
   // Batch queries to respect Exa's 5 req/sec rate limit
   // Execute in batches of 5 with 1-second delay between batches
-  const allResults: PromiseSettledResult<Awaited<ReturnType<typeof searchAll>>>[] = [];
+  const allResults: PromiseSettledResult<
+    Awaited<ReturnType<typeof searchAll>>
+  >[] = [];
 
   for (let i = 0; i < queries.length; i += BATCH_SIZE) {
     const batch = queries.slice(i, i + BATCH_SIZE);
-    console.log(`[metaSearch] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(queries.length / BATCH_SIZE)} (${batch.length} queries)`);
+    console.log(
+      `[metaSearch] Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(queries.length / BATCH_SIZE)} (${batch.length} queries)`
+    );
 
     // Execute batch in parallel
     const batchResults = await Promise.allSettled(
@@ -65,21 +72,36 @@ export async function metaSearch(
 
     // Add delay between batches (except after last batch)
     if (i + BATCH_SIZE < queries.length) {
-      console.log(`[metaSearch] Waiting ${BATCH_DELAY_MS}ms before next batch...`);
-      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+      console.log(
+        `[metaSearch] Waiting ${BATCH_DELAY_MS}ms before next batch...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY_MS));
     }
   }
 
   // Flatten and deduplicate results
-  const searchResults = allResults
+  const unifiedDocs = allResults
     .filter((result) => result.status === "fulfilled")
     .flatMap((result) => (result.status === "fulfilled" ? result.value : []));
 
-  console.log(
-    `[metaSearch] Found ${searchResults.length} total search results`
-  );
+  // Optional: de-dupe across queries by normalized URL
+  const seen = new Set<string>();
+  const discovery = unifiedDocs.filter((d) => {
+    const key = d.url.toLowerCase().replace(TRAILING_SLASH_REGEX, "");
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 
+  console.log(`[metaSearch] Found ${discovery.length} total discovery docs`);
+
+  // Write to parent research slice (unified format)
   return {
-    searchResults,
+    research: {
+      ...(state.research ?? {}),
+      discovery,
+    },
   };
 }

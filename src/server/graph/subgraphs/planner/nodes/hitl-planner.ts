@@ -17,7 +17,7 @@ import {
 
 export async function hitlPlanner(
   state: ParentState
-): Promise<Partial<ParentState> | Command<"planner" | "research">> {
+): Promise<Partial<ParentState> | Command<"planner" | "researchFlow">> {
   const { goal } = state.userInputs;
   if (!goal) {
     throw new Error("No goal provided in userInputs");
@@ -56,7 +56,7 @@ export async function hitlPlanner(
           plan,
           planning: { ...state.planning, analysis: promptAnalysis },
         },
-        goto: "research",
+        goto: "researchFlow",
         graph: Command.PARENT,
       });
     }
@@ -148,7 +148,7 @@ export async function hitlPlanner(
       planning: { analysis, questions: cachedQuestions, answers },
       userInputs: { ...state.userInputs, plannerAnswers: answers }, // optional mirror for UI/history
     },
-    goto: "research",
+    goto: "researchFlow",
     graph: Command.PARENT,
   });
 }
