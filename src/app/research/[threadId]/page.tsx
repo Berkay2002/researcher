@@ -327,6 +327,9 @@ export default function ThreadViewPage() {
     // This prevents connecting during the initial graph execution before interrupt
     const shouldStream = !hasInterrupt && !isCompleted && hasContent;
 
+    // Don't reconnect if stream has already completed
+    const isStreamCompleted = sseStream.status === "completed";
+
     if (isDev) {
       // eslint-disable-next-line no-console
       console.log("[ThreadView] Stream state", {
@@ -337,14 +340,15 @@ export default function ThreadViewPage() {
         hasInterrupt,
         isCompleted,
         hasContent,
+        isStreamCompleted,
       });
     }
 
-    if (shouldStream && sseStream.status === "idle") {
-      // Connect only when thread is running and SSE is idle
+    if (shouldStream && sseStream.status === "idle" && !isStreamCompleted) {
+      // Connect only when thread is running and SSE is idle (and hasn't completed)
       sseStream.connect();
-    } else if (!shouldStream && sseStream.status !== "idle") {
-      // Disconnect when interrupted or completed
+    } else if (!shouldStream && sseStream.status !== "idle" && !isStreamCompleted) {
+      // Disconnect when interrupted or completed (but don't disconnect if already completed)
       sseStream.disconnect();
     }
   }, [
