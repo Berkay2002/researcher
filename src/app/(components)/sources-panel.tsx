@@ -48,6 +48,7 @@ export type SourcesPanelProps = {
  */
 const FAVICON_SIZE = 16;
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <It is fine>
 export function SourcesPanel({
   sources,
   citations,
@@ -125,7 +126,7 @@ export function SourcesPanel({
     return (
       <div className={cn("flex h-full flex-col", className)}>
         {/* Collapsed Header - matches expanded header height and icon position */}
-        <div className="flex h-12 items-center justify-start px-4">
+        <div className="flex h-15 items-center justify-start px-4">
           <Button
             aria-label="Open sources sidebar"
             onClick={() => onSidebarOpenChange?.(true)}
@@ -137,11 +138,8 @@ export function SourcesPanel({
           </Button>
         </div>
 
-        {/* Spacing between collapse icon and filter icon - matches expanded state */}
-        <div className="h-5" />
-
         {/* Collapsed Filter Area - matches expanded filter area and icon position */}
-        <div className="flex h-12 items-center justify-start px-4">
+        <div className="flex h-6 items-center justify-start px-4">
           <Button
             aria-label="Toggle filters"
             className={cn(showFilters && "bg-accent")}
