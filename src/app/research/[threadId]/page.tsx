@@ -70,6 +70,9 @@ export default function ThreadViewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
   const [hasPlannerCompleted, setHasPlannerCompleted] = useState(false);
+  const [scrollToSourceIndex, setScrollToSourceIndex] = useState<
+    number | undefined
+  >(undefined);
 
   const isDev = process.env.NODE_ENV !== "production";
 
@@ -473,6 +476,23 @@ export default function ThreadViewPage() {
     handleRightSidebarOpenChange(!isRightPanelVisible);
   }, [handleRightSidebarOpenChange, isRightPanelVisible]);
 
+  const handleCitationClick = useCallback(
+    (sourceIndex: number) => {
+      const SCROLL_RESET_DELAY_MS = 100;
+      // Open sources panel if closed
+      if (!isRightPanelVisible) {
+        setIsRightPanelVisible(true);
+      }
+      // Trigger scroll to source
+      setScrollToSourceIndex(sourceIndex);
+      // Reset after a delay to allow re-clicking the same citation
+      setTimeout(() => {
+        setScrollToSourceIndex(undefined);
+      }, SCROLL_RESET_DELAY_MS);
+    },
+    [isRightPanelVisible]
+  );
+
   if (!threadId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -524,6 +544,11 @@ export default function ThreadViewPage() {
                       isSourcesPanelVisible={isRightPanelVisible}
                       key={message.id}
                       message={message}
+                      onCitationClick={
+                        message.role === "assistant"
+                          ? handleCitationClick
+                          : undefined
+                      }
                       onToggleSourcesPanel={
                         message.role === "assistant"
                           ? handleToggleSourcesPanel
@@ -569,7 +594,7 @@ export default function ThreadViewPage() {
 
           {/* Run Log */}
           <div className="flex-shrink-0">
-            <RunLog entries={sseStream.runLog} />
+            <RunLog entries={sseStream.runLog} isDev={isDev} />
           </div>
 
           {/* Prompt Input - Hide when there's an active interrupt */}
@@ -621,6 +646,7 @@ export default function ThreadViewPage() {
             isSidebarOpen={isRightPanelVisible}
             onSidebarOpenChange={handleRightSidebarOpenChange}
             onTogglePin={handleTogglePin}
+            scrollToSourceIndex={scrollToSourceIndex}
             sources={sourcesWithPinned}
           />
         ) : undefined

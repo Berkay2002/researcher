@@ -8,7 +8,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,6 +35,7 @@ export type SourcesPanelProps = {
   className?: string;
   onSidebarOpenChange?: (open: boolean) => void;
   isSidebarOpen?: boolean;
+  scrollToSourceIndex?: number;
 };
 
 /**
@@ -56,15 +57,36 @@ export function SourcesPanel({
   className,
   onSidebarOpenChange,
   isSidebarOpen = true,
+  scrollToSourceIndex,
 }: SourcesPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const sourceRefs = useRef<Map<number, HTMLDivElement>>(new Map());
 
   const handleToggleSidebar = useCallback(() => {
     onSidebarOpenChange?.(!isSidebarOpen);
   }, [isSidebarOpen, onSidebarOpenChange]);
+
+  // Scroll to specific source when requested
+  useEffect(() => {
+    const HIGHLIGHT_DURATION_MS = 2000;
+    if (scrollToSourceIndex !== undefined && scrollToSourceIndex >= 0) {
+      const element = sourceRefs.current.get(scrollToSourceIndex);
+      if (element) {
+        element.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+        // Add highlight effect
+        element.classList.add("ring-2", "ring-primary", "ring-offset-2");
+        setTimeout(() => {
+          element.classList.remove("ring-2", "ring-primary", "ring-offset-2");
+        }, HIGHLIGHT_DURATION_MS);
+      }
+    }
+  }, [scrollToSourceIndex]);
 
   const pinnedCount = sources.filter((s) => s.isPinned).length;
   const clearFilters = () => {
@@ -299,12 +321,19 @@ export function SourcesPanel({
                 )}
               </div>
             ) : (
-              filteredSources.map((source) => (
-                <SourceCard
+              filteredSources.map((source, index) => (
+                <div
                   key={source.id}
-                  onTogglePin={onTogglePin}
-                  source={source}
-                />
+                  ref={(el) => {
+                    if (el) {
+                      sourceRefs.current.set(index, el);
+                    } else {
+                      sourceRefs.current.delete(index);
+                    }
+                  }}
+                >
+                  <SourceCard onTogglePin={onTogglePin} source={source} />
+                </div>
               ))
             )}
           </PanelContent>

@@ -18,6 +18,7 @@ export type ResearchMessageProps = {
   sources?: SourceCardData[];
   isSourcesPanelVisible?: boolean;
   onToggleSourcesPanel?: () => void;
+  onCitationClick?: (sourceIndex: number) => void;
   className?: string;
 };
 
@@ -34,6 +35,7 @@ export function ResearchMessage({
   sources,
   isSourcesPanelVisible,
   onToggleSourcesPanel,
+  onCitationClick,
   className,
 }: ResearchMessageProps) {
   const isUser = message.role === "user";
@@ -64,6 +66,7 @@ export function ResearchMessage({
             <ResearchReportCard
               content={message.content}
               isSourcesPanelVisible={Boolean(isSourcesPanelVisible)}
+              onCitationClick={onCitationClick}
               onToggleSourcesPanel={handleToggleSources}
               sources={sources || []}
             />
