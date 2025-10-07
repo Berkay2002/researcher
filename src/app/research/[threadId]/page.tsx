@@ -55,6 +55,7 @@ import {
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Complexity is acceptable for main page component>
 export default function ThreadViewPage() {
   const RESUME_CONNECT_DELAY_MS = 100; // Delay after resume before reconnecting SSE
+  const INTERRUPT_POLL_INTERVAL_MS = 2000; // Poll every 2 seconds when waiting for interrupt
   const params = useParams();
   const searchParams = useSearchParams();
   const threadId = params?.threadId as string | undefined;
@@ -275,6 +276,34 @@ export default function ThreadViewPage() {
   }, [snapshot, isDev]);
 
   /**
+   * Poll for interrupt when graph is executing
+   * This handles the case where start route creates an interrupt
+   * but state endpoint hasn't seen it yet due to timing
+   */
+  useEffect(() => {
+    if (!snapshot) {
+      return;
+    }
+
+    // Check if graph is executing and might interrupt soon
+    const isExecuting = snapshot.next && snapshot.next.length > 0;
+    const hasNoContent = !snapshot.values?.plan && !snapshot.values?.draft;
+    const noInterruptYet = !snapshot.interrupt;
+
+    if (isExecuting && hasNoContent && noInterruptYet) {
+      // Poll while waiting for interrupt
+      const pollTimer = setTimeout(() => {
+        if (isDev) {
+          console.log("[ThreadView] Polling for interrupt...");
+        }
+        refetch();
+      }, INTERRUPT_POLL_INTERVAL_MS);
+
+      return () => clearTimeout(pollTimer);
+    }
+  }, [snapshot, refetch, isDev]);
+
+  /**
    * Manage SSE connection based on thread state
    * Only connect when thread is actively running (not interrupted, not completed)
    */
@@ -285,7 +314,18 @@ export default function ThreadViewPage() {
 
     const hasInterrupt = Boolean(snapshot.interrupt);
     const isCompleted = Boolean(snapshot.next && snapshot.next.length === 0);
-    const shouldStream = !hasInterrupt && !isCompleted;
+    
+    // Check if we have any real content (plan, draft, or research)
+    // This indicates the graph has progressed beyond the initial planning stage
+    const hasContent = Boolean(
+      snapshot.values?.plan ||
+      snapshot.values?.draft ||
+      snapshot.values?.research
+    );
+    
+    // Only stream if: not interrupted, not completed, and has progressed
+    // This prevents connecting during the initial graph execution before interrupt
+    const shouldStream = !hasInterrupt && !isCompleted && hasContent;
 
     if (isDev) {
       // eslint-disable-next-line no-console
@@ -296,13 +336,14 @@ export default function ThreadViewPage() {
         shouldStream,
         hasInterrupt,
         isCompleted,
+        hasContent,
       });
     }
 
     if (shouldStream && sseStream.status === "idle") {
       // Connect only when thread is running and SSE is idle
       sseStream.connect();
-    } else if (!shouldStream) {
+    } else if (!shouldStream && sseStream.status !== "idle") {
       // Disconnect when interrupted or completed
       sseStream.disconnect();
     }

@@ -45,28 +45,56 @@ export async function GET(
       snapshotKeys: Object.keys(snapshot),
     });
 
-    // Extract interrupt data from multiple possible locations in LangGraph state
-    // Check tasks for interrupt metadata (new LangGraph versions)
-    const interruptFromTasks =
-      Array.isArray(snapshot.tasks) &&
-      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
-        ?.interrupts?.[0]?.value ??
-        null);
+    // Debug: Log detailed task structure
+    if (Array.isArray(snapshot.tasks) && snapshot.tasks.length > 0) {
+      const firstTask = snapshot.tasks[0] as any;
+      console.log("[API] State route tasks detail:", {
+        firstTask: {
+          keys: Object.keys(firstTask),
+          hasInterrupts: 'interrupts' in firstTask,
+          interruptsLength: firstTask.interrupts?.length ?? 0,
+          interruptsValue: JSON.stringify(firstTask.interrupts),
+          taskState: firstTask.state,
+        },
+      });
+    }
 
-    // Check for explicit interrupts array (some LangGraph versions)
+    // Check if graph is still executing (not completed)
+    const isExecuting = snapshot.next && snapshot.next.length > 0;
+    const hasEmptyInterruptsArray = Array.isArray(snapshot.tasks) && 
+      snapshot.tasks.length > 0 &&
+      'interrupts' in snapshot.tasks[0] &&
+      Array.isArray((snapshot.tasks[0] as any).interrupts) &&
+      (snapshot.tasks[0] as any).interrupts.length === 0;
+
+    // If graph is executing and has empty interrupts array, it might be about to interrupt
+    // Return null for now but log for debugging
+    if (isExecuting && hasEmptyInterruptsArray) {
+      console.log("[API] Graph is executing with empty interrupts array - interrupt may be pending");
+    }
+
+    // Extract interrupt data from multiple possible locations in LangGraph state
+    // Try multiple detection strategies based on LangGraph version
+    
+    // Strategy 1: Check tasks array for interrupts (most common in current versions)
+    let interruptFromTasks: any = null;
+    if (Array.isArray(snapshot.tasks)) {
+      const taskWithInterrupt = (snapshot.tasks as any[]).find(
+        (t: any) => Array.isArray(t?.interrupts) && t.interrupts.length > 0
+      );
+      if (taskWithInterrupt) {
+        // Try .value property first (wrapped format)
+        interruptFromTasks = taskWithInterrupt.interrupts[0]?.value ?? taskWithInterrupt.interrupts[0] ?? null;
+      }
+    }
+
+    // Strategy 2: Check for explicit interrupts array (some LangGraph versions)
     const interruptFromTop = (snapshot as any).interrupts?.[0]?.value ?? null;
 
-    // Check for __interrupt__ in values (legacy/compatibility)
+    // Strategy 3: Check for __interrupt__ in values (legacy/compatibility)
     const interruptFromValues = (snapshot.values as any).__interrupt__ ?? null;
 
-    // Additional: Check if the interrupt is stored directly in tasks without .value wrapper
-    const interruptFromTasksDirect =
-      Array.isArray(snapshot.tasks) &&
-      ((snapshot.tasks as any[])?.find((t: any) => t?.interrupts?.length > 0)
-        ?.interrupts?.[0] ??
-        null);
-
-    // Check for interrupt in the snapshot itself (LangGraph interrupt() function)
+    // Strategy 4: Check for interrupt in the snapshot itself (LangGraph interrupt() function)
     const interruptFromSnapshot = (snapshot as any).interrupt ?? null;
 
     // Use the first available interrupt source
@@ -75,7 +103,6 @@ export async function GET(
       interruptFromTasks ??
       interruptFromTop ??
       interruptFromValues ??
-      interruptFromTasksDirect ??
       null;
 
     console.log("[API] Interrupt detection results:");
@@ -83,9 +110,6 @@ export async function GET(
     console.log(`- From tasks: ${interruptFromTasks ? "FOUND" : "null"}`);
     console.log(`- From top: ${interruptFromTop ? "FOUND" : "null"}`);
     console.log(`- From values: ${interruptFromValues ? "FOUND" : "null"}`);
-    console.log(
-      `- From tasks direct: ${interruptFromTasksDirect ? "FOUND" : "null"}`
-    );
     console.log(`- Final result: ${interruptData ? "FOUND" : "null"}`);
 
     return NextResponse.json({

@@ -538,6 +538,14 @@ function processChunkByMode(
   streamMode: string,
   chunk: unknown
 ): SSEEvent | null {
+  // Filter out AIMessageChunk objects that don't have useful content
+  if (typeof streamMode === "object" && streamMode !== null) {
+    const chunkStr = String(streamMode);
+    if (chunkStr === "[object AIMessageChunk]" || chunkStr.includes("MessageChunk")) {
+      return null;
+    }
+  }
+
   switch (streamMode) {
     case "updates":
       return processChunk(chunk);
@@ -546,8 +554,11 @@ function processChunkByMode(
     case "custom":
       return processCustomEvent(chunk);
     default:
-      console.warn(`[SSE] Unknown stream mode: ${streamMode}`);
-      return processCustomEvent(chunk);
+      // Only log unknown modes that aren't system metadata
+      if (typeof streamMode === "string" && !streamMode.includes("token")) {
+        console.warn(`[SSE] Unknown stream mode: ${streamMode}`);
+      }
+      return null;
   }
 }
 

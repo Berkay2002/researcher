@@ -97,6 +97,8 @@ export function useSSEStream({
 
   const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY_MS = 2000;
+  const last409TimeRef = useRef<number>(0);
+  const MIN_409_RETRY_INTERVAL_MS = 5000; // Wait at least 5 seconds before retrying after 409
 
   /**
    * Disconnect from SSE stream
@@ -324,6 +326,18 @@ export function useSSEStream({
       return;
     }
 
+    // Don't reconnect too soon after a 409 (interrupt) response
+    const timeSinceLast409 = Date.now() - last409TimeRef.current;
+    if (last409TimeRef.current > 0 && timeSinceLast409 < MIN_409_RETRY_INTERVAL_MS) {
+      if (isDev) {
+        console.log("[useSSEStream] Skipping reconnect, too soon after 409", {
+          timeSinceLast409,
+          minInterval: MIN_409_RETRY_INTERVAL_MS,
+        });
+      }
+      return;
+    }
+
     if (isDev) {
       console.log("[useSSEStream] Connecting to stream", { threadId });
     }
@@ -438,7 +452,11 @@ export function useSSEStream({
 
       // For interrupt (409) responses, don't attempt reconnection
       // The UI will handle reconnecting when the interrupt is resolved
-      if (eventSource.readyState === EventSource.CLOSED) {
+      // EventSource closes automatically on 409, and we shouldn't retry
+      if (eventSource.readyState === EventSource.CLOSED && !isCompletedRef.current) {
+        // Record this 409 to prevent rapid reconnection attempts
+        last409TimeRef.current = Date.now();
+        
         setState((prev) => {
           statusRef.current = "idle";
           return {

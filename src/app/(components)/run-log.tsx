@@ -22,6 +22,7 @@ import type { RunLogEntry } from "@/types/ui";
 export type RunLogProps = {
   entries: RunLogEntry[];
   className?: string;
+  isDev?: boolean;
 };
 
 /**
@@ -34,8 +35,8 @@ export type RunLogProps = {
  * - Tool calls (optional)
  * - Cost tracking (optional)
  */
-export function RunLog({ entries, className }: RunLogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function RunLog({ entries, className, isDev = false }: RunLogProps) {
+  const [isOpen, setIsOpen] = useState(isDev);
 
   if (entries.length === 0) {
     return null;
