@@ -347,7 +347,11 @@ export default function ThreadViewPage() {
     if (shouldStream && sseStream.status === "idle" && !isStreamCompleted) {
       // Connect only when thread is running and SSE is idle (and hasn't completed)
       sseStream.connect();
-    } else if (!shouldStream && sseStream.status !== "idle" && !isStreamCompleted) {
+    } else if (
+      !shouldStream &&
+      sseStream.status !== "idle" &&
+      !isStreamCompleted
+    ) {
       // Disconnect when interrupted or completed (but don't disconnect if already completed)
       sseStream.disconnect();
     }
