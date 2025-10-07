@@ -11,11 +11,6 @@ import {
   type InterruptResponse,
 } from "@/app/(components)/InterruptPrompt";
 import { ResearchMessage } from "@/app/(components)/research-message";
-import {
-  Message,
-  MessageAvatar,
-  MessageContent,
-} from "@/components/ai-elements/message";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
 import { ThreadList } from "@/app/(components)/thread-list";
@@ -24,6 +19,11 @@ import {
   ConversationContent,
   ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageAvatar,
+  MessageContent,
+} from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputBody,
