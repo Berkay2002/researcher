@@ -111,14 +111,13 @@ export function validateCitationAgainstEvidence(
   }
 
   // Check if excerpt exists in evidence content
-  const excerptExists =
-    evidence.chunks.some((chunk) =>
-      chunk.content
-        .toLowerCase()
-        .includes(
-          citation.excerpt.toLowerCase().substring(0, EXCERPT_SUBSTRING_LENGTH)
-        )
-    );
+  const excerptExists = evidence.chunks.some((chunk) =>
+    chunk.content
+      .toLowerCase()
+      .includes(
+        citation.excerpt.toLowerCase().substring(0, EXCERPT_SUBSTRING_LENGTH)
+      )
+  );
 
   if (!excerptExists) {
     return {

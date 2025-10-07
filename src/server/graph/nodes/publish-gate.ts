@@ -3,7 +3,7 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 import { interrupt } from "@langchain/langgraph";
-import type { ParentState, Draft, Evidence } from "../state";
+import type { Draft, Evidence, ParentState } from "../state";
 
 /**
  * Publish Gate Node
@@ -108,7 +108,9 @@ function runDeterministicChecks(state: ParentState): {
   }
 
   // Check 6: Section completeness (basic check)
-  const sectionsOk = Boolean(draft?.text.length && draft.text.length > MIN_DRAFT_LENGTH);
+  const sectionsOk = Boolean(
+    draft?.text.length && draft.text.length > MIN_DRAFT_LENGTH
+  );
 
   const passed = blockingIssues.length === 0;
 
@@ -131,7 +133,10 @@ function generatePreview(draft: Draft | null): string {
   if (!draft?.text) {
     return "No draft available";
   }
-  return draft.text.substring(0, PREVIEW_LENGTH) + (draft.text.length > PREVIEW_LENGTH ? PREVIEW_SUFFIX : "");
+  return (
+    draft.text.substring(0, PREVIEW_LENGTH) +
+    (draft.text.length > PREVIEW_LENGTH ? PREVIEW_SUFFIX : "")
+  );
 }
 
 /**
@@ -178,7 +183,8 @@ export async function publishGate(
 
     // Step 2: Check if auto-publish is allowed
     const policyAllowsAuto =
-      (state.plan?.constraints as Record<string, unknown>)?.autoPublish !== false;
+      (state.plan?.constraints as Record<string, unknown>)?.autoPublish !==
+      false;
 
     if (passed && policyAllowsAuto) {
       console.log("[publishGate] Auto-publishing - all checks passed");

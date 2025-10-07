@@ -20,7 +20,9 @@ export async function GET(
     const { threadId } = await params;
 
     // Import the thread history store functions
-    const { getThreadHistoryEntry } = await import("@/lib/store/thread-history");
+    const { getThreadHistoryEntry } = await import(
+      "@/lib/store/thread-history"
+    );
 
     const thread = getThreadHistoryEntry(threadId);
 
@@ -65,7 +67,9 @@ export async function PUT(
     const now = new Date().toISOString();
 
     // Import the thread history store functions
-    const { getThreadHistoryEntry, setThreadHistoryEntry } = await import("@/lib/store/thread-history");
+    const { getThreadHistoryEntry, setThreadHistoryEntry } = await import(
+      "@/lib/store/thread-history"
+    );
 
     const existingThread = getThreadHistoryEntry(threadId);
 
@@ -112,7 +116,9 @@ export async function DELETE(
     const { threadId } = await params;
 
     // Import the thread history store functions
-    const { getThreadHistoryEntry, deleteThreadHistoryEntry } = await import("@/lib/store/thread-history");
+    const { getThreadHistoryEntry, deleteThreadHistoryEntry } = await import(
+      "@/lib/store/thread-history"
+    );
 
     const existed = getThreadHistoryEntry(threadId) !== undefined;
 

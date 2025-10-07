@@ -24,8 +24,8 @@ export const AIImage = ({
       "h-auto max-w-full overflow-hidden rounded-md",
       props.className
     )}
+    height={height}
     src={`data:${mediaType};base64,${base64}`}
     width={width}
-    height={height}
   />
 );

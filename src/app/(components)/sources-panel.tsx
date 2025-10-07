@@ -157,7 +157,10 @@ export function SourcesPanel({
         </TabsList>
 
         {/* Sources Tab */}
-        <TabsContent className="flex-1 overflow-hidden" value="sources">
+        <TabsContent
+          className="flex flex-1 flex-col overflow-hidden"
+          value="sources"
+        >
           {/* Filters (collapsible) */}
           {showFilters && (
             <div className="space-y-3 border-b px-4 py-3">
@@ -248,7 +251,10 @@ export function SourcesPanel({
         </TabsContent>
 
         {/* Citations Tab */}
-        <TabsContent className="flex-1 overflow-hidden" value="citations">
+        <TabsContent
+          className="flex flex-1 flex-col overflow-hidden"
+          value="citations"
+        >
           <PanelContent className="space-y-2">
             {citations && citations.length > 0 ? (
               citations.map((citation, index) => (

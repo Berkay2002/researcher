@@ -95,7 +95,9 @@ function performDeterministicChecks(
 
   // Minimum citation requirement (more lenient)
   if (draft.citations.length === 0 && evidence.length > 0) {
-    issues.push("No citations extracted from available evidence - consider adding references to support claims");
+    issues.push(
+      "No citations extracted from available evidence - consider adding references to support claims"
+    );
   }
 
   // Confidence score threshold (more lenient)

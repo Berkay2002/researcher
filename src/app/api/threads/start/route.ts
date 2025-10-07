@@ -16,16 +16,22 @@ async function createThreadHistoryEntry(data: {
   metadata?: any;
 }) {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/history`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
-    });
+    const response = await fetch(
+      `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/history`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      }
+    );
 
     if (!response.ok) {
-      console.warn("[API] Failed to create thread history entry:", await response.text());
+      console.warn(
+        "[API] Failed to create thread history entry:",
+        await response.text()
+      );
     }
   } catch (error) {
     console.warn("[API] Error creating thread history entry:", error);
@@ -86,7 +92,10 @@ export async function POST(req: NextRequest) {
     // Check if we're in Plan mode (need to run and check for interrupts)
     if (validation.data.modeOverride === "plan") {
       // First seed the initial state like Auto mode
-      await graph.updateState({ configurable: { thread_id: threadId } }, initial);
+      await graph.updateState(
+        { configurable: { thread_id: threadId } },
+        initial
+      );
 
       // Then execute graph and wait for initial result
       // biome-ignore lint/correctness/noUnusedVariables: <Result is not used>

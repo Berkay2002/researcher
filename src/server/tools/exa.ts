@@ -28,7 +28,16 @@ export type ExaSearchOptions = {
   query: string;
   maxResults?: number;
   type?: "keyword" | "neural" | "fast" | "auto";
-  category?: "company" | "research paper" | "news" | "pdf" | "github" | "tweet" | "personal site" | "linkedin profile" | "financial report";
+  category?:
+    | "company"
+    | "research paper"
+    | "news"
+    | "pdf"
+    | "github"
+    | "tweet"
+    | "personal site"
+    | "linkedin profile"
+    | "financial report";
   includeDomains?: string[];
   excludeDomains?: string[];
   startPublishedDate?: string;
@@ -117,7 +126,7 @@ export class ExaClient {
           endCrawlDate,
           userLocation,
           contents: options.contents || {
-            highlights: { numSentences: 1, highlightsPerUrl: 1 }
+            highlights: { numSentences: 1, highlightsPerUrl: 1 },
           },
         }),
       });

@@ -4,13 +4,12 @@
 
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/(components)/app-shell";
 import {
   InterruptPrompt,
   type InterruptResponse,
 } from "@/app/(components)/InterruptPrompt";
-import { ResearchStatusBar } from "@/app/(components)/research-status-bar";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
 import { ThreadList } from "@/app/(components)/thread-list";
@@ -35,7 +34,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSSEStream } from "@/lib/hooks/use-sse-stream";
 import { useThreadState } from "@/lib/hooks/use-thread-state";
 import type { InterruptPayload } from "@/server/graph/subgraphs/planner/state";
-import type { MessageData, SourceCardData, ThreadMetadata } from "@/types/ui";
+import {
+  type MessageData,
+  type SourceCardData,
+  type ThreadMetadata,
+  unifiedDocToSourceCard,
+} from "@/types/ui";
 
 /**
  * Thread View Page
@@ -54,9 +58,9 @@ export default function ThreadViewPage() {
 
   const [threads, setThreads] = useState<ThreadMetadata[]>([]);
   const [pinnedSources, setPinnedSources] = useState<Set<string>>(new Set());
+  const [isLeftPanelVisible, setIsLeftPanelVisible] = useState(true);
   const [currentInterrupt, setCurrentInterrupt] =
     useState<InterruptPayload | null>(null);
-  const [researchStartTime] = useState(Date.now());
   const [inputValue, setInputValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
@@ -116,12 +120,66 @@ export default function ThreadViewPage() {
       ]
     : allMessages;
 
+  const researchSources = useMemo(() => {
+    const research = snapshot?.values.research;
+    if (!research) {
+      return [] as SourceCardData[];
+    }
+
+    const combined: SourceCardData[] = [];
+
+    const pushDocs = (
+      docs: typeof research.discovery,
+      stage: "discovery" | "enriched" | "final"
+    ) => {
+      if (!docs) {
+        return;
+      }
+      for (const doc of docs) {
+        combined.push(unifiedDocToSourceCard(doc, { stage }));
+      }
+    };
+
+    pushDocs(research.discovery, "discovery");
+    pushDocs(research.enriched, "enriched");
+    pushDocs(research.final, "final");
+
+    const deduped = new Map<string, SourceCardData>();
+    for (const card of combined) {
+      const existing = deduped.get(card.url);
+      if (!existing || card.excerpt.length > existing.excerpt.length) {
+        deduped.set(card.url, card);
+      }
+    }
+
+    return Array.from(deduped.values());
+  }, [snapshot?.values.research]);
+
+  const combinedSources = useMemo(() => {
+    const deduped = new Map<string, SourceCardData>();
+
+    for (const card of researchSources) {
+      deduped.set(card.url, card);
+    }
+
+    for (const card of sseStream.sources) {
+      const existing = deduped.get(card.url);
+      if (!existing || card.excerpt.length > existing.excerpt.length) {
+        deduped.set(card.url, card);
+      }
+    }
+
+    return Array.from(deduped.values());
+  }, [researchSources, sseStream.sources]);
+
   // Enhance sources with pinned state
-  const sourcesWithPinned: SourceCardData[] = sseStream.sources.map(
-    (source) => ({
-      ...source,
-      isPinned: pinnedSources.has(source.url),
-    })
+  const sourcesWithPinned: SourceCardData[] = useMemo(
+    () =>
+      combinedSources.map((source) => ({
+        ...source,
+        isPinned: pinnedSources.has(source.url),
+      })),
+    [combinedSources, pinnedSources]
   );
 
   /**
@@ -338,6 +396,10 @@ export default function ThreadViewPage() {
     }
   }, []);
 
+  const handleSidebarOpenChange = useCallback((open: boolean) => {
+    setIsLeftPanelVisible(open);
+  }, []);
+
   if (!threadId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -369,28 +431,6 @@ export default function ThreadViewPage() {
     <AppShell
       centerPanel={
         <div className="flex h-full min-h-0 flex-1 flex-col">
-          {/* Research Status Bar */}
-          {sseStream.sources.length > 0 && (
-            <ResearchStatusBar
-              content={
-                messagesWithDraft.find((msg) => msg.role === "assistant")
-                  ?.content
-              }
-              duration={
-                sseStream.status === "completed"
-                  ? Date.now() - researchStartTime
-                  : undefined
-              }
-              searchCount={snapshot?.values?.queries?.length}
-              sourceCount={sseStream.sources.length}
-              status={
-                sseStream.status === "connecting"
-                  ? "streaming"
-                  : sseStream.status
-              }
-            />
-          )}
-
           {/* Conversation Area */}
           <Conversation className="min-h-0 flex-1">
             <ConversationContent>
@@ -488,12 +528,15 @@ export default function ThreadViewPage() {
       leftPanel={
         <ThreadList
           activeThreadId={threadId}
+          isSidebarOpen={isLeftPanelVisible}
           onDeleteThread={handleDeleteThread}
+          onSidebarOpenChange={handleSidebarOpenChange}
           threads={threads}
         />
       }
+      leftPanelCollapsed={!isLeftPanelVisible}
       rightPanel={
-        sseStream.sources.length > 0 ? (
+        combinedSources.length > 0 ? (
           <SourcesPanel
             citations={
               sseStream.currentDraftCitations.length > 0
@@ -510,6 +553,7 @@ export default function ThreadViewPage() {
           />
         ) : undefined
       }
+      rightPanelVisible={combinedSources.length > 0}
     />
   );
 }

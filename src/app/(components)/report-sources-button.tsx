@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { ChevronRightIcon } from "lucide-react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getDomainColor, getFaviconUrl } from "@/lib/utils/favicon";
@@ -85,10 +85,7 @@ export function ReportSourcesButton({
 
       {/* Chevron indicator */}
       <ChevronRightIcon
-        className={cn(
-          "size-4 transition-transform",
-          isOpen && "rotate-90"
-        )}
+        className={cn("size-4 transition-transform", isOpen && "rotate-90")}
       />
     </Button>
   );

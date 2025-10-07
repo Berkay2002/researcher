@@ -43,7 +43,7 @@ export function getDomainColor(domain: string): string {
   let hash = 0;
   for (let i = 0; i < domain.length; i++) {
     const char = domain.charCodeAt(i);
-    hash = ((hash * HASH_PRIME) + char) % MAX_HASH_VALUE;
+    hash = (hash * HASH_PRIME + char) % MAX_HASH_VALUE;
   }
 
   return colors[Math.abs(hash) % colors.length];

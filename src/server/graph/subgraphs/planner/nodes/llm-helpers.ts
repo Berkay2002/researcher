@@ -69,7 +69,8 @@ function normalizeQuestions(raw: Record<string, unknown>[]): Question[] {
   return raw.map((q, i) => {
     const base =
       (typeof q.id === "string" && q.id.trim()) ||
-      (typeof q.aspect === "string" && `q${i + 1}_${q.aspect.toLowerCase().replace(/\W+/g, "_")}`) ||
+      (typeof q.aspect === "string" &&
+        `q${i + 1}_${q.aspect.toLowerCase().replace(/\W+/g, "_")}`) ||
       `q${i + 1}`;
 
     return {
@@ -79,7 +80,8 @@ function normalizeQuestions(raw: Record<string, unknown>[]): Question[] {
         ? q.options.map((o: Record<string, unknown>) => ({
             value: String(o.value ?? "").trim(),
             label: String(o.label ?? "").trim(),
-            description: typeof o.description === "string" ? o.description : undefined,
+            description:
+              typeof o.description === "string" ? o.description : undefined,
           }))
         : [],
     };

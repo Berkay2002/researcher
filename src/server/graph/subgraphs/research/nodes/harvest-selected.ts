@@ -76,7 +76,7 @@ export async function harvestSelected(
 
   // Add URL-level deduplication to avoid double counting
   const byUrl = new Map<string, UnifiedSearchDoc>();
-  
+
   for (const d of enrichedDocs) {
     const key = d.url.toLowerCase().replace(TRAILING_SLASH_REGEX, "");
     if (!byUrl.has(key)) {

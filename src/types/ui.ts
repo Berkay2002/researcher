@@ -9,7 +9,8 @@ import type {
   Citation,
   Draft,
   Evidence,
-  SearchResult,
+  ResearchState,
+  UnifiedSearchDoc,
 } from "@/server/graph/state";
 
 // ============================================================================
@@ -144,6 +145,7 @@ export type SourceCardData = {
     type?: string;
     author?: string;
     published?: string;
+    stage?: "discovery" | "enriched" | "final" | "evidence";
   };
 };
 
@@ -266,7 +268,7 @@ export type ThreadStateSnapshot = {
       constraints?: Record<string, unknown>;
     };
     queries?: string[];
-    searchResults?: SearchResult[];
+    research?: ResearchState | null;
     evidence?: Evidence[];
     draft?: Draft;
     issues?: string[];
@@ -311,6 +313,45 @@ export function isEventType<T extends SSEEventType>(
 // ============================================================================
 
 /**
+ * Convert UnifiedSearchDoc to SourceCardData
+ */
+export function unifiedDocToSourceCard(
+  doc: UnifiedSearchDoc,
+  options: { stage?: "discovery" | "enriched" | "final" } = {}
+): SourceCardData {
+  const stage = options.stage ?? "discovery";
+  const url = new URL(doc.url);
+  const snippet =
+    doc.excerpt ||
+    (Array.isArray(doc.highlights) ? doc.highlights.join(" … ") : "");
+  const excerpt = doc.content?.substring(0, MAX_EXCERPT_LENGTH) || snippet;
+
+  const stageLabel: Record<"discovery" | "enriched" | "final", string> = {
+    discovery: "Identified during meta-search discovery",
+    enriched: "Content fetched during enrichment",
+    final: "Curated for final research set",
+  };
+
+  return {
+    id: doc.id || doc.url,
+    url: doc.url,
+    title: doc.title || url.hostname,
+    host: doc.hostname || url.hostname,
+    date: doc.publishedAt || null,
+    snippet,
+    excerpt,
+    whyUsed: stageLabel[stage],
+    isPinned: false,
+    metadata: {
+      type: doc.provider,
+      author: doc.author ?? undefined,
+      published: doc.publishedAt ?? undefined,
+      stage,
+    },
+  };
+}
+
+/**
  * Convert Evidence to SourceCardData
  */
 export function evidenceToSourceCard(evidence: Evidence): SourceCardData {
@@ -330,6 +371,7 @@ export function evidenceToSourceCard(evidence: Evidence): SourceCardData {
       type: evidence.source, // Use source (tavily/exa) as type
       author: undefined, // Not available in Evidence type
       published: undefined, // Not available in Evidence type
+      stage: "evidence",
     },
   };
 }
@@ -363,6 +405,7 @@ export function draftToMessage(draft: Draft, threadId: string): MessageData {
  * Generate thread title from goal
  */
 const MAX_TITLE_LENGTH = 50;
+const MAX_EXCERPT_LENGTH = 480;
 
 export function generateThreadTitle(goal: string): string {
   // Remove extra whitespace

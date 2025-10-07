@@ -1,8 +1,19 @@
 "use client";
 
+import {
+  CopyIcon,
+  EllipsisVerticalIcon,
+  ExternalLinkIcon,
+  PinIcon,
+} from "lucide-react";
 import Image from "next/image";
-import { CopyIcon, ExternalLinkIcon, PinIcon } from "lucide-react";
-import { Action, Actions } from "@/components/ai-elements/actions";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { getDomainColor, getFaviconUrl } from "@/lib/utils/favicon";
 import type { SourceCardData } from "@/types/ui";
@@ -31,16 +42,12 @@ export function SourceCard({
   onTogglePin,
   className,
 }: SourceCardProps) {
-  const handleTogglePin = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onTogglePin?.(source.url);
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(source.url);
   };
 
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await navigator.clipboard.writeText(source.url);
+  const handleTogglePin = () => {
+    onTogglePin?.(source.url);
   };
 
   const description = source.snippet || source.excerpt || "";
@@ -96,29 +103,56 @@ export function SourceCard({
         </div>
       </div>
 
-      {/* Action buttons - show on hover */}
-      <Actions className="absolute top-2 right-2 opacity-0 transition-opacity group-hover:opacity-100">
-        <Action label="Copy link" onClick={handleCopy} tooltip="Copy link">
-          <CopyIcon className="size-4" />
-        </Action>
-        <Action label="Open in new tab" tooltip="Open in new tab">
-          <a href={source.url} rel="noopener noreferrer" target="_blank">
-            <ExternalLinkIcon className="size-4" />
-          </a>
-        </Action>
-        {onTogglePin && (
-          <Action
-            className={cn(source.isPinned && "text-primary")}
-            label={source.isPinned ? "Unpin" : "Pin"}
-            onClick={handleTogglePin}
-            tooltip={source.isPinned ? "Unpin" : "Pin"}
+      {/* Action menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={cn(
+              "absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+            )}
+            type="button"
           >
-            <PinIcon
-              className={cn("size-4", source.isPinned && "fill-current")}
-            />
-          </Action>
-        )}
-      </Actions>
+            <EllipsisVerticalIcon className="size-4" />
+            <span className="sr-only">Source actions</span>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48" sideOffset={8}>
+          <DropdownMenuItem
+            onSelect={() => {
+              void handleCopy();
+            }}
+          >
+            <CopyIcon className="mr-2 size-4" />
+            Copy link
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            <a href={source.url} rel="noopener noreferrer" target="_blank">
+              <ExternalLinkIcon className="mr-2 size-4" />
+              Open in new tab
+            </a>
+          </DropdownMenuItem>
+          {onTogglePin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className={cn(source.isPinned && "text-primary")}
+                onSelect={() => {
+                  handleTogglePin();
+                }}
+              >
+                <PinIcon
+                  className={cn(
+                    "mr-2 size-4",
+                    source.isPinned && "fill-current"
+                  )}
+                />
+                {source.isPinned ? "Unpin" : "Pin"}
+              </DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

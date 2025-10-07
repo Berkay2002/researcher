@@ -29,7 +29,10 @@ export async function metaSearch(
   if (!queries || queries.length === 0) {
     console.log("[metaSearch] No queries to execute");
     return {
-      searchResults: [],
+      research: {
+        ...(state.research ?? {}),
+        discovery: [],
+      },
     };
   }
 

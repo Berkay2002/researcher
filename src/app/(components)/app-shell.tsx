@@ -8,9 +8,11 @@ import { cn } from "@/lib/utils";
  */
 export type AppShellProps = {
   leftPanel?: ReactNode;
+  leftPanelCollapsed?: boolean;
   centerPanel: ReactNode;
   rightPanel?: ReactNode;
   className?: string;
+  rightPanelVisible?: boolean;
 };
 
 /**
@@ -28,10 +30,13 @@ export type AppShellProps = {
  */
 export function AppShell({
   leftPanel,
+  leftPanelCollapsed = false,
   centerPanel,
   rightPanel,
   className,
+  rightPanelVisible,
 }: AppShellProps) {
+  const showRightPanel = rightPanelVisible ?? Boolean(rightPanel);
   return (
     <div
       className={cn(
@@ -44,10 +49,15 @@ export function AppShell({
         <aside
           className={cn(
             "hidden flex-shrink-0 border-r bg-muted/30 lg:flex",
-            "w-64 xl:w-80" // 256px on lg, 320px on xl
+            leftPanelCollapsed ? "w-16" : "w-64 xl:w-80"
           )}
         >
-          <div className="flex h-full w-full flex-col overflow-hidden">
+          <div
+            className={cn(
+              "flex h-full w-full flex-col overflow-hidden",
+              leftPanelCollapsed && "items-center"
+            )}
+          >
             {leftPanel}
           </div>
         </aside>
@@ -61,7 +71,7 @@ export function AppShell({
       </main>
 
       {/* Right Panel - Sources */}
-      {rightPanel && (
+      {showRightPanel && (
         <aside
           className={cn(
             "hidden flex-shrink-0 border-l bg-muted/30 lg:flex",
@@ -69,7 +79,11 @@ export function AppShell({
           )}
         >
           <div className="flex h-full w-full flex-col overflow-hidden">
-            {rightPanel}
+            {rightPanel ?? (
+              <div className="flex flex-1 items-center justify-center px-6 text-center text-muted-foreground text-sm">
+                No sources available yet
+              </div>
+            )}
           </div>
         </aside>
       )}
@@ -125,7 +139,7 @@ export type PanelContentProps = {
 
 export function PanelContent({ children, className }: PanelContentProps) {
   return (
-    <div className={cn("flex-1 overflow-y-auto p-4", className)}>
+    <div className={cn("min-h-0 flex-1 overflow-y-auto p-4", className)}>
       {children}
     </div>
   );

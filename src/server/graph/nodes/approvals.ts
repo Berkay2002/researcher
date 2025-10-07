@@ -166,12 +166,17 @@ export async function approvals(
 
   try {
     // Step 1: Assess risk and estimate resources
+    const discoveryUrls =
+      state.research?.discovery?.map((doc) => doc.url) ?? [];
+    const urlCandidates =
+      discoveryUrls.length > 0
+        ? discoveryUrls
+        : queries.map(
+            (q) => `https://example.com/search?q=${encodeURIComponent(q)}`
+          );
+
     const { domains, risks, sensitivityScore } = assessRisk(
-      // Use searchResults if available, otherwise estimate from queries
-      state.searchResults?.map((r) => r.url) ||
-        queries.map(
-          (q) => `https://example.com/search?q=${encodeURIComponent(q)}`
-        ),
+      urlCandidates,
       queries
     );
 

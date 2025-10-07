@@ -108,9 +108,13 @@ export async function hitlPlanner(
 
     // Log the user's choice for debugging/analytics
     if (resume.selectedOption) {
-      console.log(`[hitlPlanner] The user chose option: ${resume.selectedOption}`);
+      console.log(
+        `[hitlPlanner] The user chose option: ${resume.selectedOption}`
+      );
     } else if (resume.customAnswer) {
-      console.log(`[hitlPlanner] The user chose custom answer: ${resume.customAnswer}`);
+      console.log(
+        `[hitlPlanner] The user chose custom answer: ${resume.customAnswer}`
+      );
     }
 
     // Persist everything and loop back into planner until finished

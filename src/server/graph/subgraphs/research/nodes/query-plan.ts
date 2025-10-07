@@ -42,6 +42,10 @@ export async function queryPlan(
 
   return {
     queries,
+    research: {
+      ...(state.research ?? {}),
+      queries,
+    },
   };
 }
 

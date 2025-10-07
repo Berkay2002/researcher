@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Oxanium, Merriweather, Fira_Code } from "next/font/google";
+import { Fira_Code, Merriweather, Oxanium } from "next/font/google";
 import "../styles/tailwind.css";
 
 const oxanium = Oxanium({

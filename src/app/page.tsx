@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { BookOpenIcon, SparklesIcon, TargetIcon } from "lucide-react";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   return (
@@ -41,11 +41,9 @@ export default function Home() {
       </main>
 
       {/* Features Section */}
-      <section id="features" className="border-t bg-muted/30 px-8 py-16">
+      <section className="border-t bg-muted/30 px-8 py-16" id="features">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-12 text-center font-bold text-3xl">
-            Key Features
-          </h2>
+          <h2 className="mb-12 text-center font-bold text-3xl">Key Features</h2>
           <div className="grid gap-8 md:grid-cols-3">
             <Card>
               <CardContent className="p-6">
@@ -65,9 +63,7 @@ export default function Home() {
                 <div className="mb-4 flex size-12 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <BookOpenIcon className="size-6" />
                 </div>
-                <h3 className="mb-2 font-semibold text-xl">
-                  Grounded Reports
-                </h3>
+                <h3 className="mb-2 font-semibold text-xl">Grounded Reports</h3>
                 <p className="text-muted-foreground text-sm">
                   Every claim is backed by citations. Real-time source tracking
                   with metadata, excerpts, and explanations.

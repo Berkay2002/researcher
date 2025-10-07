@@ -10,12 +10,12 @@ import {
 import {
   createContext,
   isValidElement,
+  type RefObject,
   useContext,
   useEffect,
   useId,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { cn } from "@/lib/utils";
 import useClickOutside from "./useClickOutside";
@@ -199,24 +199,24 @@ function MorphingPopoverContent({
     <AnimatePresence>
       {context.isOpen && (
         <motion.div
-            {...props}
-            animate="animate"
-            aria-modal="true"
-            className={cn(
-              "absolute overflow-hidden rounded-md border border-zinc-950/10 bg-white p-2 text-zinc-950 shadow-md dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50",
-              className
-            )}
-            exit="exit"
-            id={`popover-content-${context.uniqueId}`}
-            initial="initial"
-            key={context.uniqueId}
-            layoutId={`popover-trigger-${context.uniqueId}`}
-            ref={ref}
-            role="dialog"
-            variants={context.variants}
-          >
-            {children}
-          </motion.div>
+          {...props}
+          animate="animate"
+          aria-modal="true"
+          className={cn(
+            "absolute overflow-hidden rounded-md border border-zinc-950/10 bg-white p-2 text-zinc-950 shadow-md dark:border-zinc-50/10 dark:bg-zinc-700 dark:text-zinc-50",
+            className
+          )}
+          exit="exit"
+          id={`popover-content-${context.uniqueId}`}
+          initial="initial"
+          key={context.uniqueId}
+          layoutId={`popover-trigger-${context.uniqueId}`}
+          ref={ref}
+          role="dialog"
+          variants={context.variants}
+        >
+          {children}
+        </motion.div>
       )}
     </AnimatePresence>
   );

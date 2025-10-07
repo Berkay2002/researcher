@@ -1,8 +1,13 @@
 "use client";
 
-import { PlusIcon, SearchIcon } from "lucide-react";
+import {
+  PanelLeftCloseIcon,
+  PanelLeftOpenIcon,
+  PlusIcon,
+  SearchIcon,
+} from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -18,6 +23,8 @@ export type ThreadListProps = {
   activeThreadId?: string | null;
   onDeleteThread?: (threadId: string) => void;
   className?: string;
+  onSidebarOpenChange?: (open: boolean) => void;
+  isSidebarOpen?: boolean;
 };
 
 /**
@@ -30,9 +37,33 @@ export function ThreadList({
   threads,
   activeThreadId,
   onDeleteThread,
+  onSidebarOpenChange,
+  isSidebarOpen = true,
   className,
 }: ThreadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleToggleSidebar = useCallback(() => {
+    onSidebarOpenChange?.(!isSidebarOpen);
+  }, [isSidebarOpen, onSidebarOpenChange]);
+
+  const handleFocusSearch = useCallback(() => {
+    if (!isSidebarOpen) {
+      onSidebarOpenChange?.(true);
+      requestAnimationFrame(() => {
+        searchInputRef.current?.focus();
+      });
+      return;
+    }
+    searchInputRef.current?.focus();
+  }, [isSidebarOpen, onSidebarOpenChange]);
+
+  const handleStartNewChat = useCallback(() => {
+    if (!isSidebarOpen) {
+      onSidebarOpenChange?.(true);
+    }
+  }, [isSidebarOpen, onSidebarOpenChange]);
 
   /**
    * Filter threads by search query
@@ -64,21 +95,71 @@ export function ThreadList({
     [filteredThreads]
   );
 
+  if (!isSidebarOpen) {
+    return (
+      <div
+        className={cn(
+          "flex h-full flex-col items-center gap-4 py-6",
+          className
+        )}
+      >
+        <Button
+          aria-label="Open thread sidebar"
+          onClick={() => onSidebarOpenChange?.(true)}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <PanelLeftOpenIcon className="size-5" />
+        </Button>
+
+        <Button
+          aria-label="Search threads"
+          onClick={handleFocusSearch}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <SearchIcon className="size-5" />
+        </Button>
+
+        <Button
+          aria-label="New chat"
+          asChild
+          onClick={handleStartNewChat}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <Link href="/research/new">
+            <PlusIcon className="size-5" />
+            <span className="sr-only">New chat</span>
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("flex h-full flex-col", className)}>
       {/* Header */}
       <PanelHeader
         actions={
-          <Link href="/research/new">
+          onSidebarOpenChange ? (
             <Button
-              aria-label="New research"
+              aria-label={isSidebarOpen ? "Hide threads" : "Show threads"}
+              onClick={handleToggleSidebar}
               size="icon"
               type="button"
               variant="ghost"
             >
-              <PlusIcon className="size-4" />
+              {isSidebarOpen ? (
+                <PanelLeftCloseIcon className="size-4" />
+              ) : (
+                <PanelLeftOpenIcon className="size-4" />
+              )}
             </Button>
-          </Link>
+          ) : null
         }
         subtitle={`${threads.length} total`}
         title="Threads"
@@ -92,9 +173,24 @@ export function ThreadList({
             className="pl-9"
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search threads..."
+            ref={searchInputRef}
             type="search"
             value={searchQuery}
           />
+        </div>
+
+        <div className="mt-3">
+          <Link href="/research/new">
+            <Button
+              className="w-full"
+              onClick={handleStartNewChat}
+              type="button"
+              variant="secondary"
+            >
+              <PlusIcon className="mr-2 size-4" />
+              New Chat
+            </Button>
+          </Link>
         </div>
       </div>
 

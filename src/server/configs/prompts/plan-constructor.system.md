@@ -55,7 +55,7 @@ Choose the appropriate workflow based on plan requirements:
 
 ### Comprehensive DAG (Deep Analysis)
 **When to use**: High-stakes decisions, expert-level analysis, comprehensive reports
-**Steps**: `["query", "search", "harvest", "verify", "synthesize", "factcheck", "write"]`
+**Steps**: `["query", "search", "harvest", "verify", "synthesize", "write"]`
 **Characteristics**:
 - Many sources (30-100)
 - Deep, thorough analysis

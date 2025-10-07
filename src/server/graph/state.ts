@@ -123,17 +123,6 @@ export const UnifiedSearchDocSchema = z.object({
 });
 
 /**
- * Search result from external APIs (legacy, for backward compatibility)
- */
-export const SearchResultSchema = z.object({
-  url: z.string(),
-  title: z.string(),
-  snippet: z.string(),
-  publishedAt: z.string().optional(),
-  source: z.enum(["tavily", "exa"]),
-});
-
-/**
  * Content chunk for processing
  */
 export const ChunkSchema = z.object({
@@ -187,7 +176,6 @@ export type QuestionAnswer = z.infer<typeof QuestionAnswerSchema>;
 export type UserInputs = z.infer<typeof UserInputsSchema>;
 export type Plan = z.infer<typeof PlanSchema>;
 export type UnifiedSearchDoc = z.infer<typeof UnifiedSearchDocSchema>;
-export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type Chunk = z.infer<typeof ChunkSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Citation = z.infer<typeof CitationSchema>;
@@ -268,13 +256,6 @@ export const ParentStateAnnotation = Annotation.Root({
   // Generated search queries
   // Accumulates queries from planning phases
   queries: Annotation<string[]>({
-    reducer: (prev, next) => [...(prev ?? []), ...next],
-    default: () => [],
-  }),
-
-  // Pre-harvest search results (links only)
-  // Accumulates raw search results before processing
-  searchResults: Annotation<SearchResult[]>({
     reducer: (prev, next) => [...(prev ?? []), ...next],
     default: () => [],
   }),
@@ -378,8 +359,7 @@ export type IssuesUpdateCommand = {
  */
 export const validateStateForStep = (
   state: ParentState,
-  step: "plan" | "research" | "factcheck" | "write" | "publish"
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <It is okay>
+  step: "plan" | "research" | "write" | "publish"
 ): { valid: boolean; missing: string[] } => {
   const missing: string[] = [];
 
@@ -396,15 +376,6 @@ export const validateStateForStep = (
       }
       if (!state.queries.length) {
         missing.push("queries");
-      }
-      break;
-    }
-    case "factcheck": {
-      if (!state.draft) {
-        missing.push("draft");
-      }
-      if (!state.evidence.length) {
-        missing.push("evidence");
       }
       break;
     }
@@ -454,8 +425,6 @@ export const isReadyForNextStep = (
       return Boolean(state.userInputs.goal);
     case "research":
       return Boolean(state.plan && state.queries.length > 0);
-    case "factcheck":
-      return Boolean(state.draft && state.evidence.length > 0);
     case "write":
       return Boolean(state.plan && state.evidence.length > 0);
     case "publish":

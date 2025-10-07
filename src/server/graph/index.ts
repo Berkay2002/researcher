@@ -2,7 +2,6 @@ import { END, START, StateGraph } from "@langchain/langgraph";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 import { planGate } from "./nodes/plan-gate";
 import { ParentStateAnnotation } from "./state";
-import { buildFactcheckSubgraph } from "./subgraphs/factcheck";
 import { buildPlannerSubgraph } from "./subgraphs/planner";
 import { buildResearchSubgraph } from "./subgraphs/research";
 import { buildWriterSubgraph } from "./subgraphs/write";
@@ -22,7 +21,7 @@ let checkpointerSingleton: PostgresSaver | null = null;
 /**
  * Build the parent orchestration graph
  *
- * Flow: START -> planGate -> planner -> research -> writer -> factcheck -> END
+ * Flow: START -> planGate -> planner -> research -> writer -> END
  *
  * - All invocations require a thread_id
  * - PostgresSaver provides persistent checkpointing for HITL, time-travel, and fault-tolerance
@@ -43,9 +42,7 @@ function buildParentGraph() {
   // Build subgraphs
   const planner = buildPlannerSubgraph();
   const research = buildResearchSubgraph();
-  const factcheck = buildFactcheckSubgraph();
   const writer = buildWriterSubgraph();
-
 
   // Build parent graph with namespace collision protection
   const CHANNELS = new Set(Object.keys(ParentStateAnnotation.spec));
@@ -60,20 +57,17 @@ function buildParentGraph() {
   assertNoNameClash("planGate");
   assertNoNameClash("planner");
   assertNoNameClash("researchFlow");
-  assertNoNameClash("factcheck");
   assertNoNameClash("writer");
 
   const builder = new StateGraph(ParentStateAnnotation)
     .addNode("planGate", planGate)
     .addNode("planner", planner, { ends: ["planner", "researchFlow"] })
     .addNode("researchFlow", research)
-    .addNode("factcheck", factcheck)
     .addNode("writer", writer)
     .addEdge(START, "planGate")
     .addEdge("planGate", "planner")
     .addEdge("researchFlow", "writer")
-    .addEdge("writer", "factcheck")
-    .addEdge("factcheck", END);
+    .addEdge("writer", END);
 
   // Compile with Postgres checkpointer for persistent thread-level memory
   return builder.compile({ checkpointer: checkpointerSingleton });
