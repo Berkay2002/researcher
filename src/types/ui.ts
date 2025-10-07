@@ -385,18 +385,305 @@ export function generateThreadTitle(goal: string): string {
 /**
  * Parse SSE message from EventSource
  */
-export function parseSSEMessage(rawData: string): SSEEvent | null {
-  try {
-    const parsed = JSON.parse(rawData) as unknown;
+const NODE_STATUS_VALUES = new Set(["started", "completed", "failed"]);
+const DONE_STATUS_VALUES = new Set(["completed", "interrupted", "failed"]);
 
-    if (isSSEEvent(parsed)) {
-      return parsed;
-    }
-
-    return null;
-  } catch {
+function safeJsonParse(rawData: string): unknown {
+  if (!rawData) {
     return null;
   }
+
+  try {
+    return JSON.parse(rawData) as unknown;
+  } catch {
+    return rawData;
+  }
+}
+
+function normalizeDraftPayload(data: unknown): DraftEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const draftPayload =
+    typeof record.draft === "object" && record.draft !== null
+      ? (record.draft as Record<string, unknown>)
+      : record;
+
+  let text = "";
+  if (typeof draftPayload.text === "string") {
+    text = draftPayload.text;
+  } else if (typeof record.text === "string") {
+    text = record.text;
+  }
+
+  let delta: string | undefined;
+  if (typeof draftPayload.delta === "string") {
+    delta = draftPayload.delta;
+  } else if (typeof record.delta === "string") {
+    delta = record.delta;
+  }
+
+  let citations: Citation[] = [];
+  if (Array.isArray(draftPayload.citations)) {
+    citations = draftPayload.citations as Citation[];
+  } else if (Array.isArray(record.citations)) {
+    citations = record.citations as Citation[];
+  }
+
+  let confidence: number | undefined;
+  if (typeof draftPayload.confidence === "number") {
+    confidence = draftPayload.confidence;
+  } else if (typeof record.confidence === "number") {
+    confidence = record.confidence;
+  }
+
+  return {
+    text,
+    citations,
+    confidence,
+    delta,
+  };
+}
+
+function normalizeEvidencePayload(data: unknown): EvidenceEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  let sources: Evidence[] = [];
+  if (Array.isArray(record.sources)) {
+    sources = record.sources as Evidence[];
+  } else if (Array.isArray(record.evidence)) {
+    sources = record.evidence as Evidence[];
+  }
+
+  return { sources };
+}
+
+function normalizeQueriesPayload(data: unknown): QueriesEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const queries = Array.isArray(record.queries)
+    ? (record.queries as string[])
+    : [];
+
+  return { queries };
+}
+
+function normalizeCitationsPayload(data: unknown): CitationsEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const citations = Array.isArray(record.citations)
+    ? (record.citations as Citation[])
+    : [];
+
+  return { citations };
+}
+
+function normalizeIssuesPayload(data: unknown): IssuesEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const issues = Array.isArray(record.issues)
+    ? (record.issues as string[])
+    : [];
+
+  return { issues };
+}
+
+function normalizeNodePayload(data: unknown): NodeEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const update =
+    typeof record.update === "object" && record.update !== null
+      ? (record.update as Record<string, unknown>)
+      : {};
+
+  const rawStatus = (() => {
+    if (typeof record.status === "string") {
+      return record.status;
+    }
+    if (typeof update.status === "string") {
+      return update.status;
+    }
+    return;
+  })();
+
+  const status = NODE_STATUS_VALUES.has(rawStatus as string)
+    ? (rawStatus as NodeEvent["data"]["status"])
+    : "completed";
+
+  let durationCandidate: number | undefined;
+  if (typeof record.duration === "number") {
+    durationCandidate = record.duration;
+  } else if (typeof update.duration === "number") {
+    durationCandidate = update.duration;
+  } else if (typeof update.elapsed_ms === "number") {
+    durationCandidate = update.elapsed_ms;
+  }
+
+  let node = "unknown";
+  if (typeof record.node === "string") {
+    node = record.node;
+  } else if (typeof update.node === "string") {
+    node = update.node;
+  }
+
+  return {
+    node,
+    status,
+    duration: durationCandidate,
+  };
+}
+
+function normalizeErrorPayload(data: unknown): ErrorEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  let message = "Unknown error";
+  if (typeof record.message === "string") {
+    message = record.message;
+  }
+  if (message === "Unknown error" && typeof record.error === "string") {
+    message = record.error;
+  }
+
+  const code = typeof record.code === "string" ? record.code : undefined;
+
+  const node = typeof record.node === "string" ? record.node : undefined;
+
+  return { message, code, node };
+}
+
+function normalizeDonePayload(data: unknown): DoneEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  const statusCandidate =
+    typeof record.status === "string" ? record.status : undefined;
+
+  const status = DONE_STATUS_VALUES.has(statusCandidate as string)
+    ? (statusCandidate as DoneEvent["data"]["status"])
+    : "completed";
+
+  const threadId = typeof record.threadId === "string" ? record.threadId : "";
+
+  return { threadId, status };
+}
+
+function normalizeLLMTokenPayload(data: unknown): LLMTokenEvent["data"] {
+  const record =
+    typeof data === "object" && data !== null
+      ? (data as Record<string, unknown>)
+      : {};
+
+  let token = "";
+  if (typeof record.token === "string") {
+    token = record.token;
+  } else if (typeof record.delta === "string") {
+    token = record.delta;
+  }
+
+  let node = "unknown";
+  if (typeof record.node === "string") {
+    node = record.node;
+  } else if (
+    typeof record.metadata === "object" &&
+    record.metadata !== null &&
+    typeof (record.metadata as Record<string, unknown>).langgraph_node ===
+      "string"
+  ) {
+    node = (record.metadata as Record<string, unknown>)
+      .langgraph_node as string;
+  }
+
+  return { token, node };
+}
+
+function normalizeCustomPayload(data: unknown): CustomEvent["data"] {
+  return typeof data === "object" && data !== null
+    ? (data as Record<string, unknown>)
+    : { value: data };
+}
+
+function normalizeEventData(
+  eventType: SSEEventType,
+  data: unknown
+): SSEEvent["data"] {
+  switch (eventType) {
+    case "draft":
+      return normalizeDraftPayload(data);
+    case "evidence":
+      return normalizeEvidencePayload(data);
+    case "queries":
+      return normalizeQueriesPayload(data);
+    case "citations":
+      return normalizeCitationsPayload(data);
+    case "issues":
+      return normalizeIssuesPayload(data);
+    case "node":
+      return normalizeNodePayload(data);
+    case "error":
+      return normalizeErrorPayload(data);
+    case "done":
+      return normalizeDonePayload(data);
+    case "llm_token":
+      return normalizeLLMTokenPayload(data);
+    case "custom":
+      return normalizeCustomPayload(data);
+    case "keepalive":
+      return null;
+    default:
+      return typeof data === "object" && data !== null
+        ? (data as Record<string, unknown>)
+        : {};
+  }
+}
+
+export function parseSSEMessage(
+  rawData: string,
+  eventType?: SSEEventType
+): SSEEvent | null {
+  const parsed = safeJsonParse(rawData);
+
+  if (isSSEEvent(parsed)) {
+    return parsed;
+  }
+
+  if (!eventType) {
+    return null;
+  }
+
+  const timestamp =
+    typeof parsed === "object" &&
+    parsed !== null &&
+    typeof (parsed as Record<string, unknown>).timestamp === "string"
+      ? ((parsed as Record<string, unknown>).timestamp as string)
+      : undefined;
+
+  return {
+    type: eventType,
+    data: normalizeEventData(eventType, parsed),
+    timestamp,
+  };
 }
 
 /**

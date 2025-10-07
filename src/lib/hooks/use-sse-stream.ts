@@ -10,6 +10,7 @@ import type {
   RunLogEntry,
   SourceCardData,
   SSEEvent,
+  SSEEventType,
 } from "@/types/ui";
 import {
   // biome-ignore lint/correctness/noUnusedImports: <>
@@ -34,7 +35,7 @@ export type StreamState = {
 
   // Current draft (streaming)
   currentDraft: string | null;
-  currentDraftCitations: Array<{ claim: string; sources: string[] }>;
+  currentDraftCitations: { claim: string; sources: string[] }[];
 
   // Node execution tracking
   activeNode: string | null;
@@ -78,6 +79,9 @@ export function useSSEStream({
   });
 
   const eventSourceRef = useRef<EventSource | null>(null);
+  const eventListenersRef = useRef<
+    [SSEEventType, (event: MessageEvent<string>) => void][]
+  >([]);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const isCompletedRef = useRef(false);
@@ -93,6 +97,13 @@ export function useSSEStream({
       if (isDev) {
         console.log("[useSSEStream] Closing EventSource connection");
       }
+      for (const [type, listener] of eventListenersRef.current) {
+        eventSourceRef.current.removeEventListener(
+          type,
+          listener as EventListener
+        );
+      }
+      eventListenersRef.current = [];
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
@@ -313,6 +324,35 @@ export function useSSEStream({
     const eventSource = new EventSource(`/api/stream/${threadId}`);
     eventSourceRef.current = eventSource;
 
+    const knownEventTypes: SSEEventType[] = [
+      "node",
+      "draft",
+      "evidence",
+      "queries",
+      "citations",
+      "issues",
+      "llm_token",
+      "custom",
+      "error",
+      "done",
+      "keepalive",
+    ];
+
+    eventListenersRef.current = knownEventTypes.map((eventType) => {
+      const listener = (event: MessageEvent<string>) => {
+        const parsed = parseSSEMessage(event.data, eventType);
+
+        if (!parsed) {
+          return;
+        }
+
+        handleSSEEvent(parsed);
+      };
+
+      eventSource.addEventListener(eventType, listener as EventListener);
+      return [eventType, listener];
+    });
+
     // Connection opened
     eventSource.onopen = () => {
       setState((prev) => ({ ...prev, status: "streaming" }));
@@ -342,7 +382,12 @@ export function useSSEStream({
     };
 
     // Error handler
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Its fine>
     eventSource.onerror = () => {
+      for (const [type, listener] of eventListenersRef.current) {
+        eventSource.removeEventListener(type, listener as EventListener);
+      }
+      eventListenersRef.current = [];
       if (isDev) {
         console.error("[useSSEStream] EventSource error", {
           readyState: eventSource.readyState,
