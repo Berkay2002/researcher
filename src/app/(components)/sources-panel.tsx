@@ -1,8 +1,14 @@
 "use client";
 
-import { FilterIcon, PinIcon, XIcon } from "lucide-react";
+import {
+  FilterIcon,
+  PanelRightCloseIcon,
+  PanelRightOpenIcon,
+  PinIcon,
+  XIcon,
+} from "lucide-react";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +33,8 @@ export type SourcesPanelProps = {
   citations?: CitationData[];
   onTogglePin?: (url: string) => void;
   className?: string;
+  onSidebarOpenChange?: (open: boolean) => void;
+  isSidebarOpen?: boolean;
 };
 
 /**
@@ -45,23 +53,32 @@ export function SourcesPanel({
   citations,
   onTogglePin,
   className,
+  onSidebarOpenChange,
+  isSidebarOpen = true,
 }: SourcesPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
 
-  /**
-   * Extract unique domains from sources
-   */
+  const handleToggleSidebar = useCallback(() => {
+    onSidebarOpenChange?.(!isSidebarOpen);
+  }, [isSidebarOpen, onSidebarOpenChange]);
+
+  const pinnedCount = sources.filter((s) => s.isPinned).length;
+  const clearFilters = () => {
+    setSearchQuery("");
+    setDomainFilter("all");
+    setShowPinnedOnly(false);
+  };
+
+  // Extract unique domains from sources
   const uniqueDomains = useMemo(() => {
     const domains = new Set(sources.map((source) => source.host));
     return Array.from(domains).sort();
   }, [sources]);
 
-  /**
-   * Filter sources based on active filters
-   */
+  // Filter sources based on active filters
   const filteredSources = useMemo(() => {
     let filtered = sources;
 
@@ -89,9 +106,7 @@ export function SourcesPanel({
     return filtered;
   }, [sources, searchQuery, domainFilter, showPinnedOnly]);
 
-  /**
-   * Count of active filters
-   */
+  // Count of active filters
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (searchQuery.trim()) {
@@ -106,37 +121,84 @@ export function SourcesPanel({
     return count;
   }, [searchQuery, domainFilter, showPinnedOnly]);
 
-  /**
-   * Clear all filters
-   */
-  const clearFilters = () => {
-    setSearchQuery("");
-    setDomainFilter("all");
-    setShowPinnedOnly(false);
-  };
-
-  const pinnedCount = sources.filter((s) => s.isPinned).length;
-
-  return (
-    <div className={cn("flex h-full flex-col", className)}>
-      {/* Header */}
-      <PanelHeader
-        actions={
+  if (!isSidebarOpen) {
+    return (
+      <div className={cn("flex h-full flex-col", className)}>
+        {/* Collapsed Header - matches expanded header height and icon position */}
+        <div className="flex h-12 items-center justify-start px-4">
           <Button
-            aria-label="Toggle filters"
-            className={cn(showFilters && "bg-accent")}
-            onClick={() => setShowFilters(!showFilters)}
+            aria-label="Open sources sidebar"
+            onClick={() => onSidebarOpenChange?.(true)}
             size="icon"
             type="button"
             variant="ghost"
           >
-            <FilterIcon className="size-4" />
+            <PanelRightOpenIcon className="size-5" />
+          </Button>
+        </div>
+
+        {/* Spacing between collapse icon and filter icon - matches expanded state */}
+        <div className="h-5" />
+
+        {/* Collapsed Filter Area - matches expanded filter area and icon position */}
+        <div className="flex h-12 items-center justify-start px-4">
+          <Button
+            aria-label="Toggle filters"
+            className={cn(showFilters && "bg-accent")}
+            onClick={() => {
+              onSidebarOpenChange?.(true);
+              setShowFilters(!showFilters);
+            }}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <FilterIcon className="size-5" />
             {activeFilterCount > 0 && (
               <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
                 {activeFilterCount}
               </span>
             )}
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("flex h-full flex-col", className)}>
+      {/* Header */}
+      <PanelHeader
+        actions={
+          <div className="flex items-center gap-1">
+            <Button
+              aria-label="Toggle filters"
+              className={cn(showFilters && "bg-accent")}
+              onClick={() => setShowFilters(!showFilters)}
+              size="icon"
+              type="button"
+              variant="ghost"
+            >
+              <FilterIcon className="size-4" />
+              {activeFilterCount > 0 && (
+                <span className="absolute top-1 right-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+            {onSidebarOpenChange && (
+              <Button
+                aria-label="Hide sources"
+                className="size-7"
+                onClick={handleToggleSidebar}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <PanelRightCloseIcon className="size-5" />
+              </Button>
+            )}
+          </div>
         }
         subtitle={`${sources.length} found`}
         title="Sources"
@@ -172,33 +234,33 @@ export function SourcesPanel({
                 value={searchQuery}
               />
 
-              {/* Domain Filter */}
-              <Select onValueChange={setDomainFilter} value={domainFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All domains" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All domains</SelectItem>
-                  {uniqueDomains.map((domain) => (
-                    <SelectItem key={domain} value={domain}>
-                      {domain}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Pinned Filter */}
-              <div className="flex items-center justify-between">
+              {/* Domain and Pinned Filters - Side by Side */}
+              <div className="flex gap-2">
+                {/* Pinned Filter */}
                 <Button
-                  className={cn("flex-1", showPinnedOnly && "bg-accent")}
+                  className={cn("h-9 flex-1", showPinnedOnly && "bg-accent")}
                   onClick={() => setShowPinnedOnly(!showPinnedOnly)}
-                  size="sm"
                   type="button"
                   variant="outline"
                 >
                   <PinIcon className="mr-2 size-3" />
                   Pinned only ({pinnedCount})
                 </Button>
+
+                {/* Domain Filter */}
+                <Select onValueChange={setDomainFilter} value={domainFilter}>
+                  <SelectTrigger className="h-10 flex-1" size="default">
+                    <SelectValue placeholder="All domains" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All domains</SelectItem>
+                    {uniqueDomains.map((domain) => (
+                      <SelectItem key={domain} value={domain}>
+                        {domain}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Clear Filters */}

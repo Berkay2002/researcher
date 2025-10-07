@@ -3,7 +3,7 @@
 "use client";
 
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AppShell } from "@/app/(components)/app-shell";
 import {
@@ -54,16 +54,20 @@ import {
 export default function ThreadViewPage() {
   const RESUME_CONNECT_DELAY_MS = 100; // Delay after resume before reconnecting SSE
   const params = useParams();
+  const searchParams = useSearchParams();
   const threadId = params?.threadId as string | undefined;
+  const urlGoal = searchParams?.get("goal");
 
   const [threads, setThreads] = useState<ThreadMetadata[]>([]);
   const [pinnedSources, setPinnedSources] = useState<Set<string>>(new Set());
   const [isLeftPanelVisible, setIsLeftPanelVisible] = useState(true);
+  const [isRightPanelVisible, setIsRightPanelVisible] = useState(true);
   const [currentInterrupt, setCurrentInterrupt] =
     useState<InterruptPayload | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
+  const [hasPlannerCompleted, setHasPlannerCompleted] = useState(false);
 
   const isDev = process.env.NODE_ENV !== "production";
 
@@ -84,19 +88,49 @@ export default function ThreadViewPage() {
     autoConnect: false,
   });
 
-  // Build initial message from goal
-  const initialMessage: MessageData | null = snapshot?.values?.userInputs?.goal
-    ? {
-        id: "initial-goal",
+  // Build initial message from goal (prefer URL goal for immediate display)
+  const initialMessage: MessageData | null = (() => {
+    // First try to get goal from URL params for immediate display
+    if (urlGoal) {
+      return {
+        id: "initial-goal-url",
+        role: "user",
+        content: urlGoal,
+        timestamp: new Date().toISOString(),
+      };
+    }
+    
+    // Fall back to goal from snapshot once loaded
+    if (snapshot?.values?.userInputs?.goal) {
+      return {
+        id: "initial-goal-snapshot",
         role: "user",
         content: snapshot.values.userInputs.goal,
         timestamp: snapshot.metadata?.createdAt || new Date().toISOString(),
-      }
-    : null;
+      };
+    }
+    
+    return null;
+  })();
 
   // Combine all messages: initial + SSE (interrupts are handled separately)
-  let allMessages: MessageData[] = initialMessage ? [initialMessage] : [];
-  allMessages = [...allMessages, ...sseStream.messages];
+  // Use a Set to track message IDs and avoid duplicates
+  const messageIds = new Set<string>();
+  const allMessages: MessageData[] = [];
+  
+  // Add initial message if available
+  if (initialMessage) {
+    allMessages.push(initialMessage);
+    messageIds.add(initialMessage.id);
+  }
+  
+  // Add SSE messages, avoiding duplicates with initial message
+  for (const message of sseStream.messages) {
+    if (!messageIds.has(message.id)) {
+      allMessages.push(message);
+      messageIds.add(message.id);
+    }
+  }
 
   // Add current streaming draft as temporary message
   const messagesWithDraft: MessageData[] = sseStream.currentDraft
@@ -183,7 +217,7 @@ export default function ThreadViewPage() {
   );
 
   /**
-   * Detect interrupts from thread state
+   * Detect interrupts from thread state and planner completion
    */
   useEffect(() => {
     if (snapshot?.interrupt) {
@@ -196,11 +230,17 @@ export default function ThreadViewPage() {
       setHasActiveInterrupt(false);
     }
 
+    // Check if planner has completed (has plan but no interrupt)
+    if (snapshot?.values?.plan && !snapshot?.interrupt) {
+      setHasPlannerCompleted(true);
+    }
+
     if (isDev) {
       // eslint-disable-next-line no-console
       console.log("[ThreadView] Snapshot updated", {
         hasInterrupt: Boolean(snapshot?.interrupt),
         hasDraft: Boolean(snapshot?.values?.draft),
+        hasPlan: Boolean(snapshot?.values?.plan),
         issues: snapshot?.values?.issues?.length ?? 0,
       });
     }
@@ -400,6 +440,10 @@ export default function ThreadViewPage() {
     setIsLeftPanelVisible(open);
   }, []);
 
+  const handleRightSidebarOpenChange = useCallback((open: boolean) => {
+    setIsRightPanelVisible(open);
+  }, []);
+
   if (!threadId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -548,12 +592,15 @@ export default function ThreadViewPage() {
                   }))
                 : undefined
             }
+            isSidebarOpen={isRightPanelVisible}
+            onSidebarOpenChange={handleRightSidebarOpenChange}
             onTogglePin={handleTogglePin}
             sources={sourcesWithPinned}
           />
         ) : undefined
       }
-      rightPanelVisible={combinedSources.length > 0}
+      rightPanelCollapsed={!isRightPanelVisible}
+      rightPanelVisible={combinedSources.length > 0 || hasPlannerCompleted}
     />
   );
 }

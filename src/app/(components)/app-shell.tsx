@@ -13,6 +13,7 @@ export type AppShellProps = {
   rightPanel?: ReactNode;
   className?: string;
   rightPanelVisible?: boolean;
+  rightPanelCollapsed?: boolean;
 };
 
 /**
@@ -35,6 +36,7 @@ export function AppShell({
   rightPanel,
   className,
   rightPanelVisible,
+  rightPanelCollapsed = false,
 }: AppShellProps) {
   const showRightPanel = rightPanelVisible ?? Boolean(rightPanel);
   return (
@@ -75,13 +77,21 @@ export function AppShell({
         <aside
           className={cn(
             "hidden flex-shrink-0 border-l bg-muted/30 lg:flex",
-            "w-80 xl:w-96" // 320px on lg, 384px on xl
+            rightPanelCollapsed ? "w-16" : "w-80 xl:w-96" // 320px on lg, 384px on xl
           )}
         >
-          <div className="flex h-full w-full flex-col overflow-hidden">
+          <div
+            className={cn(
+              "flex h-full w-full flex-col overflow-hidden",
+              rightPanelCollapsed && "items-center"
+            )}
+          >
             {rightPanel ?? (
               <div className="flex flex-1 items-center justify-center px-6 text-center text-muted-foreground text-sm">
-                No sources available yet
+                Research starting...
+                <div className="mt-2 text-xs">
+                  Sources will appear here once collection begins
+                </div>
               </div>
             )}
           </div>

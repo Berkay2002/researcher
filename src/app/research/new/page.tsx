@@ -135,7 +135,7 @@ export default function NewResearchPage() {
       ...existingThreads.filter((thread) => thread.threadId !== threadId),
     ]);
 
-    router.push(`/research/${threadId}`);
+    router.push(`/research/${threadId}?goal=${encodeURIComponent(goal)}`);
 
     try {
       const response = await fetch("/api/threads/start", {

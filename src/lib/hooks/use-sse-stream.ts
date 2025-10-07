@@ -65,7 +65,7 @@ export function useSSEStream({
   onError,
 }: UseSSEStreamOptions) {
   const [isDev] = useState(() => process.env.NODE_ENV !== "production");
-  
+
   // Initialize refs first
   const eventSourceRef = useRef<EventSource | null>(null);
   const eventListenersRef = useRef<
@@ -76,7 +76,7 @@ export function useSSEStream({
   const isCompletedRef = useRef(false);
   const disconnectRef = useRef<(() => void) | null>(null);
   const statusRef = useRef<StreamState["status"]>("idle");
-  
+
   // Now initialize state
   const [state, setState] = useState<StreamState>(() => {
     const initialState = {
