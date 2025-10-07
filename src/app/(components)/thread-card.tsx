@@ -84,7 +84,7 @@ export function ThreadCard({
 
   useEffect(() => {
     updateTruncation();
-  }, [thread.title, updateTruncation]);
+  }, [updateTruncation]);
 
   const handleDelete = (event: Event | MouseEvent) => {
     event.preventDefault();
