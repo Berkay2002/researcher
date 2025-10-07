@@ -10,6 +10,7 @@ import {
   InterruptPrompt,
   type InterruptResponse,
 } from "@/app/(components)/InterruptPrompt";
+import { ResearchMessage } from "@/app/(components)/research-message";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
 import { ThreadList } from "@/app/(components)/thread-list";
@@ -18,11 +19,6 @@ import {
   ConversationContent,
   ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageAvatar,
-  MessageContent,
-} from "@/components/ai-elements/message";
 import {
   PromptInput,
   PromptInputBody,
@@ -35,6 +31,7 @@ import { useSSEStream } from "@/lib/hooks/use-sse-stream";
 import { useThreadState } from "@/lib/hooks/use-thread-state";
 import type { InterruptPayload } from "@/server/graph/subgraphs/planner/state";
 import {
+  draftToMessage,
   type MessageData,
   type SourceCardData,
   type ThreadMetadata,
@@ -99,7 +96,7 @@ export default function ThreadViewPage() {
         timestamp: new Date().toISOString(),
       };
     }
-    
+
     // Fall back to goal from snapshot once loaded
     if (snapshot?.values?.userInputs?.goal) {
       return {
@@ -109,7 +106,7 @@ export default function ThreadViewPage() {
         timestamp: snapshot.metadata?.createdAt || new Date().toISOString(),
       };
     }
-    
+
     return null;
   })();
 
@@ -117,18 +114,31 @@ export default function ThreadViewPage() {
   // Use a Set to track message IDs and avoid duplicates
   const messageIds = new Set<string>();
   const allMessages: MessageData[] = [];
-  
+
   // Add initial message if available
   if (initialMessage) {
     allMessages.push(initialMessage);
     messageIds.add(initialMessage.id);
   }
-  
+
   // Add SSE messages, avoiding duplicates with initial message
   for (const message of sseStream.messages) {
     if (!messageIds.has(message.id)) {
       allMessages.push(message);
       messageIds.add(message.id);
+    }
+  }
+
+  // Fallback to persisted draft when no assistant messages streamed
+  if (
+    threadId &&
+    snapshot?.values?.draft &&
+    !allMessages.some((message) => message.role === "assistant")
+  ) {
+    const fallbackMessage = draftToMessage(snapshot.values.draft, threadId);
+    if (!messageIds.has(fallbackMessage.id)) {
+      allMessages.push(fallbackMessage);
+      messageIds.add(fallbackMessage.id);
     }
   }
 
@@ -153,6 +163,16 @@ export default function ThreadViewPage() {
         },
       ]
     : allMessages;
+
+  const latestAssistantMessage = useMemo(() => {
+    for (let index = messagesWithDraft.length - 1; index >= 0; index -= 1) {
+      const message = messagesWithDraft[index];
+      if (message.role === "assistant") {
+        return message;
+      }
+    }
+    return null;
+  }, [messagesWithDraft]);
 
   const researchSources = useMemo(() => {
     const research = snapshot?.values.research;
@@ -444,6 +464,10 @@ export default function ThreadViewPage() {
     setIsRightPanelVisible(open);
   }, []);
 
+  const handleToggleSourcesPanel = useCallback(() => {
+    handleRightSidebarOpenChange(!isRightPanelVisible);
+  }, [handleRightSidebarOpenChange, isRightPanelVisible]);
+
   if (!threadId) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -491,15 +515,21 @@ export default function ThreadViewPage() {
               ) : (
                 <>
                   {messagesWithDraft.map((message) => (
-                    <Message from={message.role} key={message.id}>
-                      <MessageAvatar
-                        name={message.role === "user" ? "You" : "AI"}
-                        src={message.role === "user" ? "/user.png" : "/ai.png"}
-                      />
-                      <MessageContent variant="flat">
-                        {message.content}
-                      </MessageContent>
-                    </Message>
+                    <ResearchMessage
+                      isSourcesPanelVisible={isRightPanelVisible}
+                      key={message.id}
+                      message={message}
+                      onToggleSourcesPanel={
+                        message.role === "assistant"
+                          ? handleToggleSourcesPanel
+                          : undefined
+                      }
+                      sources={
+                        message.role === "assistant"
+                          ? sourcesWithPinned
+                          : undefined
+                      }
+                    />
                   ))}
 
                   {/* Render interrupt as part of the conversation */}
@@ -582,16 +612,7 @@ export default function ThreadViewPage() {
       rightPanel={
         combinedSources.length > 0 ? (
           <SourcesPanel
-            citations={
-              sseStream.currentDraftCitations.length > 0
-                ? sseStream.currentDraftCitations.map((cit, idx) => ({
-                    id: `draft-cit-${idx}`,
-                    text: cit.claim,
-                    sources: cit.sources,
-                    position: { start: 0, end: cit.claim.length },
-                  }))
-                : undefined
-            }
+            citations={latestAssistantMessage?.citations}
             isSidebarOpen={isRightPanelVisible}
             onSidebarOpenChange={handleRightSidebarOpenChange}
             onTogglePin={handleTogglePin}
