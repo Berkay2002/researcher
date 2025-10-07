@@ -116,6 +116,10 @@ export const UnifiedSearchDocSchema = z.object({
   rank: z.number().optional(),
   fetchedAt: z.string(),
   sourceMeta: z.record(z.string(), z.unknown()).optional(),
+  // URL resolution fields for post-fetch deduplication
+  resolvedUrl: z.string().nullable().optional(), // URL after redirects
+  canonicalUrl: z.string().nullable().optional(), // URL from canonical link tag
+  normalizedKey: z.string().nullable().optional(), // Dedupe key for post-fetch collapse
 });
 
 /**
@@ -147,6 +151,9 @@ export const EvidenceSchema = z.object({
   contentHash: z.string(),
   chunks: z.array(ChunkSchema),
   source: z.enum(["tavily", "exa"]),
+  // URL resolution fields for post-fetch deduplication
+  resolvedUrl: z.string().nullable().optional(),
+  canonicalUrl: z.string().nullable().optional(),
 });
 
 /**

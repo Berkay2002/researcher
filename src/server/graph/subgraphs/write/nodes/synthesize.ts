@@ -94,14 +94,21 @@ export async function synthesize(
       new HumanMessage(humanPrompt),
     ]);
 
-    const synthesizedText = response.content as string;
+    const synthesizedText = normalizeLLMContent(response.content);
 
     console.log(
-      `[synthesize] Generated ${synthesizedText.length} characters of synthesis`
+      "[synthesize] LLM content type:",
+      Array.isArray(response.content) ? "array" : typeof response.content
+    );
+
+    const normalizedText = normalizeCitationMarkers(synthesizedText);
+
+    console.log(
+      `[synthesize] Generated ${normalizedText.length} characters of synthesis`
     );
 
     // Extract citations from the synthesized text
-    const citations = extractCitations(synthesizedText, evidence);
+    const citations = extractCitations(normalizedText, evidence);
 
     console.log(`[synthesize] Extracted ${citations.length} citations`);
 
@@ -113,7 +120,7 @@ export async function synthesize(
     );
 
     const draft: Draft = {
-      text: synthesizedText,
+      text: normalizedText,
       citations,
       confidence,
     };
@@ -164,7 +171,8 @@ The report should include:
 ${plan?.deliverable ? `Deliverable Type: ${plan.deliverable}` : ""}
 
 Important:
-- Use citations [Source X] to reference specific evidence sources
+- Use citations [Source X] to reference specific evidence sources (this exact format is required)
+- If you cannot cite using [Source X], explain why instead of switching formats
 - Each factual claim should be supported by at least one citation
 - Do not invent information not present in the provided evidence`;
 }
@@ -179,6 +187,79 @@ Available Evidence:
 ${evidenceContext}
 
 Please synthesize a comprehensive research report based on the provided evidence that directly addresses the research goal. Ensure all claims are properly cited using the [Source X] format.`;
+}
+
+/**
+ * Normalize LLM content payloads into plain text
+ */
+function normalizeLLMContent(content: unknown): string {
+  if (typeof content === "string") {
+    return content;
+  }
+
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => {
+        if (typeof part === "string") {
+          return part;
+        }
+        if (part && typeof part === "object" && "text" in part) {
+          const maybeText = (part as { text?: unknown }).text;
+          return typeof maybeText === "string" ? maybeText : "";
+        }
+        return "";
+      })
+      .join("");
+  }
+
+  if (content && typeof content === "object" && "text" in content) {
+    const maybeText = (content as { text?: unknown }).text;
+    if (typeof maybeText === "string") {
+      return maybeText;
+    }
+  }
+
+  return String(content ?? "");
+}
+
+/**
+ * Coerce common citation styles into the `[Source n]` format
+ */
+function normalizeCitationMarkers(text: string): string {
+  let normalized = text;
+
+  normalized = normalized.replace(
+    /<sup>(\d+)<\/sup>/gi,
+    (_match, group1: string) => `[Source ${group1}]`
+  );
+
+  normalized = normalized.replace(
+    /\(Source\s+(\d+)\)/gi,
+    (_match, group1: string) => `[Source ${group1}]`
+  );
+
+  normalized = normalized.replace(
+    /Source\s*\[(\d+)\]/gi,
+    (_match, group1: string) => `[Source ${group1}]`
+  );
+
+  normalized = normalized.replace(
+    /Source\s+(\d+)/gi,
+    (match, group1: string, offset, original) => {
+      const start = offset as number;
+      const end = start + match.length;
+      const prevChar = start > 0 ? original.charAt(start - 1) : "";
+      const nextChar = original.charAt(end);
+
+      if (prevChar === "[" && nextChar === "]") {
+        return match;
+      }
+
+      return `[Source ${group1}]`;
+    }
+  );
+
+  return normalized;
 }
 
 /**

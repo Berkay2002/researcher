@@ -39,11 +39,17 @@ const DEFAULT_AUTHORITATIVE_DOMAINS = [
   "wsj.com",
 ];
 
+// Priority constants for URL resolution
+const PRIORITY_CANONICAL = 3;
+const PRIORITY_RESOLVED = 2;
+const PRIORITY_ORIGINAL = 1;
+
 /**
  * DedupRerank Node
  *
  * Phase D: final processing
- * - Deduplicates enriched documents by content hash
+ * - Deduplicates enriched documents by content hash and normalized key
+ * - Collapses documents to their final/canonical URL if discovered
  * - Reranks by recency and authority
  * - Converts UnifiedSearchDoc to Evidence for backward compatibility
  * - Returns final ordered evidence array and research.final
@@ -76,11 +82,14 @@ export function dedupRerank(state: ParentState): Partial<ParentState> {
     ? (constraints.authoritativeDomains as string[])
     : DEFAULT_AUTHORITATIVE_DOMAINS;
 
-  // Deduplicate by content hash
-  const deduped = deduplicateByContentHash(enriched);
+  // First, deduplicate by content hash to remove exact duplicates
+  const contentDeduped = deduplicateByContentHash(enriched);
+
+  // Then, collapse to final/canonical URLs using normalizedKey
+  const urlCollapsed = collapseToCanonicalUrls(contentDeduped);
 
   // Score and sort
-  const scored = deduped.map((doc) => ({
+  const scored = urlCollapsed.map((doc) => ({
     doc,
     score: calculateScore(doc, {
       recencyBoost: DEFAULT_RECENCY_BOOST,
@@ -93,8 +102,16 @@ export function dedupRerank(state: ParentState): Partial<ParentState> {
 
   const finalDocs = scored.map((item) => item.doc);
 
+  // Calculate document and chunk counts for clear logging
+  const docCount = finalDocs.length;
+  const chunkCount = finalDocs.reduce(
+    (sum, doc) =>
+      sum + (doc.content ? Math.ceil(doc.content.length / MAX_CHUNK_SIZE) : 0),
+    0
+  );
+
   console.log(
-    `[dedupRerank] After deduplication: ${finalDocs.length} unique items`
+    `[dedupRerank] After deduplication: ${docCount} docs, ${chunkCount} chunks`
   );
 
   // Limit to top N if constraints specify max evidence
@@ -144,6 +161,61 @@ function deduplicateByContentHash(
   }
 
   return unique;
+}
+
+/**
+ * Collapse documents to their final/canonical URL
+ * Uses normalizedKey to identify duplicates after redirects/canonical discovery
+ */
+function collapseToCanonicalUrls(docs: UnifiedSearchDoc[]): UnifiedSearchDoc[] {
+  const seen = new Map<string, UnifiedSearchDoc>();
+
+  for (const doc of docs) {
+    // Use normalizedKey if available, otherwise fall back to URL hash
+    const key = doc.normalizedKey || hashContent(doc.url);
+
+    // If we haven't seen this key, add the document
+    if (!seen.has(key)) {
+      seen.set(key, doc);
+      continue;
+    }
+
+    // If we have seen this key, decide which document to keep
+    const existing = seen.get(key);
+    if (!existing) {
+      seen.set(key, doc);
+      continue;
+    }
+
+    // Priority: canonical > resolved > original
+    const getPriority = (d: UnifiedSearchDoc): number => {
+      if (d.canonicalUrl) {
+        return PRIORITY_CANONICAL;
+      }
+      if (d.resolvedUrl && d.resolvedUrl !== d.url) {
+        return PRIORITY_RESOLVED;
+      }
+      return PRIORITY_ORIGINAL;
+    };
+
+    const existingPriority = getPriority(existing);
+    const docPriority = getPriority(doc);
+
+    // Keep the document with higher priority
+    if (docPriority > existingPriority) {
+      seen.set(key, doc);
+    } else if (
+      docPriority === existingPriority &&
+      doc.content &&
+      existing.content &&
+      doc.content.length > existing.content.length
+    ) {
+      // If same priority, prefer the one with more content
+      seen.set(key, doc);
+    }
+  }
+
+  return Array.from(seen.values());
 }
 
 /**
@@ -213,6 +285,9 @@ function convertToEvidence(docs: UnifiedSearchDoc[]): Evidence[] {
       contentHash: hashContent(content),
       chunks,
       source: doc.provider,
+      // Include URL resolution fields for backward compatibility
+      resolvedUrl: doc.resolvedUrl,
+      canonicalUrl: doc.canonicalUrl,
     };
   });
 }

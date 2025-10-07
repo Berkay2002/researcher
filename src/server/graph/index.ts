@@ -22,7 +22,7 @@ let checkpointerSingleton: PostgresSaver | null = null;
 /**
  * Build the parent orchestration graph
  *
- * Flow: START -> planGate -> planner -> research -> factcheck -> writer -> END
+ * Flow: START -> planGate -> planner -> research -> writer -> factcheck -> END
  *
  * - All invocations require a thread_id
  * - PostgresSaver provides persistent checkpointing for HITL, time-travel, and fault-tolerance
@@ -71,9 +71,9 @@ function buildParentGraph() {
     .addNode("writer", writer)
     .addEdge(START, "planGate")
     .addEdge("planGate", "planner")
-    .addEdge("researchFlow", "factcheck")
-    .addEdge("factcheck", "writer")
-    .addEdge("writer", END);
+    .addEdge("researchFlow", "writer")
+    .addEdge("writer", "factcheck")
+    .addEdge("factcheck", END);
 
   // Compile with Postgres checkpointer for persistent thread-level memory
   return builder.compile({ checkpointer: checkpointerSingleton });

@@ -2,6 +2,10 @@
 export const WWW_PREFIX_LENGTH = 4;
 export const ROBOTS_TXT_PATH = "/robots.txt";
 
+// Regex patterns for URL deduplication (defined at top level for performance)
+const WWW_PREFIX_REGEX = /^www\./;
+const TRACKING_PARAMS_REGEX = /^(utm_|gclid|fbclid|mc_cid|mc_eid)/i;
+
 /**
  * Normalize URL for deduplication
  * - Remove trailing slashes
@@ -59,6 +63,45 @@ export function normalizeUrl(url: string): string {
   } catch {
     // If URL parsing fails, return original
     return url;
+  }
+}
+
+/**
+ * Create a dedupe key for URL that's protocol-agnostic and removes tracking params
+ * Used for pre-fetch deduplication to avoid queueing the same page multiple times
+ */
+export function dedupeKeyForUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(WWW_PREFIX_REGEX, "").toLowerCase();
+    let path = u.pathname;
+    if (path.endsWith("/") && path.length > 1) {
+      path = path.slice(0, -1);
+    }
+
+    const qs = new URLSearchParams(u.search);
+    // remove tracking params, then sort
+    const kept = new URLSearchParams();
+    const entries = [...qs.entries()];
+    for (const [k, v] of entries.filter(
+      ([key]) => !TRACKING_PARAMS_REGEX.test(key)
+    )) {
+      kept.append(k, v);
+    }
+
+    // Sort params alphabetically
+    const sortedParams = new URLSearchParams();
+    const sortedEntries = [...kept.entries()].sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+    for (const [k, v] of sortedEntries) {
+      sortedParams.append(k, v);
+    }
+
+    const q = sortedParams.toString();
+    return `${host}${path}${q ? `?${q}` : ""}`; // note: no protocol
+  } catch {
+    return url.toLowerCase();
   }
 }
 

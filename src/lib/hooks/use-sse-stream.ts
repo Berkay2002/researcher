@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: <Development> */
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -62,6 +63,7 @@ export function useSSEStream({
   onComplete,
   onError,
 }: UseSSEStreamOptions) {
+  const [isDev] = useState(() => process.env.NODE_ENV !== "production");
   const [state, setState] = useState<StreamState>({
     status: "idle",
     error: null,
@@ -88,6 +90,9 @@ export function useSSEStream({
    */
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
+      if (isDev) {
+        console.log("[useSSEStream] Closing EventSource connection");
+      }
       eventSourceRef.current.close();
       eventSourceRef.current = null;
     }
@@ -101,13 +106,16 @@ export function useSSEStream({
     isCompletedRef.current = false;
 
     setState((prev) => ({ ...prev, status: "idle" }));
-  }, []);
+  }, [isDev]);
 
   /**
    * Handle individual SSE events
    */
   const handleSSEEvent = useCallback(
     (event: SSEEvent) => {
+      if (isDev) {
+        console.log("[useSSEStream] Received event", event.type, event.data);
+      }
       switch (event.type) {
         case "node": {
           const nodeEvent = event as NodeEvent;
@@ -141,6 +149,14 @@ export function useSSEStream({
         case "draft": {
           const draftEvent = event as DraftEvent;
           const { text, citations, delta } = draftEvent.data;
+
+          if (isDev) {
+            console.log("[useSSEStream] Draft update", {
+              node: (draftEvent.data as { node?: string }).node ?? "unknown",
+              hasDelta: Boolean(delta),
+              length: (delta || text || "").length,
+            });
+          }
 
           setState((prev) => ({
             ...prev,
@@ -181,6 +197,12 @@ export function useSSEStream({
 
           // Finalize current draft as message
           setState((prev) => {
+            if (isDev) {
+              console.log("[useSSEStream] Stream completed, finalizing draft", {
+                currentDraftLength: prev.currentDraft?.length ?? 0,
+                messages: prev.messages.length,
+              });
+            }
             const finalMessages: MessageData[] = [...prev.messages];
 
             if (prev.currentDraft) {
@@ -225,6 +247,10 @@ export function useSSEStream({
 
           const errorMessage = errorEvent.data.message;
 
+          if (isDev) {
+            console.error("[useSSEStream] Stream error", errorEvent.data);
+          }
+
           setState((prev) => ({
             ...prev,
             status: "error",
@@ -237,6 +263,9 @@ export function useSSEStream({
         }
 
         case "keepalive":
+          if (isDev) {
+            console.log("[useSSEStream] Keep-alive received");
+          }
           // Ignore keep-alive pings
           break;
 
@@ -245,7 +274,7 @@ export function useSSEStream({
           break;
       }
     },
-    [disconnect, onComplete, onError]
+    [disconnect, onComplete, onError, isDev]
   );
 
   /**
@@ -259,6 +288,10 @@ export function useSSEStream({
         error: "No thread ID provided",
       }));
       return;
+    }
+
+    if (isDev) {
+      console.log("[useSSEStream] Connecting to stream", { threadId });
     }
 
     // Don't reconnect if already streaming or completed
@@ -284,6 +317,9 @@ export function useSSEStream({
     eventSource.onopen = () => {
       setState((prev) => ({ ...prev, status: "streaming" }));
       reconnectAttempts.current = 0;
+      if (isDev) {
+        console.log("[useSSEStream] Connection opened", { threadId });
+      }
     };
 
     // Generic message handler
@@ -307,6 +343,12 @@ export function useSSEStream({
 
     // Error handler
     eventSource.onerror = () => {
+      if (isDev) {
+        console.error("[useSSEStream] EventSource error", {
+          readyState: eventSource.readyState,
+          threadId,
+        });
+      }
       eventSource.close();
       eventSourceRef.current = null;
 
@@ -354,7 +396,7 @@ export function useSSEStream({
         onError?.(errorMessage);
       }
     };
-  }, [threadId, state.status, onError, handleSSEEvent]);
+  }, [threadId, state.status, onError, handleSSEEvent, isDev]);
 
   /**
    * Auto-connect on mount if enabled

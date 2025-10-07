@@ -592,6 +592,16 @@ function processChunk(chunk: unknown): SSEEvent | null {
 
     // Emit specialized events for key state changes
     if (updateObj.draft) {
+      const draftUpdate = updateObj.draft as Record<string, unknown>;
+      const hasDelta =
+        typeof draftUpdate === "object" &&
+        draftUpdate !== null &&
+        "delta" in draftUpdate;
+
+      console.log("[SSE] Emitting draft update", {
+        node: nodeName,
+        hasDelta,
+      });
       return {
         event: "draft",
         data: {
@@ -629,6 +639,10 @@ function processChunk(chunk: unknown): SSEEvent | null {
       Array.isArray(updateObj.issues) &&
       updateObj.issues.length > 0
     ) {
+      console.log("[SSE] Emitting issues event", {
+        node: nodeName,
+        count: updateObj.issues.length,
+      });
       return {
         event: "issues",
         data: {

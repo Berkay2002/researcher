@@ -3,7 +3,7 @@ import type { UnifiedSearchDoc } from "../graph/state";
 import { getExaClient } from "../tools/exa";
 import { getTavilyClient } from "../tools/tavily";
 import { shortHash } from "../utils/hashing";
-import { normalizeUrl } from "../utils/url";
+import { dedupeKeyForUrl } from "../utils/url";
 
 // Domain resolution utilities
 const TOPIC_DOMAIN_MAP: Record<string, string[]> = {
@@ -377,9 +377,10 @@ function deduplicateByUrl(results: UnifiedSearchDoc[]): UnifiedSearchDoc[] {
   const unique: UnifiedSearchDoc[] = [];
 
   for (const result of results) {
-    const normalized = normalizeUrl(result.url);
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
+    // Use dedupeKeyForUrl for pre-fetch deduplication
+    const dedupeKey = dedupeKeyForUrl(result.url);
+    if (!seen.has(dedupeKey)) {
+      seen.add(dedupeKey);
       unique.push(result);
     }
   }

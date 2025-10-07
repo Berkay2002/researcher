@@ -61,6 +61,8 @@ export default function ThreadViewPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
 
+  const isDev = process.env.NODE_ENV !== "production";
+
   // Fetch thread state
   const {
     snapshot,
@@ -135,6 +137,15 @@ export default function ThreadViewPage() {
       setCurrentInterrupt(null);
       setHasActiveInterrupt(false);
     }
+
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.log("[ThreadView] Snapshot updated", {
+        hasInterrupt: Boolean(snapshot?.interrupt),
+        hasDraft: Boolean(snapshot?.values?.draft),
+        issues: snapshot?.values?.issues?.length ?? 0,
+      });
+    }
   }, [snapshot]);
 
   /**
@@ -149,6 +160,18 @@ export default function ThreadViewPage() {
     const hasInterrupt = Boolean(snapshot.interrupt);
     const isCompleted = Boolean(snapshot.next && snapshot.next.length === 0);
     const shouldStream = !hasInterrupt && !isCompleted;
+
+    if (isDev) {
+      // eslint-disable-next-line no-console
+      console.log("[ThreadView] Stream state", {
+        threadId,
+        snapshotHasDraft: Boolean(snapshot.values?.draft),
+        sseStatus: sseStream.status,
+        shouldStream,
+        hasInterrupt,
+        isCompleted,
+      });
+    }
 
     if (shouldStream && sseStream.status === "idle") {
       // Connect only when thread is running and SSE is idle

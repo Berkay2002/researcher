@@ -27,7 +27,10 @@ const MAX_SCORE_RANGE = 1;
 
 // Top-level regex literals for performance
 const WORD_SPLIT_REGEX = /\s+/;
-const PLACEHOLDER_PATTERNS = [/todo|placeholder|lorem ipsum/gi, /\[.*?\]/];
+const PLACEHOLDER_PATTERNS = [
+  /\b(todo|placeholder|lorem ipsum)\b/gi,
+  /\[(?:TBD|TODO|INSERT|FIXME|REPLACE)[^\]]*\]/gi,
+];
 const JSON_EXTRACT_REGEX = /\{[\s\S]*\}/;
 const LIST_ITEM_REGEX = /^[-*•]\s*/;
 const SCORE_EXTRACT_REGEX = /(?:score|rating|overall)[\s:]*([\d.]+)/i;
