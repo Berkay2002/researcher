@@ -99,7 +99,7 @@ export function ThreadList({
       </div>
 
       {/* Thread List */}
-      <PanelContent className="space-y-2">
+      <PanelContent className="space-y-1">
         {sortedThreads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <p className="text-muted-foreground text-sm">

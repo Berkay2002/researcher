@@ -54,8 +54,10 @@ export function AppShell({
       )}
 
       {/* Center Panel - Main Content */}
-      <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="mx-auto w-full max-w-7xl">{centerPanel}</div>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="mx-auto flex h-full w-full max-w-7xl flex-1 flex-col overflow-hidden">
+          {centerPanel}
+        </div>
       </main>
 
       {/* Right Panel - Sources */}

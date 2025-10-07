@@ -146,7 +146,7 @@ export default function ThreadViewPage() {
         issues: snapshot?.values?.issues?.length ?? 0,
       });
     }
-  }, [snapshot]);
+  }, [snapshot, isDev]);
 
   /**
    * Manage SSE connection based on thread state
@@ -186,6 +186,7 @@ export default function ThreadViewPage() {
     sseStream.status,
     sseStream.connect,
     sseStream.disconnect,
+    isDev,
   ]);
 
   /**
@@ -254,7 +255,6 @@ export default function ThreadViewPage() {
         return;
       }
 
-      // Don't allow regular message submission when there's an active interrupt
       if (hasActiveInterrupt) {
         return;
       }
@@ -368,7 +368,7 @@ export default function ThreadViewPage() {
   return (
     <AppShell
       centerPanel={
-        <div className="flex h-full flex-col">
+        <div className="flex h-full min-h-0 flex-1 flex-col">
           {/* Research Status Bar */}
           {sseStream.sources.length > 0 && (
             <ResearchStatusBar
@@ -392,7 +392,7 @@ export default function ThreadViewPage() {
           )}
 
           {/* Conversation Area */}
-          <Conversation className="flex-1">
+          <Conversation className="min-h-0 flex-1">
             <ConversationContent>
               {messagesWithDraft.length === 0 && !hasActiveInterrupt ? (
                 <ConversationEmptyState
@@ -449,31 +449,40 @@ export default function ThreadViewPage() {
           )}
 
           {/* Run Log */}
-          <RunLog entries={sseStream.runLog} />
+          <div className="flex-shrink-0">
+            <RunLog entries={sseStream.runLog} />
+          </div>
 
           {/* Prompt Input - Hide when there's an active interrupt */}
-          {!hasActiveInterrupt && (
-            <div className="flex-shrink-0 border-t bg-background p-4">
-              <div className="mx-auto w-full max-w-3xl">
-                <PromptInput onSubmit={handlePromptSubmit}>
-                  <PromptInputBody>
-                    <PromptInputTextarea
-                      disabled={isSubmitting}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="What would you like to know?"
-                      value={inputValue}
-                    />
-                  </PromptInputBody>
-                  <PromptInputToolbar>
-                    <PromptInputSubmit
-                      disabled={isSubmitting || !inputValue.trim()}
-                      status={isSubmitting ? "submitted" : undefined}
-                    />
-                  </PromptInputToolbar>
-                </PromptInput>
-              </div>
+          <div className="flex-shrink-0 border-t bg-background p-4">
+            <div className="mx-auto w-full max-w-3xl space-y-2">
+              {hasActiveInterrupt && (
+                <Alert variant="default">
+                  <AlertDescription>
+                    Respond to the question above to continue the research flow.
+                  </AlertDescription>
+                </Alert>
+              )}
+              <PromptInput onSubmit={handlePromptSubmit}>
+                <PromptInputBody>
+                  <PromptInputTextarea
+                    disabled={isSubmitting || hasActiveInterrupt}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder="What would you like to know?"
+                    value={inputValue}
+                  />
+                </PromptInputBody>
+                <PromptInputToolbar>
+                  <PromptInputSubmit
+                    disabled={
+                      isSubmitting || hasActiveInterrupt || !inputValue.trim()
+                    }
+                    status={isSubmitting ? "submitted" : undefined}
+                  />
+                </PromptInputToolbar>
+              </PromptInput>
             </div>
-          )}
+          </div>
         </div>
       }
       leftPanel={

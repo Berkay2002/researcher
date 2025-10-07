@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { AppShell } from "@/app/(components)/app-shell";
 import { ResearchInput } from "@/app/(components)/research-input";
 import { ThreadList } from "@/app/(components)/thread-list";
@@ -10,6 +10,8 @@ import type { ThreadMetadata } from "@/types/ui";
 
 // HTTP Status Codes
 const HTTP_STATUS_ACCEPTED = 202;
+const RANDOM_ID_RADIX = 16;
+const RANDOM_ID_SLICE_INDEX = 2;
 
 /**
  * New Research Page
@@ -27,6 +29,37 @@ export default function NewResearchPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [threads, setThreads] = useState<ThreadMetadata[]>([]);
+  const isMountedRef = useRef(true);
+
+  useEffect(
+    () => () => {
+      isMountedRef.current = false;
+    },
+    []
+  );
+
+  /**
+   * Persist thread list to localStorage to keep the sidebar in sync
+   */
+  type ThreadsUpdater = (threadList: ThreadMetadata[]) => ThreadMetadata[];
+
+  const persistThreads = useCallback(
+    (updater: ThreadsUpdater | ThreadMetadata[]) => {
+      setThreads((currentThreadList) => {
+        const nextState: ThreadMetadata[] =
+          typeof updater === "function" ? updater(currentThreadList) : updater;
+
+        try {
+          localStorage.setItem("research-threads", JSON.stringify(nextState));
+        } catch {
+          // Ignore storage write failures (e.g., private browsing)
+        }
+
+        return nextState;
+      });
+    },
+    []
+  );
 
   /**
    * Load threads from localStorage
@@ -46,16 +79,55 @@ export default function NewResearchPage() {
   /**
    * Handle thread deletion
    */
-  const handleDeleteThread = useCallback((threadId: string) => {
-    setThreads((prev) => prev.filter((t) => t.threadId !== threadId));
-  }, []);
+  const handleDeleteThread = useCallback(
+    (threadId: string) => {
+      persistThreads((existingThreads) =>
+        existingThreads.filter((thread) => thread.threadId !== threadId)
+      );
+    },
+    [persistThreads]
+  );
 
   /**
    * Handle research submission
    */
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <>
   const handleSubmit = async (goal: string, mode: "auto" | "plan") => {
+    if (!isMountedRef.current) {
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
+
+    const threadId =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()
+            .toString(RANDOM_ID_RADIX)
+            .slice(RANDOM_ID_SLICE_INDEX)}`;
+
+    const timestamp = new Date().toISOString();
+
+    const optimisticThread: ThreadMetadata = {
+      threadId,
+      title: goal,
+      goal,
+      status: "running",
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      messageCount: 0,
+      mode,
+    };
+
+    // Optimistically add the thread and navigate immediately so the user sees progress right away
+    persistThreads((existingThreads) => [
+      optimisticThread,
+      ...existingThreads.filter((thread) => thread.threadId !== threadId),
+    ]);
+
+    router.push(`/research/${threadId}`);
 
     try {
       const response = await fetch("/api/threads/start", {
@@ -66,6 +138,7 @@ export default function NewResearchPage() {
         body: JSON.stringify({
           goal,
           modeOverride: mode,
+          threadId,
         }),
       });
 
@@ -85,15 +158,32 @@ export default function NewResearchPage() {
           "[NewResearch] Thread interrupted, redirecting to handle HITL"
         );
       }
-
-      // Navigate to thread view regardless - it will handle interrupts
-      router.push(`/research/${data.threadId}`);
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Unknown error occurred";
-      setError(errorMessage);
+      try {
+        const storedThreads = localStorage.getItem("research-threads");
+        if (storedThreads) {
+          const parsed = JSON.parse(storedThreads) as ThreadMetadata[];
+          const filtered = parsed.filter(
+            (thread) => thread.threadId !== threadId
+          );
+          localStorage.setItem("research-threads", JSON.stringify(filtered));
+        }
+      } catch {
+        // Ignore storage cleanup failures
+      }
+
+      if (isMountedRef.current) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Unknown error occurred";
+        setThreads((existingThreads) =>
+          existingThreads.filter((thread) => thread.threadId !== threadId)
+        );
+        setError(errorMessage);
+      }
     } finally {
-      setIsSubmitting(false);
+      if (isMountedRef.current) {
+        setIsSubmitting(false);
+      }
     }
   };
 

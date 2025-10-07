@@ -1,7 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ThreadStateSnapshot } from "@/types/ui";
+
+const RETRY_DELAY_MS = 500;
+const THREAD_STATE_PENDING_STATUS = 404;
 
 /**
  * Thread State Hook Options
@@ -36,10 +39,13 @@ export function useThreadState({
   const [snapshot, setSnapshot] = useState<ThreadStateSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const retryTimeoutRef = useRef<number | null>(null);
 
   /**
    * Fetch thread state snapshot
    */
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <It is fine here>
   const fetchState = useCallback(async () => {
     if (!threadId) {
       setSnapshot(null);
@@ -54,6 +60,18 @@ export function useThreadState({
       const response = await fetch(`/api/threads/${threadId}/state`);
 
       if (!response.ok) {
+        if (response.status === THREAD_STATE_PENDING_STATUS) {
+          if (retryTimeoutRef.current === null) {
+            retryTimeoutRef.current = window.setTimeout(() => {
+              retryTimeoutRef.current = null;
+              fetchState().catch(() => {
+                // Ignore retry errors; the outer call handles reporting
+              });
+            }, RETRY_DELAY_MS);
+          }
+          return;
+        }
+
         const errorText = await response.text();
         throw new Error(
           `Failed to fetch thread state: ${response.status} ${errorText}`
@@ -62,6 +80,10 @@ export function useThreadState({
 
       const data = (await response.json()) as ThreadStateSnapshot;
       setSnapshot(data);
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error occurred";
@@ -87,6 +109,16 @@ export function useThreadState({
       fetchState();
     }
   }, [autoFetch, threadId, fetchState]);
+
+  useEffect(
+    () => () => {
+      if (retryTimeoutRef.current !== null) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    },
+    []
+  );
 
   /**
    * Set up polling if interval > 0

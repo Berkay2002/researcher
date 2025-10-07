@@ -1,25 +1,16 @@
 "use client";
 
-import {
-  AlertCircleIcon,
-  CheckCircleIcon,
-  Loader2Icon,
-  PauseCircleIcon,
-  TrashIcon,
-} from "lucide-react";
+import { MoreVerticalIcon } from "lucide-react";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import type { MouseEvent } from "react";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
-import { formatTimestamp } from "@/types/ui";
 
 /**
  * Thread Card Props
@@ -32,56 +23,9 @@ export type ThreadCardProps = {
 };
 
 /**
- * Get status badge variant and icon
- */
-function getStatusConfig(status: ThreadMetadata["status"]): {
-  variant: "default" | "secondary" | "destructive" | "outline";
-  icon: React.ReactNode;
-  label: string;
-} {
-  const ICON_SIZE_CLASS = "mr-1 size-3";
-
-  switch (status) {
-    case "running":
-      return {
-        variant: "default",
-        icon: <Loader2Icon className={cn(ICON_SIZE_CLASS, "animate-spin")} />,
-        label: "Running",
-      };
-    case "completed":
-      return {
-        variant: "secondary",
-        icon: <CheckCircleIcon className={ICON_SIZE_CLASS} />,
-        label: "Completed",
-      };
-    case "interrupted":
-      return {
-        variant: "outline",
-        icon: <PauseCircleIcon className={ICON_SIZE_CLASS} />,
-        label: "Paused",
-      };
-    case "failed":
-      return {
-        variant: "destructive",
-        icon: <AlertCircleIcon className={ICON_SIZE_CLASS} />,
-        label: "Failed",
-      };
-    default:
-      // This should never be reached since all status values are handled
-      // but satisfies the linter requirement for exhaustive switch
-      return {
-        variant: "outline",
-        icon: <AlertCircleIcon className={ICON_SIZE_CLASS} />,
-        label: "Unknown",
-      };
-  }
-}
-
-/**
  * Thread Card Component
  *
- * Displays thread metadata in the thread history panel.
- * Clickable to navigate to the thread view.
+ * Minimal thread row for the history sidebar.
  */
 export function ThreadCard({
   thread,
@@ -89,69 +33,53 @@ export function ThreadCard({
   isActive = false,
   className,
 }: ThreadCardProps) {
-  const statusConfig = getStatusConfig(thread.status);
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.preventDefault(); // Prevent navigation
-    e.stopPropagation();
+  const handleDelete = (event: Event | MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     onDelete?.(thread.threadId);
   };
 
   return (
     <Link className="block" href={`/research/${thread.threadId}`}>
-      <Card
+      <div
         className={cn(
-          "transition-colors hover:bg-accent/50",
-          isActive && "border-primary bg-accent",
+          "group flex items-center justify-between gap-2 rounded-md px-3 py-2",
+          "text-left transition-colors hover:bg-accent/40 focus-visible:bg-accent/40",
+          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+          isActive && "bg-accent/60",
           className
         )}
       >
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <CardTitle className="line-clamp-2 text-sm">
-                {thread.title}
-              </CardTitle>
-              <CardDescription className="mt-1 text-xs">
-                {formatTimestamp(thread.createdAt)}
-              </CardDescription>
-            </div>
-            {onDelete && (
-              <Button
-                aria-label="Delete thread"
-                className="h-6 w-6"
-                onClick={handleDelete}
-                size="icon"
+        <span className="truncate font-medium text-foreground text-sm">
+          {thread.title}
+        </span>
+        {onDelete && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                aria-label="Thread actions"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
                 type="button"
-                variant="ghost"
               >
-                <TrashIcon className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <Badge className="flex items-center" variant={statusConfig.variant}>
-              {statusConfig.icon}
-              {statusConfig.label}
-            </Badge>
-            <div className="flex items-center gap-2">
-              <Badge className="text-xs" variant="outline">
-                {thread.mode}
-              </Badge>
-              <span className="text-muted-foreground text-xs">
-                {thread.messageCount} msg
-              </span>
-            </div>
-          </div>
-          {thread.preview && (
-            <p className="mt-2 line-clamp-2 text-muted-foreground text-xs">
-              {thread.preview}
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                <MoreVerticalIcon className="size-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  handleDelete(event);
+                }}
+              >
+                Delete thread
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </div>
     </Link>
   );
 }
