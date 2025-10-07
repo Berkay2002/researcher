@@ -65,19 +65,8 @@ export function useSSEStream({
   onError,
 }: UseSSEStreamOptions) {
   const [isDev] = useState(() => process.env.NODE_ENV !== "production");
-  const [state, setState] = useState<StreamState>({
-    status: "idle",
-    error: null,
-    messages: [],
-    sources: [],
-    runLog: [],
-    queries: [],
-    currentDraft: null,
-    currentDraftCitations: [],
-    activeNode: null,
-    completedNodes: [],
-  });
-
+  
+  // Initialize refs first
   const eventSourceRef = useRef<EventSource | null>(null);
   const eventListenersRef = useRef<
     [SSEEventType, (event: MessageEvent<string>) => void][]
@@ -85,6 +74,26 @@ export function useSSEStream({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const isCompletedRef = useRef(false);
+  const disconnectRef = useRef<(() => void) | null>(null);
+  const statusRef = useRef<StreamState["status"]>("idle");
+  
+  // Now initialize state
+  const [state, setState] = useState<StreamState>(() => {
+    const initialState = {
+      status: "idle" as const,
+      error: null,
+      messages: [],
+      sources: [],
+      runLog: [],
+      queries: [],
+      currentDraft: null,
+      currentDraftCitations: [],
+      activeNode: null,
+      completedNodes: [],
+    };
+    statusRef.current = initialState.status;
+    return initialState;
+  });
 
   const MAX_RECONNECT_ATTEMPTS = 3;
   const RECONNECT_DELAY_MS = 2000;
@@ -94,7 +103,7 @@ export function useSSEStream({
    */
   const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
-      if (isDev) {
+      if (process.env.NODE_ENV !== "production") {
         console.log("[useSSEStream] Closing EventSource connection");
       }
       for (const [type, listener] of eventListenersRef.current) {
@@ -116,15 +125,23 @@ export function useSSEStream({
     // Reset completion state
     isCompletedRef.current = false;
 
-    setState((prev) => ({ ...prev, status: "idle" }));
-  }, [isDev]);
+    setState((prev) => {
+      statusRef.current = "idle";
+      return { ...prev, status: "idle" };
+    });
+  }, []);
+
+  // Update the ref whenever disconnect changes
+  useEffect(() => {
+    disconnectRef.current = disconnect;
+  }, [disconnect]);
 
   /**
    * Handle individual SSE events
    */
   const handleSSEEvent = useCallback(
     (event: SSEEvent) => {
-      if (isDev) {
+      if (process.env.NODE_ENV !== "production") {
         console.log("[useSSEStream] Received event", event.type, event.data);
       }
       switch (event.type) {
@@ -161,7 +178,7 @@ export function useSSEStream({
           const draftEvent = event as DraftEvent;
           const { text, citations, delta } = draftEvent.data;
 
-          if (isDev) {
+          if (process.env.NODE_ENV !== "production") {
             console.log("[useSSEStream] Draft update", {
               node: (draftEvent.data as { node?: string }).node ?? "unknown",
               hasDelta: Boolean(delta),
@@ -208,7 +225,7 @@ export function useSSEStream({
 
           // Finalize current draft as message
           setState((prev) => {
-            if (isDev) {
+            if (process.env.NODE_ENV !== "production") {
               console.log("[useSSEStream] Stream completed, finalizing draft", {
                 currentDraftLength: prev.currentDraft?.length ?? 0,
                 messages: prev.messages.length,
@@ -234,6 +251,7 @@ export function useSSEStream({
               finalMessages.push(finalMessage);
             }
 
+            statusRef.current = "completed";
             return {
               ...prev,
               status: "completed",
@@ -244,7 +262,8 @@ export function useSSEStream({
             };
           });
 
-          disconnect();
+          // Use the ref to access the latest disconnect function
+          disconnectRef.current?.();
           onComplete?.();
           break;
         }
@@ -258,23 +277,27 @@ export function useSSEStream({
 
           const errorMessage = errorEvent.data.message;
 
-          if (isDev) {
+          if (process.env.NODE_ENV !== "production") {
             console.error("[useSSEStream] Stream error", errorEvent.data);
           }
 
-          setState((prev) => ({
-            ...prev,
-            status: "error",
-            error: errorMessage,
-          }));
+          setState((prev) => {
+            statusRef.current = "error";
+            return {
+              ...prev,
+              status: "error",
+              error: errorMessage,
+            };
+          });
 
           onError?.(errorMessage);
-          disconnect();
+          // Use the ref to access the latest disconnect function
+          disconnectRef.current?.();
           break;
         }
 
         case "keepalive":
-          if (isDev) {
+          if (process.env.NODE_ENV !== "production") {
             console.log("[useSSEStream] Keep-alive received");
           }
           // Ignore keep-alive pings
@@ -285,7 +308,7 @@ export function useSSEStream({
           break;
       }
     },
-    [disconnect, onComplete, onError, isDev]
+    [onComplete, onError]
   );
 
   /**
@@ -307,8 +330,8 @@ export function useSSEStream({
 
     // Don't reconnect if already streaming or completed
     if (
-      state.status === "streaming" ||
-      state.status === "completed" ||
+      statusRef.current === "streaming" ||
+      statusRef.current === "completed" ||
       isCompletedRef.current
     ) {
       return;
@@ -319,7 +342,10 @@ export function useSSEStream({
       eventSourceRef.current.close();
     }
 
-    setState((prev) => ({ ...prev, status: "connecting", error: null }));
+    setState((prev) => {
+      statusRef.current = "connecting";
+      return { ...prev, status: "connecting", error: null };
+    });
 
     const eventSource = new EventSource(`/api/stream/${threadId}`);
     eventSourceRef.current = eventSource;
@@ -355,7 +381,10 @@ export function useSSEStream({
 
     // Connection opened
     eventSource.onopen = () => {
-      setState((prev) => ({ ...prev, status: "streaming" }));
+      setState((prev) => {
+        statusRef.current = "streaming";
+        return { ...prev, status: "streaming" };
+      });
       reconnectAttempts.current = 0;
       if (isDev) {
         console.log("[useSSEStream] Connection opened", { threadId });
@@ -410,11 +439,14 @@ export function useSSEStream({
       // For interrupt (409) responses, don't attempt reconnection
       // The UI will handle reconnecting when the interrupt is resolved
       if (eventSource.readyState === EventSource.CLOSED) {
-        setState((prev) => ({
-          ...prev,
-          status: "idle",
-          error: null, // Clear error for expected interrupt
-        }));
+        setState((prev) => {
+          statusRef.current = "idle";
+          return {
+            ...prev,
+            status: "idle",
+            error: null, // Clear error for expected interrupt
+          };
+        });
         return;
       }
 
@@ -422,26 +454,32 @@ export function useSSEStream({
       if (reconnectAttempts.current < MAX_RECONNECT_ATTEMPTS) {
         reconnectAttempts.current += 1;
 
-        setState((prev) => ({
-          ...prev,
-          status: "connecting",
-          error: `Reconnecting... (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})`,
-        }));
+        setState((prev) => {
+          statusRef.current = "connecting";
+          return {
+            ...prev,
+            status: "connecting",
+            error: `Reconnecting... (attempt ${reconnectAttempts.current}/${MAX_RECONNECT_ATTEMPTS})`,
+          };
+        });
 
         reconnectTimeoutRef.current = setTimeout(() => {
           connect();
         }, RECONNECT_DELAY_MS);
       } else {
         const errorMessage = "Connection failed after multiple attempts";
-        setState((prev) => ({
-          ...prev,
-          status: "error",
-          error: errorMessage,
-        }));
+        setState((prev) => {
+          statusRef.current = "error";
+          return {
+            ...prev,
+            status: "error",
+            error: errorMessage,
+          };
+        });
         onError?.(errorMessage);
       }
     };
-  }, [threadId, state.status, onError, handleSSEEvent, isDev]);
+  }, [threadId, onError, handleSSEEvent, isDev]);
 
   /**
    * Auto-connect on mount if enabled

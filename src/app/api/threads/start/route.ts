@@ -54,6 +54,8 @@ async function createThreadHistoryEntry(data: {
  * - 400: Validation error
  * - 500: Server error
  */
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <>
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -108,6 +110,17 @@ export async function POST(req: NextRequest) {
         configurable: { thread_id: threadId },
       });
 
+      // Debug: Log the full snapshot structure
+      console.log("[API] Snapshot structure after invoke:", {
+        hasValues: Boolean(snapshot.values),
+        hasNext: Boolean(snapshot.next),
+        nextLength: snapshot.next?.length ?? 0,
+        hasTasks: Boolean(snapshot.tasks),
+        tasksLength: snapshot.tasks?.length ?? 0,
+        hasInterrupt: Boolean((snapshot as any).interrupt),
+        snapshotKeys: Object.keys(snapshot),
+      });
+
       // Extract interrupt data from state (same logic as /state route)
       const interruptFromTasks =
         (Array.isArray(snapshot.tasks) &&
@@ -118,8 +131,25 @@ export async function POST(req: NextRequest) {
       const interruptFromTop = (snapshot as any).interrupts?.[0]?.value ?? null;
       const interruptFromValues =
         (snapshot.values as any).__interrupt__ ?? null;
+
+      // Check for interrupt in the snapshot itself (LangGraph interrupt() function)
+      const interruptFromSnapshot = (snapshot as any).interrupt ?? null;
+
       const interruptData =
-        interruptFromTasks ?? interruptFromTop ?? interruptFromValues ?? null;
+        interruptFromSnapshot ??
+        interruptFromTasks ??
+        interruptFromTop ??
+        interruptFromValues ??
+        null;
+
+      console.log("[API] Start route interrupt detection results:");
+      console.log(
+        `- From snapshot: ${interruptFromSnapshot ? "FOUND" : "null"}`
+      );
+      console.log(`- From tasks: ${interruptFromTasks ? "FOUND" : "null"}`);
+      console.log(`- From top: ${interruptFromTop ? "FOUND" : "null"}`);
+      console.log(`- From values: ${interruptFromValues ? "FOUND" : "null"}`);
+      console.log(`- Final result: ${interruptData ? "FOUND" : "null"}`);
 
       if (interruptData) {
         console.log(`[API] Thread ${threadId} interrupted in Plan mode`);

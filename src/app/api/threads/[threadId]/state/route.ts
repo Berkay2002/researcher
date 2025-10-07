@@ -34,6 +34,17 @@ export async function GET(
       return NextResponse.json({ error: "Thread not found" }, { status: 404 });
     }
 
+    // Debug: Log the full snapshot structure
+    console.log("[API] State route snapshot structure:", {
+      hasValues: Boolean(snapshot.values),
+      hasNext: Boolean(snapshot.next),
+      nextLength: snapshot.next?.length ?? 0,
+      hasTasks: Boolean(snapshot.tasks),
+      tasksLength: snapshot.tasks?.length ?? 0,
+      hasInterrupt: Boolean((snapshot as any).interrupt),
+      snapshotKeys: Object.keys(snapshot),
+    });
+
     // Extract interrupt data from multiple possible locations in LangGraph state
     // Check tasks for interrupt metadata (new LangGraph versions)
     const interruptFromTasks =
@@ -55,8 +66,12 @@ export async function GET(
         ?.interrupts?.[0] ??
         null);
 
+    // Check for interrupt in the snapshot itself (LangGraph interrupt() function)
+    const interruptFromSnapshot = (snapshot as any).interrupt ?? null;
+
     // Use the first available interrupt source
     const interruptData =
+      interruptFromSnapshot ??
       interruptFromTasks ??
       interruptFromTop ??
       interruptFromValues ??
@@ -64,6 +79,7 @@ export async function GET(
       null;
 
     console.log("[API] Interrupt detection results:");
+    console.log(`- From snapshot: ${interruptFromSnapshot ? "FOUND" : "null"}`);
     console.log(`- From tasks: ${interruptFromTasks ? "FOUND" : "null"}`);
     console.log(`- From top: ${interruptFromTop ? "FOUND" : "null"}`);
     console.log(`- From values: ${interruptFromValues ? "FOUND" : "null"}`);
