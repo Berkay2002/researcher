@@ -541,7 +541,10 @@ function processChunkByMode(
   // Filter out AIMessageChunk objects that don't have useful content
   if (typeof streamMode === "object" && streamMode !== null) {
     const chunkStr = String(streamMode);
-    if (chunkStr === "[object AIMessageChunk]" || chunkStr.includes("MessageChunk")) {
+    if (
+      chunkStr === "[object AIMessageChunk]" ||
+      chunkStr.includes("MessageChunk")
+    ) {
       return null;
     }
   }

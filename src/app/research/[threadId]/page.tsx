@@ -314,15 +314,15 @@ export default function ThreadViewPage() {
 
     const hasInterrupt = Boolean(snapshot.interrupt);
     const isCompleted = Boolean(snapshot.next && snapshot.next.length === 0);
-    
+
     // Check if we have any real content (plan, draft, or research)
     // This indicates the graph has progressed beyond the initial planning stage
     const hasContent = Boolean(
       snapshot.values?.plan ||
-      snapshot.values?.draft ||
-      snapshot.values?.research
+        snapshot.values?.draft ||
+        snapshot.values?.research
     );
-    
+
     // Only stream if: not interrupted, not completed, and has progressed
     // This prevents connecting during the initial graph execution before interrupt
     const shouldStream = !hasInterrupt && !isCompleted && hasContent;

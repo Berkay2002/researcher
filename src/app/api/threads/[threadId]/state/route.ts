@@ -51,7 +51,7 @@ export async function GET(
       console.log("[API] State route tasks detail:", {
         firstTask: {
           keys: Object.keys(firstTask),
-          hasInterrupts: 'interrupts' in firstTask,
+          hasInterrupts: "interrupts" in firstTask,
           interruptsLength: firstTask.interrupts?.length ?? 0,
           interruptsValue: JSON.stringify(firstTask.interrupts),
           taskState: firstTask.state,
@@ -61,21 +61,24 @@ export async function GET(
 
     // Check if graph is still executing (not completed)
     const isExecuting = snapshot.next && snapshot.next.length > 0;
-    const hasEmptyInterruptsArray = Array.isArray(snapshot.tasks) && 
+    const hasEmptyInterruptsArray =
+      Array.isArray(snapshot.tasks) &&
       snapshot.tasks.length > 0 &&
-      'interrupts' in snapshot.tasks[0] &&
+      "interrupts" in snapshot.tasks[0] &&
       Array.isArray((snapshot.tasks[0] as any).interrupts) &&
       (snapshot.tasks[0] as any).interrupts.length === 0;
 
     // If graph is executing and has empty interrupts array, it might be about to interrupt
     // Return null for now but log for debugging
     if (isExecuting && hasEmptyInterruptsArray) {
-      console.log("[API] Graph is executing with empty interrupts array - interrupt may be pending");
+      console.log(
+        "[API] Graph is executing with empty interrupts array - interrupt may be pending"
+      );
     }
 
     // Extract interrupt data from multiple possible locations in LangGraph state
     // Try multiple detection strategies based on LangGraph version
-    
+
     // Strategy 1: Check tasks array for interrupts (most common in current versions)
     let interruptFromTasks: any = null;
     if (Array.isArray(snapshot.tasks)) {
@@ -84,7 +87,10 @@ export async function GET(
       );
       if (taskWithInterrupt) {
         // Try .value property first (wrapped format)
-        interruptFromTasks = taskWithInterrupt.interrupts[0]?.value ?? taskWithInterrupt.interrupts[0] ?? null;
+        interruptFromTasks =
+          taskWithInterrupt.interrupts[0]?.value ??
+          taskWithInterrupt.interrupts[0] ??
+          null;
       }
     }
 
