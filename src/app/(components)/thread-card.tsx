@@ -2,7 +2,13 @@
 
 import { MoreVerticalIcon } from "lucide-react";
 import Link from "next/link";
-import type { MouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +39,53 @@ export function ThreadCard({
   isActive = false,
   className,
 }: ThreadCardProps) {
+  const titleRef = useRef<HTMLSpanElement | null>(null);
+  const [isTitleTruncated, setIsTitleTruncated] = useState(false);
+
+  const updateTruncation = useCallback(() => {
+    const element = titleRef.current;
+    if (!element) {
+      setIsTitleTruncated(false);
+      return;
+    }
+    setIsTitleTruncated(element.scrollWidth > element.clientWidth + 1);
+  }, []);
+
+  useEffect(() => {
+    const element = titleRef.current;
+
+    if (!element) {
+      setIsTitleTruncated(false);
+      return;
+    }
+
+    updateTruncation();
+
+    if (typeof ResizeObserver !== "undefined") {
+      const resizeObserver = new ResizeObserver(() => {
+        updateTruncation();
+      });
+      resizeObserver.observe(element);
+
+      return () => {
+        resizeObserver.disconnect();
+      };
+    }
+
+    const handleWindowResize = () => {
+      updateTruncation();
+    };
+
+    window.addEventListener("resize", handleWindowResize);
+    return () => {
+      window.removeEventListener("resize", handleWindowResize);
+    };
+  }, [updateTruncation]);
+
+  useEffect(() => {
+    updateTruncation();
+  }, [thread.title, updateTruncation]);
+
   const handleDelete = (event: Event | MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -50,7 +103,11 @@ export function ThreadCard({
           className
         )}
       >
-        <span className="truncate font-medium text-foreground text-sm">
+        <span
+          className="truncate font-medium text-foreground text-sm"
+          ref={titleRef}
+          title={isTitleTruncated ? thread.title : undefined}
+        >
           {thread.title}
         </span>
         {onDelete && (
