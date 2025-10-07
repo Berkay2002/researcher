@@ -147,17 +147,14 @@ export function ThreadList({
         actions={
           onSidebarOpenChange ? (
             <Button
-              aria-label={isSidebarOpen ? "Hide threads" : "Show threads"}
+              aria-label="Hide threads"
+              className="size-7"
               onClick={handleToggleSidebar}
               size="icon"
               type="button"
               variant="ghost"
             >
-              {isSidebarOpen ? (
-                <PanelLeftCloseIcon className="size-4" />
-              ) : (
-                <PanelLeftOpenIcon className="size-4" />
-              )}
+              <PanelLeftCloseIcon className="size-5" />
             </Button>
           ) : null
         }
@@ -170,7 +167,7 @@ export function ThreadList({
         <div className="relative">
           <SearchIcon className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
           <Input
-            className="pl-9"
+            className="h-9 pl-9"
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search threads..."
             ref={searchInputRef}
@@ -182,12 +179,12 @@ export function ThreadList({
         <div className="mt-3">
           <Link href="/research/new">
             <Button
-              className="w-full"
+              className="h-9 w-full justify-start px-3"
               onClick={handleStartNewChat}
               type="button"
               variant="secondary"
             >
-              <PlusIcon className="mr-2 size-4" />
+              <PlusIcon className="mr-3 size-4" />
               New Chat
             </Button>
           </Link>

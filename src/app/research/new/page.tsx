@@ -29,6 +29,7 @@ export default function NewResearchPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [threads, setThreads] = useState<ThreadMetadata[]>([]);
+  const [isLeftPanelVisible, setIsLeftPanelVisible] = useState(true);
   const isMountedRef = useRef(true);
 
   useEffect(
@@ -87,6 +88,13 @@ export default function NewResearchPage() {
     },
     [persistThreads]
   );
+
+  /**
+   * Handle sidebar toggle
+   */
+  const handleSidebarOpenChange = useCallback((open: boolean) => {
+    setIsLeftPanelVisible(open);
+  }, []);
 
   /**
    * Handle research submission
@@ -217,10 +225,13 @@ export default function NewResearchPage() {
       leftPanel={
         <ThreadList
           activeThreadId={null}
+          isSidebarOpen={isLeftPanelVisible}
           onDeleteThread={handleDeleteThread}
+          onSidebarOpenChange={handleSidebarOpenChange}
           threads={threads}
         />
       }
+      leftPanelCollapsed={!isLeftPanelVisible}
       // No right panel - sources appear only after research starts
     />
   );

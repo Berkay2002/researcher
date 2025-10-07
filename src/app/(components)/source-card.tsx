@@ -119,8 +119,8 @@ export function SourceCard({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48" sideOffset={8}>
           <DropdownMenuItem
-            onSelect={() => {
-              void handleCopy();
+            onSelect={async () => {
+              await handleCopy();
             }}
           >
             <CopyIcon className="mr-2 size-4" />
