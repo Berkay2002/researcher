@@ -3,11 +3,11 @@
 import { MoreVerticalIcon } from "lucide-react";
 import Link from "next/link";
 import {
+  type MouseEvent,
   useCallback,
   useEffect,
   useRef,
   useState,
-  type MouseEvent,
 } from "react";
 import {
   DropdownMenu,
@@ -80,10 +80,6 @@ export function ThreadCard({
     return () => {
       window.removeEventListener("resize", handleWindowResize);
     };
-  }, [updateTruncation]);
-
-  useEffect(() => {
-    updateTruncation();
   }, [updateTruncation]);
 
   const handleDelete = (event: Event | MouseEvent) => {

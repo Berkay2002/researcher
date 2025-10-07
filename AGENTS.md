@@ -1,32 +1,19 @@
 # Repository Guidelines
+
 ## Project Structure & Module Organization
-- `src/app` hosts the Next.js App Router; colocate route-specific loaders and actions inside each route folder, e.g. `src/app/research/[threadId]/page.tsx`.
-- UI primitives are generated in `src/components/ui`; compose wrappers next to their feature entry points instead of editing the source files directly.
-- LangGraph orchestration sits in `src/server`; `graph` defines parent and subgraphs, `services` wraps external APIs, and `store` coordinates persistence for runs with memory.
-- Shared hooks and utilities live in `src/lib`, static assets in `public`, developer scripts in `scripts`, and contract tests in `tests`.
+Source routes live under `src/app` using the App Router; keep loaders and actions beside each `page.tsx` (e.g., `src/app/research/[threadId]/page.tsx`). Compose UI primitives by wrapping components from `src/components/ui` near their feature entry points. Place LangGraph orchestration in `src/server` (`graph` for flows, `services` for external APIs, `store` for memory). Shared utilities belong in `src/lib`, static assets in `public`, developer scripts in `scripts`, and mirror feature paths for contract tests in `tests`.
 
 ## Build, Test, and Development Commands
-- `npm run dev` – start the Next.js dev server with hot reload for the dashboard and research views.
-- `npm run build` – create an optimized production bundle; catches type and accessibility regressions.
-- `npm run start` – serve the production bundle for smoke tests before deployment or demos.
-- `npm run lint` – run Biome plus Ultracite checks; required before opening a pull request.
-- `npm run format` – apply Biome formatting; pair with `npx ultracite check` when you need stricter diagnostics.
+Use `npm run dev` to start the Next.js dashboard with hot reload. Run `npm run build` to produce the optimized bundle and catch type or accessibility issues. Execute `npm run start` for production smoke tests. Keep linting clean with `npm run lint`, and format consistently via `npm run format` followed by `npx ultracite check` when you need stricter diagnostics.
 
 ## Coding Style & Naming Conventions
-- Biome enforces two-space indentation, arrow functions, and `for...of`; review `biome.json` before adjusting tooling defaults.
-- Follow kebab-case filenames and PascalCase component names as described in `naming-conventions.md`; prefer inferred types or `as const` over redundant annotations.
-- Uphold Ultracite accessibility rules: provide keyboard fallbacks for pointer handlers, include `type="button"` on buttons, and avoid manual roles on semantic elements.
+Biome enforces two-space indentation, arrow functions, and `for...of` loops. Follow kebab-case filenames and PascalCase React components as noted in `naming-conventions.md`. Prefer inferred types or `as const` rather than redundant annotations, and keep UI wrappers local instead of editing `src/components/ui` directly.
 
 ## Testing Guidelines
-- Author Vitest suites in `tests` with the `*.spec.ts` suffix mirroring the feature path (`research.spec.ts`, etc.).
-- Run `npx vitest run --coverage` locally; aim for coverage on planner, research, factcheck, and writer nodes.
-- Mock external providers and graph I/O to keep suites deterministic; never depend on live APIs or network state.
+Author Vitest suites in `tests` using the `*.spec.ts` suffix aligned with the feature path (e.g., `tests/research.spec.ts`). Run `npx vitest run --coverage` to validate planner, research, factcheck, and writer nodes. Mock external providers and graph I/O so suites remain deterministic.
 
 ## Commit & Pull Request Guidelines
-- Mirror the existing history: imperative subject lines with optional Conventional Commit prefixes (`feat:`, `fix:`, `refactor:`).
-- Keep requests focused, lint-clean, and linked to tracking issues; document manual test commands and include UI captures for visual updates.
-- Rebase or squash noisy commits before review so the main branch stays concise.
+Write imperative commit subjects, optionally prefixed with Conventional Commit tags such as `feat:` or `fix:`. Ensure pull requests link tracking issues, document manual test commands, and include UI captures for visual tweaks. Keep the diff focused and lint-clean before review, and rebase or squash before merging.
 
-## Environment & Security
-- Copy `.env.example` to `.env.local` and supply provider keys (OpenAI, LangChain, etc.); never commit `.env` files or credentials.
-- Rotate secrets through your vault and access them via typed helpers in `src/server/configs`.
+## Security & Configuration Tips
+Copy `.env.example` to `.env.local` and fill provider keys without committing them. Rotate secrets through your vault and load them via typed helpers in `src/server/configs`. Avoid touching credentials in code, and prefer environment-based configuration for all external services.
