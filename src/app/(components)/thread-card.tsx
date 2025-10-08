@@ -18,9 +18,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 
-/**
- * Thread Card Props
- */
 export type ThreadCardProps = {
   thread: ThreadMetadata;
   onDelete?: (threadId: string) => void;
@@ -28,11 +25,6 @@ export type ThreadCardProps = {
   className?: string;
 };
 
-/**
- * Thread Card Component
- *
- * Minimal thread row for the history sidebar.
- */
 export function ThreadCard({
   thread,
   onDelete,
@@ -44,42 +36,25 @@ export function ThreadCard({
 
   const updateTruncation = useCallback(() => {
     const element = titleRef.current;
-    if (!element) {
-      setIsTitleTruncated(false);
-      return;
-    }
+    if (!element) return setIsTitleTruncated(false);
     setIsTitleTruncated(element.scrollWidth > element.clientWidth + 1);
   }, []);
 
   useEffect(() => {
     const element = titleRef.current;
-
-    if (!element) {
-      setIsTitleTruncated(false);
-      return;
-    }
+    if (!element) return setIsTitleTruncated(false);
 
     updateTruncation();
 
     if (typeof ResizeObserver !== "undefined") {
-      const resizeObserver = new ResizeObserver(() => {
-        updateTruncation();
-      });
-      resizeObserver.observe(element);
-
-      return () => {
-        resizeObserver.disconnect();
-      };
+      const ro = new ResizeObserver(() => updateTruncation());
+      ro.observe(element);
+      return () => ro.disconnect();
     }
 
-    const handleWindowResize = () => {
-      updateTruncation();
-    };
-
-    window.addEventListener("resize", handleWindowResize);
-    return () => {
-      window.removeEventListener("resize", handleWindowResize);
-    };
+    const onResize = () => updateTruncation();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, [updateTruncation]);
 
   const handleDelete = (event: Event | MouseEvent) => {
@@ -89,13 +64,23 @@ export function ThreadCard({
   };
 
   return (
-    <Link className="block" href={`/research/${thread.threadId}`}>
+    <Link
+      className="block"
+      href={`/research/${thread.threadId}`}
+      aria-current={isActive ? "page" : undefined}
+    >
       <div
         className={cn(
-          "group flex items-center justify-between gap-2 rounded-md px-3 py-2",
-          "text-left transition-colors hover:bg-accent/40 focus-visible:bg-accent/40",
-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
-          isActive && "bg-accent/60",
+          // Softer card surface + hover affordances
+          "group flex items-center justify-between gap-2",
+          "rounded-lg px-3 py-2",
+          "transition-all duration-200",
+          // Better focus ring
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+          // Surface states
+          isActive
+            ? "border border-border bg-accent/60 hover:bg-accent/70"
+            : "border border-transparent bg-card/40 hover:bg-card/60 hover:border-border/60",
           className
         )}
       >
@@ -111,7 +96,12 @@ export function ThreadCard({
             <DropdownMenuTrigger asChild>
               <button
                 aria-label="Thread actions"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center",
+                  "rounded-lg text-muted-foreground",
+                  "transition-colors border border-transparent",
+                  "hover:bg-muted/50 hover:text-foreground"
+                )}
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -122,11 +112,7 @@ export function ThreadCard({
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onSelect={(event) => {
-                  handleDelete(event);
-                }}
-              >
+              <DropdownMenuItem onSelect={(event) => handleDelete(event)}>
                 Delete thread
               </DropdownMenuItem>
             </DropdownMenuContent>

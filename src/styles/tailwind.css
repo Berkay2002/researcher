@@ -3,6 +3,25 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@layer base {
+  :root {
+    /* Slightly softened curve shared across shadcn primitives */
+    --radius: 12px;
+  }
+
+  .rounded-lg {
+    border-radius: var(--radius);
+  }
+
+  .rounded-md {
+    border-radius: calc(var(--radius) - 3px);
+  }
+
+  .rounded-sm {
+    border-radius: calc(var(--radius) - 5px);
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -42,7 +61,7 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
   --font-serif: Merriweather, serif;
-  --radius: 0.3rem;
+  --radius: 12px;
   --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
   --tracking-tight: calc(var(--tracking-normal) - 0.025em);
   --tracking-wide: calc(var(--tracking-normal) + 0.025em);
@@ -69,7 +88,7 @@
 }
 
 :root {
-  --radius: 0.3rem;
+  --radius: 12px;
   --background: oklch(0.9885 0.0057 84.5659);
   --foreground: oklch(0.366 0.0251 49.6085);
   --card: oklch(0.9686 0.0091 78.2818);

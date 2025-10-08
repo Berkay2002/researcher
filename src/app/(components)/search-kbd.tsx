@@ -28,19 +28,32 @@ export const KbdInputGroup = forwardRef<HTMLInputElement, KbdInputGroupProps>(
     ref
   ) {
     return (
-      <InputGroup className={cn("h-9 w-full", className)}>
-        <InputGroupAddon className="text-muted-foreground">
+      <InputGroup
+        className={cn(
+          // Rounded but restrained search surface with improved focus ring
+          "h-10 w-full overflow-hidden rounded-xl",
+          "bg-muted/40 ring-1 ring-border",
+          "focus-within:ring-2 focus-within:ring-ring/60",
+          "transition-colors",
+          className
+        )}
+      >
+        <InputGroupAddon className="pr-2 pl-3 text-muted-foreground">
           <SearchIcon className="size-4" />
         </InputGroupAddon>
         <InputGroupInput
-          className={cn("px-0", inputClassName)}
+          className={cn(
+            "bg-transparent px-0",
+            "focus-visible:outline-none focus-visible:ring-0",
+            inputClassName
+          )}
           placeholder={placeholder}
           ref={ref}
           type={type}
           {...inputProps}
         />
         {kbdKeys.length > 0 ? (
-          <InputGroupAddon align="inline-end" className="gap-1">
+          <InputGroupAddon align="inline-end" className="gap-1 pr-3">
             <KbdGroup>
               {kbdKeys.map((key) => (
                 <Kbd key={key}>{key}</Kbd>

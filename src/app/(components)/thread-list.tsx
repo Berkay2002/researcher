@@ -17,9 +17,6 @@ import { KbdInputGroup } from "./search-kbd";
 import { SearchModal } from "./search-modal";
 import { ThreadCard } from "./thread-card";
 
-/**
- * Thread List Props
- */
 export type ThreadListProps = {
   threads: ThreadMetadata[];
   activeThreadId?: string | null;
@@ -29,12 +26,6 @@ export type ThreadListProps = {
   isSidebarOpen?: boolean;
 };
 
-/**
- * Thread List Component
- *
- * Displays list of research threads with search and filtering.
- * Shows in left panel of app shell.
- */
 export function ThreadList({
   threads,
   activeThreadId,
@@ -57,9 +48,7 @@ export function ThreadList({
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   const handleToggleSidebar = useCallback(() => {
@@ -69,9 +58,7 @@ export function ThreadList({
   const handleFocusSearch = useCallback(() => {
     if (!isSidebarOpen) {
       onSidebarOpenChange?.(true);
-      requestAnimationFrame(() => {
-        searchInputRef.current?.focus();
-      });
+      requestAnimationFrame(() => searchInputRef.current?.focus());
       return;
     }
     searchInputRef.current?.focus();
@@ -103,21 +90,13 @@ export function ThreadList({
   const handleOpenSearchModal = useCallback(() => {
     setIsSearchModalOpen(true);
   }, []);
-
   const handleSearchModalOpenChange = useCallback((open: boolean) => {
     setIsSearchModalOpen(open);
   }, []);
 
-  /**
-   * Filter threads by search query
-   */
   const filteredThreads = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return threads;
-    }
-
+    if (!searchQuery.trim()) return threads;
     const query = searchQuery.toLowerCase();
-
     return threads.filter(
       (thread) =>
         thread.title.toLowerCase().includes(query) ||
@@ -126,9 +105,6 @@ export function ThreadList({
     );
   }, [threads, searchQuery]);
 
-  /**
-   * Sort threads by most recent first
-   */
   const sortedThreads = useMemo(
     () =>
       [...filteredThreads].sort(
@@ -151,10 +127,11 @@ export function ThreadList({
   if (!isSidebarOpen) {
     return (
       <div className={cn("flex h-full flex-col", className)}>
-        {/* Collapsed Header - matches expanded header height and icon position */}
+        {/* Collapsed Header */}
         <div className="flex h-15 items-center justify-end px-4">
           <Button
             aria-label="Open thread sidebar"
+            className="rounded-lg hover:bg-accent/60"
             onClick={() => onSidebarOpenChange?.(true)}
             size="icon"
             type="button"
@@ -164,13 +141,13 @@ export function ThreadList({
           </Button>
         </div>
 
-        {/* Spacing between collapse icon and search icon - matches expanded state */}
         <div className="h-2" />
 
-        {/* Collapsed Search Area - matches expanded search area and icon position */}
+        {/* Collapsed Search */}
         <div className="flex h-12 items-center justify-start px-4">
           <Button
             aria-label="Search threads"
+            className="rounded-lg hover:bg-accent/60"
             onClick={() => {
               handleFocusSearch();
               handleOpenSearchModal();
@@ -183,11 +160,12 @@ export function ThreadList({
           </Button>
         </div>
 
-        {/* Collapsed New Chat Area - matches expanded new chat area and icon position */}
+        {/* Collapsed New Chat */}
         <div className="flex h-12 items-center justify-start px-4">
           <Button
             aria-label="New chat"
             asChild
+            className="rounded-lg hover:bg-accent/60"
             onClick={handleStartNewChat}
             size="icon"
             type="button"
@@ -212,7 +190,7 @@ export function ThreadList({
           onSidebarOpenChange ? (
             <Button
               aria-label="Hide threads"
-              className="size-7"
+              className="size-7 rounded-lg hover:bg-accent/60"
               onClick={handleToggleSidebar}
               size="icon"
               type="button"
@@ -229,6 +207,8 @@ export function ThreadList({
       {/* Search */}
       <div className="border-b px-4 py-3">
         <KbdInputGroup
+          className="rounded-xl"
+          inputClassName="bg-transparent"
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={(event) => {
             if (
@@ -244,33 +224,37 @@ export function ThreadList({
           value={searchQuery}
         />
         <div className="mt-3">
-          <Link href="/research/new">
-            <Button
-              className="h-9 w-full justify-start px-3"
-              onClick={handleStartNewChat}
-              type="button"
-              variant="secondary"
-            >
+          <Button
+            asChild
+            className="h-9 w-full justify-start rounded-md px-3 shadow-xs transition hover:shadow-sm"
+            onClick={handleStartNewChat}
+            type="button"
+            variant="secondary"
+          >
+            <Link href="/research/new">
               <PlusIcon className="size-4" />
               New Chat
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
 
       {/* Thread List */}
-      <PanelContent className="space-y-1">
+      <PanelContent className="space-y-2 p-2">
         {sortedThreads.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <p className="text-muted-foreground text-sm">
               {searchQuery ? "No threads match your search" : "No threads yet"}
             </p>
             {!searchQuery && (
-              <Link href="/research/new">
-                <Button className="mt-4" size="sm" type="button">
-                  Start Research
-                </Button>
-              </Link>
+              <Button
+                asChild
+                className="mt-4 rounded-md"
+                size="sm"
+                type="button"
+              >
+                <Link href="/research/new">Start Research</Link>
+              </Button>
             )}
           </div>
         ) : (
@@ -285,8 +269,8 @@ export function ThreadList({
         )}
       </PanelContent>
 
-      {/* Footer (optional) */}
-      <PanelFooter className="text-center">
+      {/* Footer */}
+      <PanelFooter className="border-t text-center">
         <p className="text-muted-foreground text-xs">
           {sortedThreads.length} thread{sortedThreads.length !== 1 ? "s" : ""}
         </p>
