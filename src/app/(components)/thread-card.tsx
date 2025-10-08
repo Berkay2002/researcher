@@ -25,6 +25,7 @@ export type ThreadCardProps = {
   className?: string;
   isFavorite?: boolean;
   onToggleFavorite?: (threadId: string) => void;
+  basePath?: string;
 };
 
 export function ThreadCard({
@@ -34,6 +35,7 @@ export function ThreadCard({
   className,
   isFavorite = false,
   onToggleFavorite,
+  basePath = "/research",
 }: ThreadCardProps) {
   const titleRef = useRef<HTMLSpanElement | null>(null);
   const [isTitleTruncated, setIsTitleTruncated] = useState(false);
@@ -75,7 +77,7 @@ export function ThreadCard({
     <Link
       aria-current={isActive ? "page" : undefined}
       className="block"
-      href={`/research/${thread.threadId}`}
+      href={`${basePath}/${thread.threadId}`}
     >
       <div
         className={cn(

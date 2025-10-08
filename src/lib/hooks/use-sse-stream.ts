@@ -61,6 +61,7 @@ export type UseSSEStreamOptions = {
   autoConnect?: boolean;
   onComplete?: () => void;
   onError?: (error: string) => void;
+  endpoint?: string;
 };
 
 /**
@@ -74,6 +75,7 @@ export function useSSEStream({
   autoConnect = true,
   onComplete,
   onError,
+  endpoint = "/api/stream",
 }: UseSSEStreamOptions) {
   const [isDev] = useState(() => process.env.NODE_ENV !== "production");
 
@@ -367,6 +369,8 @@ export function useSSEStream({
   /**
    * Connect to SSE stream
    */
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Its fine>
   const connect = useCallback(() => {
     if (!threadId) {
       setState((prev) => ({
@@ -415,7 +419,10 @@ export function useSSEStream({
       return { ...prev, status: "connecting", error: null };
     });
 
-    const eventSource = new EventSource(`/api/stream/${threadId}`);
+    const normalizedEndpoint = endpoint.endsWith("/")
+      ? endpoint.slice(0, -1)
+      : endpoint;
+    const eventSource = new EventSource(`${normalizedEndpoint}/${threadId}`);
     eventSourceRef.current = eventSource;
 
     const knownEventTypes: SSEEventType[] = [
@@ -558,7 +565,7 @@ export function useSSEStream({
         onError?.(errorMessage);
       }
     };
-  }, [threadId, onError, handleSSEEvent, isDev]);
+  }, [threadId, onError, handleSSEEvent, isDev, endpoint]);
 
   /**
    * Auto-connect on mount if enabled

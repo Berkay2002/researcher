@@ -69,6 +69,7 @@ export type ThreadListProps = {
   className?: string;
   onSidebarOpenChange?: (open: boolean) => void;
   isSidebarOpen?: boolean;
+  basePath?: string;
 };
 
 export function ThreadList({
@@ -78,6 +79,7 @@ export function ThreadList({
   onSidebarOpenChange,
   isSidebarOpen = true,
   className,
+  basePath = "/research",
 }: ThreadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
@@ -150,8 +152,8 @@ export function ThreadList({
 
   const handleCreateThread = useCallback(() => {
     handleStartNewChat();
-    router.push("/research/new");
-  }, [handleStartNewChat, router]);
+    router.push(`${basePath}/new`);
+  }, [handleStartNewChat, router, basePath]);
 
   const handleCreateProject = useCallback((project: Project) => {
     setProjects((prev) => {
@@ -185,9 +187,9 @@ export function ThreadList({
       }
       setSearchQuery("");
       setIsSearchModalOpen(false);
-      router.push(`/research/${thread.threadId}`);
+      router.push(`${basePath}/${thread.threadId}`);
     },
-    [isSidebarOpen, onSidebarOpenChange, router]
+    [isSidebarOpen, onSidebarOpenChange, router, basePath]
   );
 
   const handleOpenSearchModal = useCallback(() => {
@@ -299,7 +301,7 @@ export function ThreadList({
             type="button"
             variant="ghost"
           >
-            <Link href="/research/new">
+            <Link href={`${basePath}/new`}>
               <PlusIcon className="size-5" />
               <span className="sr-only">New chat</span>
             </Link>
@@ -359,7 +361,7 @@ export function ThreadList({
             type="button"
             variant="ghost"
           >
-            <Link href="/research/new">
+            <Link href={`${basePath}/new`}>
               <PlusIcon className="size-4" />
               New Chat
             </Link>
@@ -468,7 +470,7 @@ export function ThreadList({
                 size="sm"
                 type="button"
               >
-                <Link href="/research/new">Start Research</Link>
+                <Link href={`${basePath}/new`}>Start Research</Link>
               </Button>
             )}
           </div>

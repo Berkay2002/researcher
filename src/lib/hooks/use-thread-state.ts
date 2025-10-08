@@ -13,6 +13,7 @@ export type UseThreadStateOptions = {
   threadId: string | null;
   autoFetch?: boolean;
   pollInterval?: number; // Poll interval in ms (0 = no polling)
+  endpoint?: string;
 };
 
 /**
@@ -35,6 +36,7 @@ export function useThreadState({
   threadId,
   autoFetch = true,
   pollInterval = 0,
+  endpoint = "/api/threads",
 }: UseThreadStateOptions): UseThreadStateResult {
   const [snapshot, setSnapshot] = useState<ThreadStateSnapshot | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +59,10 @@ export function useThreadState({
     setError(null);
 
     try {
-      const response = await fetch(`/api/threads/${threadId}/state`);
+      const normalizedEndpoint = endpoint.endsWith("/")
+        ? endpoint.slice(0, -1)
+        : endpoint;
+      const response = await fetch(`${normalizedEndpoint}/${threadId}/state`);
 
       if (!response.ok) {
         if (response.status === THREAD_STATE_PENDING_STATUS) {
@@ -92,7 +97,7 @@ export function useThreadState({
     } finally {
       setIsLoading(false);
     }
-  }, [threadId]);
+  }, [threadId, endpoint]);
 
   /**
    * Manual refetch wrapper

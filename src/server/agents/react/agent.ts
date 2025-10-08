@@ -25,6 +25,7 @@ export type ReactAgentOptions = {
   stateSchema?: ExtractAgentProp<"stateSchema">;
   contextSchema?: ExtractAgentProp<"contextSchema">;
   extraTools?: ReactTool[];
+  checkpointer?: ExtractAgentProp<"checkpointer">;
 };
 
 export function createReactAgent(options: ReactAgentOptions = {}) {
@@ -37,6 +38,7 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
     stateSchema,
     contextSchema,
     extraTools,
+    checkpointer,
   } = options;
   const resolvedLLM =
     llm ?? createLLM("gemini-2.5-pro", DEFAULT_AGENT_TEMPERATURE);
@@ -55,6 +57,11 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
 
   if (model) {
     (agentConfig as { model?: typeof model }).model = model;
+  }
+
+  if (checkpointer !== undefined) {
+    (agentConfig as { checkpointer?: typeof checkpointer }).checkpointer =
+      checkpointer;
   }
 
   return createAgent(agentConfig as unknown as AgentParams);
