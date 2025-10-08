@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fira_Code, Merriweather, Oxanium } from "next/font/google";
 import "../styles/tailwind.css";
+import "@/server/startup"; // This will initialize services at startup
 
 const oxanium = Oxanium({
   variable: "--font-oxanium",

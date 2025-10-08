@@ -10,6 +10,9 @@ const envSchema = z.object({
   TAVILY_API_KEY: z.string().min(1, "Tavily API key is required"),
   EXA_API_KEY: z.string().min(1, "Exa API key is required"),
 
+  // Database
+  DATABASE_URL: z.string().url("Database URL is required"),
+
   // Optional Configuration
   REDIS_URL: z.string().url().optional(),
   NODE_ENV: z
@@ -46,6 +49,7 @@ export const {
   OPENAI_API_KEY,
   TAVILY_API_KEY,
   EXA_API_KEY,
+  DATABASE_URL,
   REDIS_URL,
   NODE_ENV,
   LANGCHAIN_TRACING_V2,
