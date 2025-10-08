@@ -55,7 +55,8 @@ export function SourceCard({
   return (
     <div
       className={cn(
-        "group relative rounded-lg border border-border/50 p-3 transition-all hover:border-border hover:bg-accent/30",
+        "group relative rounded-lg border border-transparent bg-card/40 p-3",
+        "transition-all duration-200 hover:border-border/60 hover:bg-card/60",
         className
       )}
     >
@@ -81,7 +82,7 @@ export function SourceCard({
         <div className="min-w-0 flex-1 space-y-1">
           {/* Title - clickable, truncate to 2 lines */}
           <a
-            className="line-clamp-2 block font-medium text-sm leading-tight hover:underline"
+            className="line-clamp-2 block font-medium text-sm leading-tight hover:text-foreground hover:underline"
             href={source.url}
             rel="noopener noreferrer"
             target="_blank"
@@ -108,8 +109,11 @@ export function SourceCard({
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              "absolute top-2 right-2 inline-flex size-8 items-center justify-center rounded-full text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100"
+              "absolute top-2 right-2 inline-flex size-8 items-center justify-center",
+              "rounded-md border border-transparent text-muted-foreground",
+              "transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "opacity-0 focus-visible:opacity-100 group-hover:opacity-100",
+              source.isPinned && "border-border/60 bg-card"
             )}
             type="button"
           >

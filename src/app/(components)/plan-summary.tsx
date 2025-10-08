@@ -113,7 +113,7 @@ export function PlanSummary({
       {!hideTrigger && (
         <div className={cn(triggerContainerClassName)}>
           <Button
-            className="h-8 px-3"
+            className="h-8 rounded-md px-3 transition-colors hover:bg-muted/40"
             onClick={() => setIsOpen(true)}
             size="sm"
             variant="ghost"
@@ -164,7 +164,7 @@ export function PlanSummary({
                 <div className="flex flex-wrap gap-1.5">
                   {dagSteps.map((step) => (
                     <span
-                      className="rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground text-xs"
+                      className="rounded-md bg-muted px-2 py-1 font-medium text-muted-foreground text-xs"
                       key={step}
                     >
                       {step}

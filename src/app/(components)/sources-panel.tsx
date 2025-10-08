@@ -150,10 +150,11 @@ export function SourcesPanel({
   if (!isSidebarOpen) {
     return (
       <div className={cn("flex h-full flex-col", className)}>
-        {/* Collapsed Header - matches expanded header height and icon position */}
+        {/* Collapsed Header */}
         <div className="flex h-15 items-center justify-start px-4">
           <Button
             aria-label="Open sources sidebar"
+            className="rounded-lg hover:bg-accent/60"
             onClick={() => onSidebarOpenChange?.(true)}
             size="icon"
             type="button"
@@ -163,11 +164,14 @@ export function SourcesPanel({
           </Button>
         </div>
 
-        {/* Collapsed Filter Area - matches expanded filter area and icon position */}
+        {/* Collapsed Filter Area */}
         <div className="flex h-6 items-center justify-start px-4">
           <Button
             aria-label="Toggle filters"
-            className={cn(showFilters && "bg-accent")}
+            className={cn(
+              "rounded-lg hover:bg-accent/60",
+              showFilters && "bg-accent/60 text-foreground"
+            )}
             onClick={() => {
               onSidebarOpenChange?.(true);
               setShowFilters(!showFilters);
@@ -196,7 +200,10 @@ export function SourcesPanel({
           <div className="flex items-center gap-1">
             <Button
               aria-label="Toggle filters"
-              className={cn(showFilters && "bg-accent")}
+              className={cn(
+                "rounded-lg transition-colors hover:bg-accent/60",
+                showFilters && "bg-accent/60 text-foreground"
+              )}
               onClick={() => setShowFilters(!showFilters)}
               size="icon"
               type="button"
@@ -212,7 +219,7 @@ export function SourcesPanel({
             {onSidebarOpenChange && (
               <Button
                 aria-label="Hide sources"
-                className="size-7"
+                className="size-7 rounded-lg hover:bg-accent/60"
                 onClick={handleToggleSidebar}
                 size="icon"
                 type="button"
@@ -252,6 +259,7 @@ export function SourcesPanel({
             <div className="space-y-3 border-b px-4 py-3">
               {/* Search */}
               <Input
+                className="rounded-lg"
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search sources..."
                 type="search"
@@ -262,10 +270,13 @@ export function SourcesPanel({
               <div className="flex gap-2">
                 {/* Pinned Filter */}
                 <Button
-                  className={cn("h-9 flex-1", showPinnedOnly && "bg-accent")}
+                  className={cn(
+                    "h-9 flex-1 rounded-md border border-border/60 bg-card/40 transition-colors hover:bg-card/60",
+                    showPinnedOnly && "border-border bg-accent/60 text-foreground"
+                  )}
                   onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                   type="button"
-                  variant="outline"
+                  variant="ghost"
                 >
                   <PinIcon className="mr-2 size-3" />
                   Pinned only ({pinnedCount})
@@ -273,7 +284,7 @@ export function SourcesPanel({
 
                 {/* Domain Filter */}
                 <Select onValueChange={setDomainFilter} value={domainFilter}>
-                  <SelectTrigger className="h-10 flex-1" size="default">
+                  <SelectTrigger className="h-10 flex-1 rounded-md" size="default">
                     <SelectValue placeholder="All domains" />
                   </SelectTrigger>
                   <SelectContent>
@@ -290,7 +301,7 @@ export function SourcesPanel({
               {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <Button
-                  className="w-full"
+                  className="w-full rounded-md hover:bg-muted/40"
                   onClick={clearFilters}
                   size="sm"
                   type="button"
@@ -304,7 +315,7 @@ export function SourcesPanel({
           )}
 
           {/* Sources List */}
-          <PanelContent className="space-y-2">
+          <PanelContent className="space-y-2 p-2">
             {filteredSources.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <p className="text-muted-foreground text-sm">
@@ -314,11 +325,11 @@ export function SourcesPanel({
                 </p>
                 {activeFilterCount > 0 && (
                   <Button
-                    className="mt-4"
+                    className="mt-4 rounded-md hover:bg-muted/40"
                     onClick={clearFilters}
                     size="sm"
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                   >
                     Clear filters
                   </Button>
@@ -348,11 +359,11 @@ export function SourcesPanel({
           className="flex flex-1 flex-col overflow-hidden"
           value="citations"
         >
-          <PanelContent className="space-y-2">
+          <PanelContent className="space-y-2 p-2">
             {citations && citations.length > 0 ? (
               citations.map((citation, index) => (
                 <div
-                  className="flex gap-3 rounded-lg border border-border/50 p-3 transition-colors hover:bg-accent/30"
+                  className="group flex gap-3 rounded-lg border border-transparent bg-card/40 p-3 transition-all duration-200 hover:border-border/60 hover:bg-card/60"
                   key={citation.id}
                 >
                   <span className="shrink-0 font-medium font-mono text-xs">
@@ -368,7 +379,7 @@ export function SourcesPanel({
                           const domain = new URL(sourceUrl).hostname;
                           return (
                             <a
-                              className="flex items-center gap-1 text-muted-foreground text-xs hover:underline"
+                              className="flex items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground hover:underline"
                               href={sourceUrl}
                               key={sourceUrl}
                               rel="noopener noreferrer"

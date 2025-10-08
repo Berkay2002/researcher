@@ -246,17 +246,15 @@ export default function ThreadViewPage() {
   );
 
   const plan = snapshot?.values?.plan;
-  const planSummary = plan?.goal
-    ? (
-        <PlanSummary
-          constraints={plan.constraints ?? null}
-          dag={plan.dag ?? null}
-          deliverable={plan.deliverable}
-          goal={plan.goal}
-          originalGoal={snapshot?.values?.userInputs?.goal ?? urlGoal ?? null}
-        />
-      )
-    : null;
+  const planSummary = plan?.goal ? (
+    <PlanSummary
+      constraints={plan.constraints ?? null}
+      dag={plan.dag ?? null}
+      deliverable={plan.deliverable}
+      goal={plan.goal}
+      originalGoal={snapshot?.values?.userInputs?.goal ?? urlGoal ?? null}
+    />
+  ) : null;
 
   const shouldRenderSourcesPanel =
     combinedSources.length > 0 || Boolean(planSummary);

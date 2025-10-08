@@ -44,7 +44,12 @@ export function ReportSourcesButton({
 
   return (
     <Button
-      className={cn("gap-2", className)}
+      className={cn(
+        "gap-2 rounded-lg border border-border/60 bg-card/40",
+        "transition-all duration-200 hover:border-border/80 hover:bg-card/60",
+        isOpen && "border-border bg-accent/60 text-foreground",
+        className
+      )}
       onClick={onClick}
       type="button"
       variant="outline"
@@ -74,7 +79,7 @@ export function ReportSourcesButton({
 
         {/* "+N" Counter for remaining sources */}
         {remainingCount > 0 && (
-          <div className="flex size-6 shrink-0 items-center justify-center rounded-full border-2 border-background bg-muted font-medium text-xs">
+          <div className="flex size-6 shrink-0 items-center justify-center rounded-md border-2 border-background bg-muted font-medium text-xs">
             +{remainingCount}
           </div>
         )}
