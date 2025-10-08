@@ -231,7 +231,6 @@ export function SourcesPanel({
           </div>
         }
         middle={planSummary}
-        subtitle={`${sources.length} found`}
         title="Sources"
       />
 
@@ -242,10 +241,10 @@ export function SourcesPanel({
       >
         <TabsList className="w-full rounded-none border-b">
           <TabsTrigger className="flex-1" value="sources">
-            Sources ({sources.length})
+            {sources.length} Sources
           </TabsTrigger>
           <TabsTrigger className="flex-1" value="citations">
-            Citations ({citations?.length || 0})
+            {citations?.length || 0} Citations
           </TabsTrigger>
         </TabsList>
 
@@ -272,7 +271,8 @@ export function SourcesPanel({
                 <Button
                   className={cn(
                     "h-9 flex-1 rounded-md border border-border/60 bg-card/40 transition-colors hover:bg-card/60",
-                    showPinnedOnly && "border-border bg-accent/60 text-foreground"
+                    showPinnedOnly &&
+                      "border-border bg-accent/60 text-foreground"
                   )}
                   onClick={() => setShowPinnedOnly(!showPinnedOnly)}
                   type="button"
@@ -284,7 +284,10 @@ export function SourcesPanel({
 
                 {/* Domain Filter */}
                 <Select onValueChange={setDomainFilter} value={domainFilter}>
-                  <SelectTrigger className="h-10 flex-1 rounded-md" size="default">
+                  <SelectTrigger
+                    className="h-10 flex-1 rounded-md"
+                    size="default"
+                  >
                     <SelectValue placeholder="All domains" />
                   </SelectTrigger>
                   <SelectContent>

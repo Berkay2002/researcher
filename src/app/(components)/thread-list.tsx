@@ -1,7 +1,10 @@
+/** biome-ignore-all lint/suspicious/noConsole: <Development> */
 "use client";
 
 import {
+  ChevronRight,
   FolderPlus,
+  MoreVertical,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlusIcon,
@@ -11,6 +14,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 import { PanelContent, PanelFooter, PanelHeader } from "./app-shell";
@@ -41,6 +55,8 @@ export function ThreadList({
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isProjectsExpanded, setIsProjectsExpanded] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -51,6 +67,24 @@ export function ThreadList({
       } catch (error) {
         console.error("Failed to parse favoriteThreadIds", error);
       }
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("projects") ?? "[]");
+      if (Array.isArray(stored)) {
+        const hydrated = stored.filter(
+          (project): project is Project =>
+            typeof project?.id === "string" && typeof project?.name === "string"
+        );
+        setProjects(hydrated);
+        if (hydrated.length > 0) {
+          setIsProjectsExpanded(true);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to parse projects", error);
     }
   }, []);
 
@@ -90,22 +124,30 @@ export function ThreadList({
     router.push("/research/new");
   }, [handleStartNewChat, router]);
 
-  const handleCreateProject = useCallback(
-    (project: Project) => {
+  const handleCreateProject = useCallback((project: Project) => {
+    setProjects((prev) => {
+      const next = [...prev, project];
       try {
-        const existing = JSON.parse(
-          localStorage.getItem("projects") ?? "[]"
-        ) as Project[];
-        localStorage.setItem(
-          "projects",
-          JSON.stringify([...existing, project])
-        );
+        localStorage.setItem("projects", JSON.stringify(next));
       } catch (error) {
         console.error("Failed to persist project", error);
       }
-    },
-    []
-  );
+      setIsProjectsExpanded(true);
+      return next;
+    });
+  }, []);
+
+  const handleDeleteProject = useCallback((projectId: string) => {
+    setProjects((prev) => {
+      const next = prev.filter((project) => project.id !== projectId);
+      try {
+        localStorage.setItem("projects", JSON.stringify(next));
+      } catch (error) {
+        console.error("Failed to persist project", error);
+      }
+      return next;
+    });
+  }, []);
 
   const handleSelectThreadFromModal = useCallback(
     (thread: ThreadMetadata) => {
@@ -295,15 +337,84 @@ export function ThreadList({
           </Button>
         </div>
         <div className="mt-2">
-          <Button
-            className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
-            onClick={() => setIsProjectModalOpen(true)}
-            type="button"
-            variant="ghost"
-          >
-            <FolderPlus className="size-4" />
-            Projects
-          </Button>
+          {projects.length === 0 ? (
+            <Button
+              className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
+              onClick={() => setIsProjectModalOpen(true)}
+              type="button"
+              variant="ghost"
+            >
+              <FolderPlus className="size-4" />
+              Projects
+            </Button>
+          ) : (
+            <Collapsible
+              className="group/collapsible"
+              onOpenChange={setIsProjectsExpanded}
+              open={isProjectsExpanded}
+            >
+              <CollapsibleTrigger asChild>
+                <Button
+                  className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
+                  type="button"
+                  variant="ghost"
+                >
+                  <FolderPlus className="size-4" />
+                  Projects
+                  <ChevronRight className="ml-auto size-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-1 pl-2 data-[state=open]:mt-2 data-[state=closed]:hidden">
+                <Button
+                  className="h-8 w-full justify-start rounded-md bg-transparent px-3 text-sm transition hover:bg-muted/40"
+                  onClick={() => setIsProjectModalOpen(true)}
+                  type="button"
+                  variant="ghost"
+                >
+                  <FolderPlus className="size-4" />
+                  New Project
+                </Button>
+                {projects.map((project) => (
+                  <div
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/40"
+                    key={project.id}
+                  >
+                    <button
+                      className="flex flex-1 items-center gap-2 text-left"
+                      type="button"
+                    >
+                      <span
+                        aria-hidden
+                        className="flex size-6 items-center justify-center rounded-md bg-muted text-base"
+                      >
+                        {project.emoji ?? "📁"}
+                      </span>
+                      <span className="truncate">{project.name}</span>
+                    </button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          aria-label={`Project actions for ${project.name}`}
+                          className="size-7"
+                          type="button"
+                          variant="ghost"
+                        >
+                          <MoreVertical className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onSelect={() => handleDeleteProject(project.id)}
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                ))}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
         </div>
       </div>
 

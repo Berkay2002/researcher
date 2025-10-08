@@ -40,13 +40,17 @@ export function ThreadCard({
 
   const updateTruncation = useCallback(() => {
     const element = titleRef.current;
-    if (!element) return setIsTitleTruncated(false);
+    if (!element) {
+      return setIsTitleTruncated(false);
+    }
     setIsTitleTruncated(element.scrollWidth > element.clientWidth + 1);
   }, []);
 
   useEffect(() => {
     const element = titleRef.current;
-    if (!element) return setIsTitleTruncated(false);
+    if (!element) {
+      return setIsTitleTruncated(false);
+    }
 
     updateTruncation();
 
@@ -69,9 +73,9 @@ export function ThreadCard({
 
   return (
     <Link
+      aria-current={isActive ? "page" : undefined}
       className="block"
       href={`/research/${thread.threadId}`}
-      aria-current={isActive ? "page" : undefined}
     >
       <div
         className={cn(
@@ -84,7 +88,7 @@ export function ThreadCard({
           // Surface states
           isActive
             ? "border border-border bg-accent/60 hover:bg-accent/70"
-            : "border border-transparent bg-card/40 hover:bg-card/60 hover:border-border/60",
+            : "border border-transparent bg-card/40 hover:border-border/60 hover:bg-card/60",
           className
         )}
       >
@@ -100,7 +104,7 @@ export function ThreadCard({
             aria-label={isFavorite ? "Unfavorite" : "Favorite"}
             className={cn(
               "flex h-8 w-8 items-center justify-center",
-              "rounded-lg text-muted-foreground transition-colors border border-transparent",
+              "rounded-lg border border-transparent text-muted-foreground transition-colors",
               "hover:bg-muted/50 hover:text-foreground"
             )}
             onClick={(event) => {
@@ -111,7 +115,10 @@ export function ThreadCard({
             type="button"
           >
             <StarIcon
-              className={cn("size-4", isFavorite && "fill-yellow-400 text-yellow-400")}
+              className={cn(
+                "size-4",
+                isFavorite && "fill-yellow-400 text-yellow-400"
+              )}
             />
           </button>
         )}
@@ -123,7 +130,7 @@ export function ThreadCard({
                 className={cn(
                   "flex h-8 w-8 items-center justify-center",
                   "rounded-lg text-muted-foreground",
-                  "transition-colors border border-transparent",
+                  "border border-transparent transition-colors",
                   "hover:bg-muted/50 hover:text-foreground"
                 )}
                 onClick={(event) => {
