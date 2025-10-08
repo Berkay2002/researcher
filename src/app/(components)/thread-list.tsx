@@ -1,6 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConsole: <Development> */
 "use client";
 
+// biome-ignore lint/performance/noNamespaceImport: <It is fine>
+import * as Icons from "lucide-react";
 import {
   ChevronRight,
   FolderPlus,
@@ -28,6 +30,33 @@ import {
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 import { PanelContent, PanelFooter, PanelHeader } from "./app-shell";
+
+type ColorKey =
+  | "gray"
+  | "emerald"
+  | "blue"
+  | "violet"
+  | "red"
+  | "orange"
+  | "indigo";
+
+const ICON_COLOR: Record<ColorKey, string> = {
+  gray: "text-gray-500",
+  emerald: "text-emerald-500",
+  blue: "text-blue-500",
+  violet: "text-violet-500",
+  red: "text-red-500",
+  orange: "text-orange-500",
+  indigo: "text-indigo-500",
+};
+
+function getIconByName(name?: string) {
+  const fallback = Icons.Folder;
+  // dynamic access into lucide-react's export map
+  // biome-ignore lint/suspicious/noExplicitAny: <It is fine>
+  return (Icons as any)[name ?? "Folder"] ?? fallback;
+}
+
 import ProjectModal, { type Project } from "./project-modal";
 import { KbdInputGroup } from "./search-kbd";
 import { SearchModal } from "./search-modal";
@@ -374,44 +403,51 @@ export function ThreadList({
                   <FolderPlus className="size-4" />
                   New Project
                 </Button>
-                {projects.map((project) => (
-                  <div
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/40"
-                    key={project.id}
-                  >
-                    <button
-                      className="flex flex-1 items-center gap-2 text-left"
-                      type="button"
+                {projects.map((project) => {
+                  const Icon = getIconByName(project.icon);
+                  const colorClass =
+                    ICON_COLOR[(project.color as ColorKey) ?? "gray"];
+
+                  return (
+                    <div
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition hover:bg-muted/40"
+                      key={project.id}
                     >
-                      <span
-                        aria-hidden
-                        className="flex size-6 items-center justify-center rounded-md bg-muted text-base"
+                      <button
+                        className="flex flex-1 items-center gap-2 text-left"
+                        type="button"
                       >
-                        {project.emoji ?? "📁"}
-                      </span>
-                      <span className="truncate">{project.name}</span>
-                    </button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-label={`Project actions for ${project.name}`}
-                          className="size-7"
-                          type="button"
-                          variant="ghost"
+                        <span
+                          aria-hidden
+                          className="flex size-6 items-center justify-center rounded-md bg-muted"
                         >
-                          <MoreVertical className="size-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onSelect={() => handleDeleteProject(project.id)}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                ))}
+                          <Icon className={cn("h-4 w-4", colorClass)} />
+                        </span>
+                        <span className="truncate">{project.name}</span>
+                      </button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            aria-label={`Project actions for ${project.name}`}
+                            className="size-7"
+                            type="button"
+                            variant="ghost"
+                          >
+                            <MoreVertical className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => handleDeleteProject(project.id)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  );
+                })}
               </CollapsibleContent>
             </Collapsible>
           )}
