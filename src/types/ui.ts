@@ -265,6 +265,7 @@ export type ThreadStateSnapshot = {
     plan?: {
       goal: string;
       deliverable: string;
+      dag?: string[];
       constraints?: Record<string, unknown>;
     };
     queries?: string[];

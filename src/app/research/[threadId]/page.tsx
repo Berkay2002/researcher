@@ -10,6 +10,7 @@ import {
   InterruptPrompt,
   type InterruptResponse,
 } from "@/app/(components)/InterruptPrompt";
+import { PlanSummary } from "@/app/(components)/plan-summary";
 import { ResearchMessage } from "@/app/(components)/research-message";
 import { RunLog } from "@/app/(components)/run-log";
 import { SourcesPanel } from "@/app/(components)/sources-panel";
@@ -70,7 +71,6 @@ export default function ThreadViewPage() {
   const [inputValue, setInputValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasActiveInterrupt, setHasActiveInterrupt] = useState(false);
-  const [hasPlannerCompleted, setHasPlannerCompleted] = useState(false);
   const [scrollToSourceIndex, setScrollToSourceIndex] = useState<
     number | undefined
   >(undefined);
@@ -245,6 +245,22 @@ export default function ThreadViewPage() {
     [combinedSources, pinnedSources]
   );
 
+  const plan = snapshot?.values?.plan;
+  const planSummary = plan?.goal
+    ? (
+        <PlanSummary
+          constraints={plan.constraints ?? null}
+          dag={plan.dag ?? null}
+          deliverable={plan.deliverable}
+          goal={plan.goal}
+          originalGoal={snapshot?.values?.userInputs?.goal ?? urlGoal ?? null}
+        />
+      )
+    : null;
+
+  const shouldRenderSourcesPanel =
+    combinedSources.length > 0 || Boolean(planSummary);
+
   /**
    * Detect interrupts from thread state and planner completion
    */
@@ -257,11 +273,6 @@ export default function ThreadViewPage() {
       // Clear interrupt if none present
       setCurrentInterrupt(null);
       setHasActiveInterrupt(false);
-    }
-
-    // Check if planner has completed (has plan but no interrupt)
-    if (snapshot?.values?.plan && !snapshot?.interrupt) {
-      setHasPlannerCompleted(true);
     }
 
     if (isDev) {
@@ -689,19 +700,20 @@ export default function ThreadViewPage() {
       }
       leftPanelCollapsed={!isLeftPanelVisible}
       rightPanel={
-        combinedSources.length > 0 ? (
+        shouldRenderSourcesPanel ? (
           <SourcesPanel
             citations={latestAssistantMessage?.citations}
             isSidebarOpen={isRightPanelVisible}
             onSidebarOpenChange={handleRightSidebarOpenChange}
             onTogglePin={handleTogglePin}
+            planSummary={planSummary}
             scrollToSourceIndex={scrollToSourceIndex}
             sources={sourcesWithPinned}
           />
         ) : undefined
       }
       rightPanelCollapsed={!isRightPanelVisible}
-      rightPanelVisible={combinedSources.length > 0 || hasPlannerCompleted}
+      rightPanelVisible={shouldRenderSourcesPanel}
     />
   );
 }

@@ -41,6 +41,10 @@ export function PlanSummary({
   const lastGoalRef = useRef<string | null>(null);
 
   useEffect(() => {
+    if (!hideTrigger) {
+      return;
+    }
+
     if (!goal) {
       setIsOpen(false);
       lastGoalRef.current = null;
@@ -51,7 +55,7 @@ export function PlanSummary({
       lastGoalRef.current = goal;
       setIsOpen(true);
     }
-  }, [goal]);
+  }, [goal, hideTrigger]);
 
   const hasGoalChanged = useMemo(() => {
     if (!(goal && originalGoal)) {
@@ -62,7 +66,7 @@ export function PlanSummary({
 
   const constraintEntries = useMemo(() => {
     if (!constraints || typeof constraints !== "object") {
-      return [] as Array<[string, unknown]>;
+      return [] as [string, unknown][];
     }
 
     return Object.entries(constraints).filter(([, value]) => {
@@ -108,13 +112,18 @@ export function PlanSummary({
     <>
       {!hideTrigger && (
         <div className={cn(triggerContainerClassName)}>
-          <Button onClick={() => setIsOpen(true)} size="sm" variant="outline">
+          <Button
+            className="h-8 px-3"
+            onClick={() => setIsOpen(true)}
+            size="sm"
+            variant="ghost"
+          >
             <ScrollTextIcon className="mr-2 size-4" />
             Plan Summary
           </Button>
         </div>
       )}
-      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <Dialog onOpenChange={handleOpenChange} open={isOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Planner Objective</DialogTitle>
@@ -130,30 +139,32 @@ export function PlanSummary({
           </DialogHeader>
           <div className="space-y-4">
             <section className="space-y-2">
-              <p className="font-medium text-sm uppercase text-muted-foreground">
+              <p className="font-medium text-muted-foreground text-sm uppercase">
                 Goal
               </p>
-              <p className="text-sm leading-6 text-foreground">{formattedGoal}</p>
+              <p className="text-foreground text-sm leading-6">
+                {formattedGoal}
+              </p>
             </section>
             {formattedDeliverable ? (
               <section className="space-y-2">
-                <p className="font-medium text-sm uppercase text-muted-foreground">
+                <p className="font-medium text-muted-foreground text-sm uppercase">
                   Deliverable
                 </p>
-                <p className="text-sm leading-6 text-foreground">
+                <p className="text-foreground text-sm leading-6">
                   {formattedDeliverable}
                 </p>
               </section>
             ) : null}
             {dagSteps.length > 0 ? (
               <section className="space-y-2">
-                <p className="font-medium text-sm uppercase text-muted-foreground">
+                <p className="font-medium text-muted-foreground text-sm uppercase">
                   Workflow
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {dagSteps.map((step) => (
                     <span
-                      className="rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground"
+                      className="rounded-full bg-muted px-2 py-1 font-medium text-muted-foreground text-xs"
                       key={step}
                     >
                       {step}
@@ -164,7 +175,7 @@ export function PlanSummary({
             ) : null}
             {constraintEntries.length > 0 ? (
               <section className="space-y-2">
-                <p className="font-medium text-sm uppercase text-muted-foreground">
+                <p className="font-medium text-muted-foreground text-sm uppercase">
                   Constraints
                 </p>
                 <dl className="space-y-1 text-sm">

@@ -8,6 +8,7 @@ import {
   XIcon,
 } from "lucide-react";
 import Image from "next/image";
+import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,6 +37,7 @@ export type SourcesPanelProps = {
   onSidebarOpenChange?: (open: boolean) => void;
   isSidebarOpen?: boolean;
   scrollToSourceIndex?: number;
+  planSummary?: ReactNode;
 };
 
 /**
@@ -58,6 +60,7 @@ export function SourcesPanel({
   onSidebarOpenChange,
   isSidebarOpen = true,
   scrollToSourceIndex,
+  planSummary,
 }: SourcesPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [domainFilter, setDomainFilter] = useState<string>("all");
@@ -220,6 +223,7 @@ export function SourcesPanel({
             )}
           </div>
         }
+        middle={planSummary}
         subtitle={`${sources.length} found`}
         title="Sources"
       />

@@ -110,6 +110,7 @@ export type PanelHeaderProps = {
   title: string;
   subtitle?: string;
   actions?: ReactNode;
+  middle?: ReactNode;
   className?: string;
 };
 
@@ -117,14 +118,34 @@ export function PanelHeader({
   title,
   subtitle,
   actions,
+  middle,
   className,
 }: PanelHeaderProps) {
+  if (middle) {
+    return (
+      <div
+        className={cn(
+          "grid grid-cols-[1fr_auto_1fr] items-center gap-3 border-b px-4 py-3",
+          className
+        )}
+      >
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-sm">{title}</h2>
+          {subtitle && (
+            <p className="truncate text-muted-foreground text-xs">{subtitle}</p>
+          )}
+        </div>
+        <div className="justify-self-center">{middle}</div>
+        <div className="flex justify-end gap-1">
+          {actions}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
-      className={cn(
-        "flex items-center justify-between border-b px-4 py-3",
-        className
-      )}
+      className={cn("flex items-center border-b px-4 py-3", className)}
     >
       <div className="min-w-0 flex-1">
         <h2 className="truncate font-semibold text-sm">{title}</h2>
@@ -132,7 +153,9 @@ export function PanelHeader({
           <p className="truncate text-muted-foreground text-xs">{subtitle}</p>
         )}
       </div>
-      {actions && <div className="ml-2 flex-shrink-0">{actions}</div>}
+      {actions ? (
+        <div className="ml-auto flex items-center gap-1">{actions}</div>
+      ) : null}
     </div>
   );
 }
