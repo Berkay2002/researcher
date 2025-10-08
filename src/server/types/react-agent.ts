@@ -1,31 +1,76 @@
-import { z } from "zod";
+/**
+ * React Agent Types
+ *
+ * Type definitions for the React agent implementation using LangGraph SDK.
+ * These types define the state structure and metadata for the agent,
+ * aligned with LangGraph SDK's message and state types.
+ */
 
-// ============================================================================
-// ReAct Agent Shared Types
-// ============================================================================
+import type { Message } from "@langchain/langgraph-sdk";
 
-export const TodoItemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.enum(["pending", "completed"]),
-  notes: z.string().optional(),
-  createdAt: z.string(),
-  completedAt: z.string().nullable().optional(),
-});
+export type TodoItem = {
+  id: string;
+  title: string;
+  status: "pending" | "completed";
+  notes?: string;
+  createdAt: string;
+  completedAt?: string;
+};
 
-export const ToolCallMetadataSchema = z.object({
-  toolName: z.string(),
-  invokedAt: z.string(),
-  correlationId: z.string().optional(),
-});
+export type ToolCallMetadata = {
+  toolName: string;
+  invokedAt: string;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
+  error?: string;
+  duration?: number;
+};
 
-export const SearchRunMetadataSchema = z.object({
-  query: z.string(),
-  provider: z.enum(["tavily", "exa"]),
-  startedAt: z.string(),
-  completedAt: z.string().optional(),
-});
+export type SearchRunMetadata = {
+  query: string;
+  provider: "tavily" | "exa";
+  startedAt: string;
+  completedAt?: string;
+  results?: number;
+  error?: string;
+};
 
-export type TodoItem = z.infer<typeof TodoItemSchema>;
-export type ToolCallMetadata = z.infer<typeof ToolCallMetadataSchema>;
-export type SearchRunMetadata = z.infer<typeof SearchRunMetadataSchema>;
+export type ReactAgentContext = {
+  sessionId?: string;
+  userId?: string;
+  locale?: string;
+};
+
+/**
+ * React Agent State structure matching LangGraph SDK's ThreadState format.
+ * This is the state shape that the agent graph maintains and streams to the frontend.
+ */
+export type ReactAgentState = {
+  // SDK Message array - contains HumanMessage, AIMessage, ToolMessage, etc.
+  messages: Message[];
+  // Agent-specific state
+  todos: TodoItem[];
+  recentToolCalls: ToolCallMetadata[];
+  searchRuns: SearchRunMetadata[];
+  context?: ReactAgentContext;
+};
+
+/**
+ * Type guard to check if a value is a valid ReactAgentState
+ */
+export function isReactAgentState(
+  value: unknown
+): value is ReactAgentState {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const state = value as Record<string, unknown>;
+
+  return (
+    Array.isArray(state.messages) &&
+    Array.isArray(state.todos) &&
+    Array.isArray(state.recentToolCalls) &&
+    Array.isArray(state.searchRuns)
+  );
+}

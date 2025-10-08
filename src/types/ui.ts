@@ -5,14 +5,15 @@
  * Maps server-side types to client-friendly formats.
  */
 
-import type { ReactAgentState } from "@/server/agents/react/state";
 import type {
+  ReactAgentState,
   SearchRunMetadata,
   TodoItem,
   ToolCallMetadata,
 } from "@/server/types/react-agent";
 
 export type {
+  ReactAgentState,
   SearchRunMetadata,
   TodoItem,
   ToolCallMetadata,
@@ -27,10 +28,16 @@ import type {
 } from "@/server/workflows/researcher/graph/state";
 
 // ============================================================================
-// SSE Event Types
+// SSE Event Types (DEPRECATED - Use LangGraph SDK Instead)
 // ============================================================================
 
 /**
+ * @deprecated Use LangGraph SDK's stream events instead.
+ * These types are maintained for backward compatibility with the researcher workflow.
+ * For new implementations (like the React agent), use:
+ * - @langchain/langgraph-sdk for streaming
+ * - StreamProvider from @/lib/providers/stream-provider
+ *
  * Server-Sent Event types from /api/stream/[threadId]
  */
 export type SSEEventType =
@@ -46,11 +53,13 @@ export type SSEEventType =
   | "search_runs"
   | "llm_token"
   | "custom"
+  | "update"
   | "error"
   | "done"
   | "keepalive";
 
 /**
+ * @deprecated Use LangGraph SDK's StreamEvent types instead.
  * Base SSE event structure
  */
 export type SSEEvent<T = unknown> = {
@@ -142,6 +151,7 @@ export type DoneEvent = SSEEvent<{
 export type KeepAliveEvent = SSEEvent<null>;
 
 /**
+ * @deprecated For React agent, use LangGraph SDK's Message type and StreamProvider.
  * ReAct agent message batch event
  */
 export type MessagesEvent = SSEEvent<{
@@ -149,6 +159,7 @@ export type MessagesEvent = SSEEvent<{
 }>;
 
 /**
+ * @deprecated For React agent, use ReactAgentState.todos from SDK stream values.
  * ReAct agent todo list event
  */
 export type TodosEvent = SSEEvent<{
@@ -156,6 +167,7 @@ export type TodosEvent = SSEEvent<{
 }>;
 
 /**
+ * @deprecated For React agent, use ReactAgentState.recentToolCalls from SDK stream values.
  * ReAct agent tool call metadata event
  */
 export type ToolCallsEvent = SSEEvent<{
@@ -163,10 +175,25 @@ export type ToolCallsEvent = SSEEvent<{
 }>;
 
 /**
+ * @deprecated For React agent, use ReactAgentState.searchRuns from SDK stream values.
  * ReAct agent search run metadata event
  */
 export type SearchRunsEvent = SSEEvent<{
   searchRuns: SearchRunMetadata[];
+}>;
+
+/**
+ * @deprecated For React agent, use SDK's UpdatesStreamEvent instead.
+ * Combined update event for performance optimization
+ */
+export type UpdateEvent = SSEEvent<{
+  node?: string;
+  status?: string;
+  messages?: unknown[];
+  todos?: TodoItem[];
+  toolCalls?: ToolCallMetadata[];
+  searchRuns?: SearchRunMetadata[];
+  timestamp?: string;
 }>;
 
 // ============================================================================

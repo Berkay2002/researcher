@@ -1,12 +1,16 @@
 "use client";
 
+import type {
+  Message as LangGraphMessage,
+  Thread,
+} from "@langchain/langgraph-sdk";
 import {
   AlertCircleIcon,
   ListTodoIcon,
   SearchIcon,
   WandIcon,
 } from "lucide-react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AppShell } from "@/app/(components)/app-shell";
 import { ThreadList } from "@/app/(components)/thread-list";
@@ -23,28 +27,29 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSSEStream } from "@/lib/hooks/use-sse-stream";
-import { useThreadState } from "@/lib/hooks/use-thread-state";
-import type {
-  MessageData,
-  ThreadMetadata,
-  TodoItem,
-  ToolCallMetadata,
-} from "@/types/ui";
+import {
+  StreamProvider,
+  useStreamContext,
+} from "@/lib/providers/stream-provider";
+import { ThreadProvider, useThreads } from "@/lib/providers/thread-provider";
 
 const STORAGE_KEY = "agent-threads";
+const THREAD_ID_PREVIEW_LENGTH = 8;
 
-export default function AgentThreadPage() {
+function AgentThreadContent() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const threadId = params?.threadId as string | undefined;
-  const urlPrompt = searchParams?.get("prompt") ?? null;
 
-  const [threads, setThreads] = useState<ThreadMetadata[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLeftPanelVisible, setIsLeftPanelVisible] = useState(true);
   const isMountedRef = useRef(true);
+
+  // Get threads from ThreadProvider
+  const { getThreads, setThreads, threads, deleteThread } = useThreads();
+
+  // Get stream from StreamProvider
+  const stream = useStreamContext();
 
   useEffect(
     () => () => {
@@ -59,150 +64,149 @@ export default function AgentThreadPage() {
       return;
     }
     try {
-      const parsed = JSON.parse(storedThreads) as ThreadMetadata[];
+      const parsed = JSON.parse(storedThreads) as Thread[];
       setThreads(parsed);
     } catch {
       // Ignore parse errors
     }
-  }, []);
+  }, [setThreads]);
+
+  // Load threads from SDK
+  useEffect(() => {
+    getThreads()
+      .then(setThreads)
+      .catch((error) => {
+        // biome-ignore lint/suspicious/noConsole: <Error logging>
+        console.error("Failed to load threads:", error);
+      });
+  }, [getThreads, setThreads]);
 
   const handleSidebarOpenChange = useCallback((open: boolean) => {
     setIsLeftPanelVisible(open);
   }, []);
 
-  const handleDeleteThread = useCallback((id: string) => {
-    setThreads((current) => current.filter((thread) => thread.threadId !== id));
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (!stored) {
-        return;
+  const handleDeleteThread = useCallback(
+    (id: string) => {
+      deleteThread(id).catch((error) => {
+        // biome-ignore lint/suspicious/noConsole: <Error logging>
+        console.error("Failed to delete thread:", error);
+      });
+    },
+    [deleteThread]
+  );
+
+  // Helper to extract content from SDK message
+  const extractMessageContent = useCallback(
+    (content: LangGraphMessage["content"]): string => {
+      if (typeof content === "string") {
+        return content;
       }
-      const parsed = JSON.parse(stored) as ThreadMetadata[];
-      const filtered = parsed.filter((thread) => thread.threadId !== id);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-    } catch {
-      // Ignore persistence errors
-    }
-  }, []);
+      if (Array.isArray(content)) {
+        return content
+          .map((item) => {
+            if (item.type === "text") {
+              return item.text;
+            }
+            if (item.type === "image_url") {
+              const url =
+                typeof item.image_url === "string"
+                  ? item.image_url
+                  : item.image_url.url;
+              return `[Image: ${url}]`;
+            }
+            return "";
+          })
+          .join("\n");
+      }
+      return "";
+    },
+    []
+  );
 
-  const {
-    snapshot,
-    isLoading,
-    error: stateError,
-  } = useThreadState({
-    threadId: threadId ?? null,
-    autoFetch: true,
-  });
-
-  const sseStream = useSSEStream({
-    threadId: threadId ?? null,
-    autoConnect: true,
-    endpoint: "/api/agent/stream",
-  });
-
-  const snapshotMessages = useMemo<MessageData[]>(() => {
-    if (
-      !(snapshot?.values?.messages && Array.isArray(snapshot.values.messages))
-    ) {
+  // Convert SDK messages to display format
+  const conversationMessages = useMemo(() => {
+    if (!stream.messages || stream.messages.length === 0) {
       return [];
     }
-    return convertAgentMessagesToMessageData(snapshot.values.messages);
-  }, [snapshot]);
 
-  const streamedMessages = useMemo<MessageData[]>(() => {
-    if (
-      !Array.isArray(sseStream.agentMessages) ||
-      sseStream.agentMessages.length === 0
-    ) {
-      return [];
-    }
-    return convertAgentMessagesToMessageData(sseStream.agentMessages);
-  }, [sseStream.agentMessages]);
+    return stream.messages
+      .filter((message) => message.type === "human" || message.type === "ai")
+      .map((message: LangGraphMessage, index: number) => {
+        const metadata = stream.getMessagesMetadata(message, index);
+        const content = extractMessageContent(message.content);
 
-  const conversationMessages = useMemo<MessageData[]>(() => {
-    if (streamedMessages.length > 0) {
-      return streamedMessages;
-    }
-    if (snapshotMessages.length > 0) {
-      return snapshotMessages;
-    }
-    if (urlPrompt) {
-      return [
-        {
-          id: "initial-url-prompt",
-          role: "user",
-          content: urlPrompt,
+        return {
+          id: message.id || `message-${index}`,
+          role:
+            message.type === "human"
+              ? "user"
+              : ("assistant" as "user" | "assistant"),
+          content,
           timestamp: new Date().toISOString(),
-        } satisfies MessageData,
-      ];
-    }
-    return [];
-  }, [snapshotMessages, streamedMessages, urlPrompt]);
+          metadata,
+        };
+      });
+  }, [stream.messages, stream.getMessagesMetadata, extractMessageContent]);
 
-  const todos = useMemo(() => {
-    if (sseStream.todos.length > 0) {
-      return sseStream.todos;
-    }
-    if (
-      snapshot?.values &&
-      "todos" in snapshot.values &&
-      Array.isArray((snapshot.values as Record<string, unknown>).todos)
-    ) {
-      return (snapshot.values as { todos: TodoItem[] }).todos;
-    }
-    return [] as TodoItem[];
-  }, [sseStream.todos, snapshot]);
+  // Extract agent state from SDK stream values
+  const agentState = useMemo(
+    () => ({
+      todos:
+        stream.values &&
+        "todos" in stream.values &&
+        Array.isArray(stream.values.todos)
+          ? stream.values.todos
+          : [],
+      toolCalls:
+        stream.values &&
+        "recentToolCalls" in stream.values &&
+        Array.isArray(stream.values.recentToolCalls)
+          ? stream.values.recentToolCalls
+          : [],
+      searchRuns:
+        stream.values &&
+        "searchRuns" in stream.values &&
+        Array.isArray(stream.values.searchRuns)
+          ? stream.values.searchRuns
+          : [],
+    }),
+    [stream.values]
+  );
 
-  const toolCalls = useMemo(() => {
-    if (sseStream.toolCalls.length > 0) {
-      return sseStream.toolCalls;
-    }
-    if (
-      snapshot?.values &&
-      "recentToolCalls" in snapshot.values &&
-      Array.isArray(
-        (snapshot.values as Record<string, unknown>).recentToolCalls
-      )
-    ) {
-      return (snapshot.values as { recentToolCalls: ToolCallMetadata[] })
-        .recentToolCalls;
-    }
-    return [] as ToolCallMetadata[];
-  }, [sseStream.toolCalls, snapshot]);
-
-  const searchRuns = useMemo(() => {
-    if (sseStream.searchRuns.length > 0) {
-      return sseStream.searchRuns;
-    }
-    if (
-      snapshot?.values &&
-      "searchRuns" in snapshot.values &&
-      Array.isArray((snapshot.values as Record<string, unknown>).searchRuns)
-    ) {
-      return (snapshot.values as { searchRuns: Record<string, unknown>[] })
-        .searchRuns;
-    }
-    return [] as Record<string, unknown>[];
-  }, [sseStream.searchRuns, snapshot]);
+  const { todos, toolCalls, searchRuns } = agentState;
 
   const handlePromptSubmit = useCallback(
-    (message: { text?: string }) => {
+    async (message: { text?: string }) => {
       if (!(threadId && message.text?.trim())) {
         return;
       }
       if (isSubmitting) {
         return;
       }
+
       setIsSubmitting(true);
       setInputValue("");
-      // Placeholder for future multi-turn support
-      setTimeout(() => {
+
+      try {
+        // Send the new message using the SDK
+        await stream.submit({
+          messages: [
+            {
+              type: "human",
+              content: message.text,
+            },
+          ],
+        });
+      } catch (error) {
+        // biome-ignore lint/suspicious/noConsole: <Error logging>
+        console.error("Failed to send message:", error);
+      } finally {
         if (isMountedRef.current) {
           setIsSubmitting(false);
         }
-      }, 0);
+      }
     },
-    [isSubmitting, threadId]
+    [isSubmitting, threadId, stream]
   );
 
   const hasMessages = conversationMessages.length > 0;
@@ -215,7 +219,7 @@ export default function AgentThreadPage() {
             <ConversationContent>
               {hasMessages ? (
                 <div className="space-y-4 px-4 pt-4 pb-6">
-                  {conversationMessages.map((message: MessageData) => (
+                  {conversationMessages.map((message) => (
                     <Message from={message.role} key={message.id}>
                       <MessageAvatar
                         name={message.role === "user" ? "You" : "Agent"}
@@ -232,7 +236,7 @@ export default function AgentThreadPage() {
               ) : (
                 <ConversationEmptyState
                   description={
-                    isLoading
+                    stream.isLoading
                       ? "Loading agent session..."
                       : "Start a new request to see the agent in action."
                   }
@@ -242,23 +246,32 @@ export default function AgentThreadPage() {
             </ConversationContent>
           </Conversation>
 
-          {stateError && (
+          {stream.error ? (
             <Alert className="mx-4 mb-4" variant="destructive">
               <AlertCircleIcon className="size-4" />
-              <AlertDescription>{stateError}</AlertDescription>
+              <AlertDescription>
+                {(() => {
+                  if (stream.error instanceof Error) {
+                    return stream.error.message;
+                  }
+                  if (typeof stream.error === "string") {
+                    return stream.error;
+                  }
+                  return "An error occurred";
+                })()}
+              </AlertDescription>
             </Alert>
-          )}
+          ) : null}
 
           <div className="flex-shrink-0 border-t bg-background p-4">
             <div className="mx-auto w-full max-w-3xl">
-              <div className="space-y-3 rounded-lg border border-border/70 border-dashed bg-muted/20 p-4 text-sm">
+              <div className="space-y-3 rounded-lg border border-border/70 bg-muted/20 p-4 text-sm">
                 <div>
                   <h3 className="font-semibold text-sm">
-                    Multi-turn support coming soon
+                    Continue the conversation
                   </h3>
                   <p className="text-muted-foreground text-xs">
-                    For now, start a new agent thread to run another
-                    instruction.
+                    Send another instruction to continue working with the agent.
                   </p>
                 </div>
                 <form
@@ -272,16 +285,16 @@ export default function AgentThreadPage() {
                     className="flex-1 resize-none rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     disabled={isSubmitting}
                     onChange={(event) => setInputValue(event.target.value)}
-                    placeholder="Send another instruction (disabled)"
+                    placeholder="Send another instruction..."
                     rows={2}
                     value={inputValue}
                   />
                   <button
                     className="rounded-md bg-primary px-4 py-2 text-primary-foreground text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled
+                    disabled={isSubmitting || !inputValue.trim()}
                     type="submit"
                   >
-                    Send
+                    {isSubmitting ? "Sending..." : "Send"}
                   </button>
                 </form>
               </div>
@@ -296,7 +309,18 @@ export default function AgentThreadPage() {
           isSidebarOpen={isLeftPanelVisible}
           onDeleteThread={handleDeleteThread}
           onSidebarOpenChange={handleSidebarOpenChange}
-          threads={threads}
+          threads={threads.map((thread) => ({
+            threadId: thread.thread_id,
+            title:
+              (thread.metadata?.title as string) ||
+              `Thread ${thread.thread_id.slice(0, THREAD_ID_PREVIEW_LENGTH)}`,
+            createdAt: thread.created_at,
+            updatedAt: thread.updated_at,
+            goal: "",
+            status: "running" as const,
+            messageCount: 0,
+            mode: "plan" as const,
+          }))}
         />
       }
       leftPanelCollapsed={!isLeftPanelVisible}
@@ -313,125 +337,31 @@ export default function AgentThreadPage() {
   );
 }
 
-type SerializedAgentMessage = {
-  type?: string;
-  data?: {
-    content?: unknown;
-    additional_kwargs?: Record<string, unknown>;
-    response_metadata?: Record<string, unknown>;
-  } & Record<string, unknown>;
-};
+// Wrapper component that provides the contexts
+export default function AgentThreadPage() {
+  const params = useParams();
+  const threadId = params?.threadId as string | undefined;
 
-function convertAgentMessagesToMessageData(messages: unknown[]): MessageData[] {
-  return messages.reduce<MessageData[]>((acc, message, index) => {
-    if (!message || typeof message !== "object") {
-      return acc;
-    }
-
-    const serialized = message as SerializedAgentMessage;
-    const role = mapAgentRoleToMessageRole(serialized.type);
-    const content = extractMessageText(serialized.data?.content);
-    const metadata = extractMessageMetadata(serialized);
-
-    const messageData: MessageData = {
-      id: `agent-message-${index}`,
-      role,
-      content,
-      timestamp: new Date().toISOString(),
-    };
-
-    if (metadata) {
-      messageData.metadata = metadata;
-    }
-
-    acc.push(messageData);
-
-    return acc;
-  }, []);
+  return (
+    <ThreadProvider>
+      <StreamProvider threadId={threadId ?? null}>
+        <AgentThreadContent />
+      </StreamProvider>
+    </ThreadProvider>
+  );
 }
 
-function mapAgentRoleToMessageRole(role?: string): MessageData["role"] {
-  switch (role) {
-    case "human":
-      return "user";
-    case "ai":
-      return "assistant";
-    case "system":
-      return "system";
-    case "tool":
-      return "assistant";
-    default:
-      return "assistant";
-  }
-}
-
-function extractMessageMetadata(
-  message: SerializedAgentMessage
-): MessageData["metadata"] | undefined {
-  const additionalKwargs = message.data?.additional_kwargs;
-
-  if (!additionalKwargs || typeof additionalKwargs !== "object") {
-    return;
-  }
-
-  const metadata: MessageData["metadata"] = {};
-
-  const nodeCandidate = (additionalKwargs as Record<string, unknown>)
-    .langgraph_node;
-  if (typeof nodeCandidate === "string") {
-    metadata.node = nodeCandidate;
-  }
-
-  if (Object.keys(metadata).length === 0) {
-    return;
-  }
-
-  return metadata;
-}
-
-function extractMessageText(content: unknown): string {
-  if (typeof content === "string") {
-    return content;
-  }
-  if (Array.isArray(content)) {
-    return content
-      .map((block) => {
-        if (typeof block === "string") {
-          return block;
-        }
-        if (
-          block &&
-          typeof block === "object" &&
-          "text" in block &&
-          typeof (block as { text?: unknown }).text === "string"
-        ) {
-          return (block as { text: string }).text;
-        }
-        return "";
-      })
-      .join("");
-  }
-  if (
-    content &&
-    typeof content === "object" &&
-    "text" in content &&
-    typeof (content as { text?: unknown }).text === "string"
-  ) {
-    return (content as { text: string }).text;
-  }
-  return "";
-}
-
+// Card components (keeping the existing ones for now)
 type AgentToolCallCardProps = {
-  toolCalls: ToolCallMetadata[];
+  toolCalls: unknown[];
 };
 
 type AgentTodoCardProps = {
-  todos: TodoItem[];
+  todos: unknown[];
 };
 
 type AgentSearchRunCardProps = {
-  searchRuns: Record<string, unknown>[];
+  searchRuns: unknown[];
 };
 
 function AgentTodoCard({ todos }: AgentTodoCardProps) {
@@ -451,26 +381,20 @@ function AgentTodoCard({ todos }: AgentTodoCardProps) {
           <p className="text-muted-foreground text-sm">No tasks queued.</p>
         ) : (
           <ul className="space-y-2 text-sm">
-            {todos.map((todo) => (
+            {todos.map((todo, index) => (
               <li
                 className="rounded-md border border-border/60 bg-muted/30 p-2"
-                key={todo.id}
+                key={`todo-${index}-${typeof todo === "object" && todo !== null && "id" in todo ? String(todo.id) : index}`}
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-medium">{todo.title}</span>
-                  <Badge
-                    variant={
-                      todo.status === "completed" ? "default" : "outline"
-                    }
-                  >
-                    {todo.status}
-                  </Badge>
+                  <span className="font-medium">
+                    {typeof todo === "object" &&
+                    todo !== null &&
+                    "title" in todo
+                      ? String(todo.title)
+                      : "Task"}
+                  </span>
                 </div>
-                {todo.notes && (
-                  <p className="mt-1 text-muted-foreground text-xs">
-                    {todo.notes}
-                  </p>
-                )}
               </li>
             ))}
           </ul>
@@ -502,19 +426,17 @@ function AgentToolCallCard({ toolCalls }: AgentToolCallCardProps) {
             {toolCalls.map((toolCall, index) => (
               <li
                 className="rounded-md border border-border/60 bg-muted/30 p-2"
-                key={`${toolCall.toolName}-${toolCall.invokedAt}-${index}`}
+                key={`tool-${index}-${typeof toolCall === "object" && toolCall !== null && "toolName" in toolCall ? String(toolCall.toolName) : index}`}
               >
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium">{toolCall.toolName}</span>
-                  <span className="text-muted-foreground">
-                    {new Date(toolCall.invokedAt).toLocaleTimeString()}
+                  <span className="font-medium">
+                    {typeof toolCall === "object" &&
+                    toolCall !== null &&
+                    "toolName" in toolCall
+                      ? String(toolCall.toolName)
+                      : "Tool"}
                   </span>
                 </div>
-                {toolCall.correlationId && (
-                  <p className="mt-1 text-muted-foreground text-xs">
-                    Correlation ID: {toolCall.correlationId}
-                  </p>
-                )}
               </li>
             ))}
           </ul>
@@ -543,48 +465,23 @@ function AgentSearchRunCard({ searchRuns }: AgentSearchRunCardProps) {
           </p>
         ) : (
           <ul className="space-y-2 text-sm">
-            {searchRuns.map((run, index) => {
-              const completedAt =
-                typeof run.completedAt === "string" ? run.completedAt : null;
-
-              return (
-                <li
-                  className="rounded-md border border-border/60 bg-muted/30 p-2"
-                  key={`${String(run.query ?? index)}-${index}`}
-                >
-                  <div className="flex flex-col gap-1">
-                    <span className="font-medium">
-                      {String(run.query ?? "Unknown query")}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      Provider: {String(run.provider ?? "unknown")}
-                    </span>
-                    <span className="text-muted-foreground text-xs">
-                      Started: {formatTimestamp(run.startedAt)}
-                    </span>
-                    {completedAt ? (
-                      <span className="text-muted-foreground text-xs">
-                        Completed: {formatTimestamp(completedAt)}
-                      </span>
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })}
+            {searchRuns.map((run, index) => (
+              <li
+                className="rounded-md border border-border/60 bg-muted/30 p-2"
+                key={`search-${index}-${typeof run === "object" && run !== null && "query" in run ? String(run.query) : index}`}
+              >
+                <div className="flex flex-col gap-1">
+                  <span className="font-medium">
+                    {typeof run === "object" && run !== null && "query" in run
+                      ? String(run.query)
+                      : "Unknown query"}
+                  </span>
+                </div>
+              </li>
+            ))}
           </ul>
         )}
       </CardContent>
     </Card>
   );
-}
-
-function formatTimestamp(value: unknown): string {
-  if (typeof value !== "string") {
-    return "–";
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
 }
