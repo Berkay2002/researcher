@@ -24,7 +24,7 @@ When creating an agent with `createAgent`, you can specify a `contextSchema` to 
 
 When invoking the agent, pass the `context` argument with the relevant configuration for the run:
 
-```ts
+```ts  theme={null}
 import { z } from "zod";
 import { createAgent } from "langchain";
 
@@ -56,7 +56,7 @@ You can access the runtime information inside tools to:
 
 Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a tool.
 
-```ts
+```ts  theme={null}
 import { z } from "zod";
 import { tool } from "langchain";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
@@ -93,7 +93,7 @@ const fetchUserEmailPreferences = tool(
 
 Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a prompt function.
 
-```ts
+```ts  theme={null}
 import { z } from "zod";
 import { createAgent, type AgentState, SystemMessage } from "langchain";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
@@ -134,7 +134,7 @@ const result = await agent.invoke(
 
 Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a pre or post model hook.
 
-```ts
+```ts  theme={null}
 import { z } from "zod";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
 import { createAgent, type AgentState } from "langchain";

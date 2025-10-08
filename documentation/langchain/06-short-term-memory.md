@@ -36,7 +36,7 @@ To add short-term memory (thread-level persistence) to an agent, you need to spe
   Short-term memory updates when the agent is invoked or a step (like a tool call) is completed, and the state is read at the start of each step.
 </Info>
 
-```ts {highlight={2,4, 9,14}}
+```ts {highlight={2,4, 9,14}} theme={null}
 import { createAgent } from "langchain";
 import { MemorySaver } from "@langchain/langgraph";
 
@@ -58,7 +58,7 @@ await agent.invoke(
 
 In production, use a checkpointer backed by a database:
 
-```ts
+```ts  theme={null}
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
 
 const DB_URI = "postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable";
@@ -73,7 +73,7 @@ Users can subclass `AgentState` to add additional fields to the state.
 
 This custom state can then be accessed via tools and dynamic prompt / model functions.
 
-```typescript highlight={4-7,13}
+```typescript highlight={4-7,13} theme={null}
 import { z } from "zod";
 import { createAgent } from "langchain";
 import { MemorySaver } from "@langchain/langgraph";
@@ -123,7 +123,7 @@ One way to decide when to truncate messages is to count the tokens in the messag
 
 To trim message history in an agent, use `stateModifier` with the [`trimMessages`](https://js.langchain.com/docs/how_to/trim_messages/) function:
 
-```typescript
+```typescript  theme={null}
 import {
     createAgent,
     trimMessages,
@@ -163,7 +163,7 @@ To delete messages from the graph state, you can use the `RemoveMessage`. For `R
 
 To remove specific messages:
 
-```typescript
+```typescript  theme={null}
 import { RemoveMessage } from "@langchain/core/messages";
 
 const deleteMessages = (state) => {
@@ -186,7 +186,7 @@ const deleteMessages = (state) => {
   * Most providers require `assistant` messages with tool calls to be followed by corresponding `tool` result messages.
 </Warning>
 
-```typescript
+```typescript  theme={null}
 import { RemoveMessage } from "@langchain/core/messages";
 import { AgentState, createAgent } from "langchain";
 import { MemorySaver } from "@langchain/langgraph";
@@ -274,7 +274,7 @@ Access short term memory (state) in a tool by injecting the agent's state into t
 
 This annotation hides the state from the tool signature (so the model doesn't see it), but the tool can access it.
 
-```typescript
+```typescript  theme={null}
 import { z } from "zod";
 import { createAgent, tool } from "langchain";
 
@@ -321,7 +321,7 @@ To modify the agent's short-term memory (state) during execution, you can return
 
 This is useful for persisting intermediate results or making information accessible to subsequent tools or prompts.
 
-```typescript
+```typescript  theme={null}
 import { z } from "zod";
 import { tool, createAgent } from "langchain";
 import { MessagesZodState, Command } from "@langchain/langgraph";
@@ -384,7 +384,7 @@ await agent.invoke(
 
 Access short term memory (state) in a dynamic prompt function by injecting the agent's state into the prompt function signature.
 
-```typescript
+```typescript  theme={null}
 import { z } from "zod";
 import { createAgent, tool, SystemMessage } from "langchain";
 
@@ -468,7 +468,7 @@ for (const message of result.messages) {
 
 Access short term memory (state) in a pre model hook by injecting the agent's state into the hook signature.
 
-```typescript
+```typescript  theme={null}
 import {
     createAgent,
     type AgentState,
@@ -509,7 +509,7 @@ console.log(result.messages.at(-1)?.content);
 
 Access short term memory (state) in a post model hook by injecting the agent's state into the hook signature.
 
-```typescript
+```typescript  theme={null}
 import { RemoveMessage } from "@langchain/core/messages";
 import { createAgent, type AgentState } from "langchain";
 

@@ -56,7 +56,7 @@ Flow:
 3. The **tool agent** returns results to the controller.
 4. The **controller** decides the next step or finishes.
 
-```mermaid
+```mermaid  theme={null}
 graph LR
     A[User] --> B[Controller Agent]
     B --> C[Tool Agent 1]
@@ -76,7 +76,7 @@ graph LR
 
 Below is a minimal example where the main agent is given access to a single subagent via a tool definition:
 
-```typescript
+```typescript  theme={null}
 import { createAgent, tool } from "langchain";
 import { z } from "zod";
 
@@ -126,7 +126,7 @@ There are two main levers to control the input that the main agent passes to a s
 * **Modify the prompt** – Adjust the main agent's prompt or the tool metadata (i.e., sub-agent's name and description) to better guide when and how it calls the subagent.
 * **Context injection** – Add input that isn’t practical to capture in a static prompt (e.g., full message history, prior results, task metadata) by adjusting the tool call to pull from the agent’s state.
 
-```typescript
+```typescript  theme={null}
 import { createAgent, tool, AgentState, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
 import { z } from "zod";
@@ -164,7 +164,7 @@ Two common strategies for shaping what the main agent receives back from a subag
   * Example: pass specific state keys back to the main agent in addition to the final text.
   * This requires wrapping the result in a `Command` (or equivalent structure) so you can merge custom state with the subagent’s response.
 
-```typescript
+```typescript  theme={null}
 import { tool, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
 import { z } from "zod";
@@ -209,7 +209,7 @@ Flow:
 2. It passes control (and state) to the **next agent**.
 3. The **new agent** interacts directly with the user until it decides to hand off again or finish.
 
-```mermaid
+```mermaid  theme={null}
 graph LR
     A[User] --> B[Agent A]
     B --> C[Agent B]

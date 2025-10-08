@@ -12,10 +12,12 @@ In addition to text generation, many models support:
 
 * <Icon icon="hammer" size={16} /> [Tool calling](#tool-calling) - calling external tools (like databases queries or API calls) and use results in their responses.
 * <Icon icon="shapes" size={16} /> [Structured output](#structured-outputs) - where the model's response is constrained follow a defined format.
-* <Icon icon="image" size={16} /> [Multimodal](#multimodal) - process and return data other than text, such as images, audio, and video.
+* <Icon icon="image" size={16} /> [Multimodality](#multimodal) - process and return data other than text, such as images, audio, and video.
 * <Icon icon="brain" size={16} /> [Reasoning](#reasoning) - models perform multi-step reasoning to arrive at a conclusion.
 
-For provider-specific integration information and capabilities, see the provider's [integration page](/oss/javascript/integrations/providers).
+<Info>
+  For provider-specific integration information and capabilities, see the provider's [integration page](/oss/javascript/integrations/providers).
+</Info>
 
 ## Basic usage
 
@@ -24,24 +26,24 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
 <Tabs>
   <Tab title="OpenAI">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/openai
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/openai
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/openai
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     OPENAI_API_KEY=your-api-key
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatOpenAI } from "@langchain/openai";
 
     const llm = new ChatOpenAI({
@@ -52,24 +54,24 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
 
   <Tab title="Anthropic">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/anthropic
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/anthropic
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/anthropic
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     ANTHROPIC_API_KEY=your-api-key
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatAnthropic } from "@langchain/anthropic";
 
     const llm = new ChatAnthropic({
@@ -80,52 +82,52 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
 
   <Tab title="Google Gemini">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/google-genai
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/google-genai
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/google-genai
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     GOOGLE_API_KEY=your-api-key
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
     const llm = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash-lite-latest",
     });
     ```
   </Tab>
 
   <Tab title="Fireworks AI">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/community
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/community
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/community
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     FIREWORKS_API_KEY=your-api-key
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatFireworks } from "@langchain/community/chat_models/fireworks";
 
     const llm = new ChatFireworks({
@@ -136,24 +138,24 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
 
   <Tab title="MistralAI">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/mistralai
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/mistralai
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/mistralai
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     MISTRAL_API_KEY=your-api-key
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatMistralAI } from "@langchain/mistralai";
 
     const llm = new ChatMistralAI({
@@ -164,24 +166,24 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
 
   <Tab title="VertexAI">
     <CodeGroup>
-      ```bash npm
+      ```bash npm theme={null}
       npm i @langchain/google-vertexai
       ```
 
-      ```bash yarn
+      ```bash yarn theme={null}
       yarn add @langchain/google-vertexai
       ```
 
-      ```bash pnpm
+      ```bash pnpm theme={null}
       pnpm add @langchain/google-vertexai
       ```
     </CodeGroup>
 
-    ```bash
+    ```bash  theme={null}
     GOOGLE_APPLICATION_CREDENTIALS=credentials.json
     ```
 
-    ```typescript
+    ```typescript  theme={null}
     import { ChatVertexAI } from "@langchain/google-vertexai";
 
     const llm = new ChatVertexAI({
@@ -191,7 +193,7 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
   </Tab>
 </Tabs>
 
-```typescript
+```typescript  theme={null}
 const response = await model.invoke("Why do parrots talk?");
 ```
 
@@ -257,14 +259,14 @@ A chat model must be invoked to generate an output. There are three primary invo
 
 The most straightforward way to call a model is to use [`invoke()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#invoke) with a single message or a list of messages.
 
-```typescript Single message
+```typescript Single message theme={null}
 const response = await model.invoke("Why do parrots have colorful feathers?");
 console.log(response);
 ```
 
 A list of messages can be provided to a model to represent conversation history. Each message has a role that models use to indicate who sent the message in the conversation. See the [messages](/oss/javascript/langchain/messages) guide for more detail on roles, types, and content.
 
-```typescript Conversation history
+```typescript Conversation history theme={null}
 import { HumanMessage, AIMessage, SystemMessage } from "langchain";
 
 const conversation = [
@@ -285,14 +287,14 @@ Most models can stream their output content while it is being generated. By disp
 Calling [`stream()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#stream) returns an <Tooltip tip="An object that progressively provides access to each item of a collection, in order.">iterator</Tooltip> that yields output chunks as they are produced. You can use a loop to process each chunk in real-time:
 
 <CodeGroup>
-  ```typescript Basic text streaming
+  ```typescript Basic text streaming theme={null}
   const stream = await model.stream("Why do parrots have colorful feathers?");
   for await (const chunk of stream) {
       console.log(chunk.text)
   }
   ```
 
-  ```typescript Stream tool calls, reasoning, and other content
+  ```typescript Stream tool calls, reasoning, and other content theme={null}
   const stream = await model.stream("What color is the sky?");
   for await (const chunk of stream) {
       for (const block of chunk.contentBlocks) {
@@ -312,7 +314,7 @@ Calling [`stream()`](https://v03.api.js.langchain.com/classes/_langchain_core.la
 
 As opposed to `invoke()`, which returns a single [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) after the model has finished generating its full response, `stream()` returns multiple [`AIMessageChunk`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessageChunk.html) objects, each containing a portion of the output text. Importantly, each chunk in a stream is designed to be gathered into a full message via summation:
 
-```typescript Construct AIMessage
+```typescript Construct AIMessage theme={null}
 let full: AIMessageChunk | null = null;
 for await (const chunk of stream) {
     full = full ? full.concat(chunk) : chunk;
@@ -355,7 +357,7 @@ The resulting message can be treated the same as a message that was generated wi
 
     This simplifies filtering based on event types and other metadata, and will aggregate the full message in the background. See below for an example.
 
-    ```typescript
+    ```typescript  theme={null}
     const stream = await model.streamEvents("Hello");
     for await (const event of stream) {
         if (event.event === "on_chat_model_start") {
@@ -370,7 +372,7 @@ The resulting message can be treated the same as a message that was generated wi
     }
     ```
 
-    ```txt
+    ```txt  theme={null}
     Input: Hello
     Token: Hi
     Token:  there
@@ -390,7 +392,7 @@ The resulting message can be treated the same as a message that was generated wi
 
 Batching a collection of independent requests to a model can significantly improve performance and reduce costs, as the processing can be done in parallel:
 
-```typescript Batch
+```typescript Batch theme={null}
 const responses = await model.batch([
     "Why do parrots have colorful feathers?",
     "How do airplanes fly?",
@@ -407,7 +409,7 @@ for (const response of responses) {
 <Tip>
   When processing a large number of inputs using `batch()`, you may want to control the maximum number of parallel calls. This can be done by setting the `maxConcurrency` attribute in the `RunnableConfig` dictionary.
 
-  ```typescript Batch with max concurrency
+  ```typescript Batch with max concurrency theme={null}
   model.batch(
       listOfInputs,
       {
@@ -442,7 +444,7 @@ Some model providers offer built-in tools that can be enabled via model paramete
   See the [tools guide](/oss/javascript/langchain/tools) for details and other options for creating tools.
 </Tip>
 
-```typescript Binding user tools highlight={17}
+```typescript Binding user tools highlight={17} theme={null}
 import { tool } from "langchain";
 import { z } from "zod";
 import { ChatOpenAI } from "@langchain/openai";
@@ -480,7 +482,7 @@ Below, we show some common ways you can use tool calling.
   <Accordion title="Tool execution loop" icon="arrow-rotate-right">
     When a model returns tool calls, you need to execute the tools and pass the results back to the model. This creates a conversation loop where the model can use tool results to generate its final response.
 
-    ```typescript Tool execution loop
+    ```typescript Tool execution loop theme={null}
     //  Bind (potentially multiple) tools to the model
     const modelWithTools = model.bindTools([get_weather])
 
@@ -509,11 +511,11 @@ Below, we show some common ways you can use tool calling.
     By default, the model has the freedom to choose which bound tool to use based on the user's input. However, you might want to force choosing a tool, ensuring the model uses either a particular tool or *any* tool from a given list:
 
     <CodeGroup>
-      ```typescript Force use of any tool
+      ```typescript Force use of any tool theme={null}
       const modelWithTools = model.bindTools([tool_1], { toolChoice: "any" })
       ```
 
-      ```typescript Force use of specific tools
+      ```typescript Force use of specific tools theme={null}
       const modelWithTools = model.bindTools([tool_1], { toolChoice: "tool_1" })
       ```
     </CodeGroup>
@@ -522,7 +524,7 @@ Below, we show some common ways you can use tool calling.
   <Accordion title="Parallel tool calls" icon="layer-group">
     Many models support calling multiple tools in parallel when appropriate. This allows the model to gather information from different sources simultaneously.
 
-    ```typescript Parallel tool calls
+    ```typescript Parallel tool calls theme={null}
     const modelWithTools = model.bind_tools([get_weather])
 
     const response = await modelWithTools.invoke(
@@ -554,7 +556,7 @@ Below, we show some common ways you can use tool calling.
   <Accordion title="Streaming tool calls" icon="rss">
     When streaming responses, tool calls are progressively built through `ToolCallChunk`. This allows you to see tool calls as they're being generated rather than waiting for the complete response.
 
-    ```typescript Streaming tool calls
+    ```typescript Streaming tool calls theme={null}
     const stream = await modelWithTools.stream(
         "What's the weather in Boston and Tokyo?"
     )
@@ -583,7 +585,7 @@ Below, we show some common ways you can use tool calling.
 
     You can accumulate chunks to build complete tool calls:
 
-    ```typescript Accumulate tool calls
+    ```typescript Accumulate tool calls theme={null}
     let full: AIMessageChunk | null = null
     const stream = await modelWithTools.stream("What's the weather in Boston?")
     for await (const chunk of stream) {
@@ -604,7 +606,7 @@ Models can be requested to provide their response in a format matching a given s
   <Tab title="Zod">
     A [zod schema](https://zod.dev/) is the preferred method of defining an output schema. Note that when a zod schema is provided, the model output will also be validated against the schema using zod's parse methods.
 
-    ```typescript
+    ```typescript  theme={null}
     import { z } from "zod";
 
     const Movie = z.object({
@@ -630,7 +632,7 @@ Models can be requested to provide their response in a format matching a given s
   <Tab title="JSON Schema">
     For maximum control or interoperability, you can provide a raw JSON Schema.
 
-    ```typescript
+    ```typescript  theme={null}
     const jsonSchema = {
         "title": "Movie",
         "description": "A movie with details",
@@ -678,7 +680,7 @@ Models can be requested to provide their response in a format matching a given s
 <Accordion title="Example: Message output alongside parsed structure">
   It can be useful to return the raw `AIMessage` object alongside the parsed representation to access response metadata such as [token counts](#token-usage). To do this, set `include_raw=True` when calling `with_structured_output`:
 
-  ```typescript highlight={10}
+  ```typescript highlight={10} theme={null}
   import { z } from "zod";
 
   const Movie = z.object({
@@ -706,7 +708,7 @@ Models can be requested to provide their response in a format matching a given s
 <Accordion title="Example: Nested structures">
   Schemas can be nested:
 
-  ```typescript
+  ```typescript  theme={null}
   import { z } from "zod";
 
   const Actor = z.object({
@@ -752,7 +754,7 @@ See the [multimodal section](/oss/javascript/langchain/messages#multimodal) of t
 
 Some models can also return multimodal data as part of their response. In such cases, the resulting `AIMessage` will have content blocks with multimodal types.
 
-```typescript Multimodal output
+```typescript Multimodal output theme={null}
 const response = await model.invoke("Create a picture of a cat");
 console.log(response.contentBlocks);
 // [
@@ -770,7 +772,7 @@ Newer models are capable of performing multi-step reasoning to arrive at a concl
 If supported by the underlying model, you can surface this reasoning process to better understand how the model arrived at its final answer.
 
 <CodeGroup>
-  ```typescript Stream reasoning output
+  ```typescript Stream reasoning output theme={null}
   const stream = model.stream("Why do parrots have colorful feathers?");
   for await (const chunk of stream) {
       const reasoningSteps = chunk.contentBlocks.filter(b => b.type === "reasoning");
@@ -778,7 +780,7 @@ If supported by the underlying model, you can surface this reasoning process to 
   }
   ```
 
-  ```typescript Complete reasoning output
+  ```typescript Complete reasoning output theme={null}
   const response = await model.invoke("Why do parrots have colorful feathers?");
   const reasoningSteps = response.contentBlocks.filter(b => b.type === "reasoning");
   console.log(reasoningSteps.map(step => step.reasoning).join(" "));
@@ -812,7 +814,7 @@ Some providers support server-side [tool-calling](#tool-calling) loops: models c
 
 If a model invokes a tool server-side, the content of the response message will include content representing the invocation and result of the tool. Accessing the [content blocks](/oss/javascript/langchain/messages#standard-content-blocks) of the response will return the server-side tool calls and results in a provider-agnostic format:
 
-```typescript
+```typescript  theme={null}
 import { initChatModel } from "langchain";
 
 const model = await initChatModel("openai:gpt-4.1-mini");
@@ -833,7 +835,7 @@ For many chat model integrations, you can configure the base URL for API request
 <Accordion title="Base URL" icon="link">
   Many model providers offer OpenAI-compatible APIs (e.g., [Together AI](https://www.together.ai/), [vLLM](https://github.com/vllm-project/vllm)). You can use `initChatModel` with these providers by specifying the appropriate `base_url` parameter:
 
-  ```python
+  ```python  theme={null}
   model = initChatModel(
       "MODEL_NAME",
       {
@@ -853,7 +855,7 @@ For many chat model integrations, you can configure the base URL for API request
 
 Certain models can be configured to return token-level log probabilities representing the likelihood of a given token by setting the `logprobs` parameter when initializing the model:
 
-```typescript
+```typescript  theme={null}
 const model = new ChatOpenAI({
     model: "gpt-4o",
     logprobs: true,
@@ -878,7 +880,7 @@ When invoking a model, you can pass additional configuration through the `config
 
 Common configuration options include:
 
-```typescript Invocation with config
+```typescript Invocation with config theme={null}
 const response = await model.invoke(
     "Tell me a joke",
     {

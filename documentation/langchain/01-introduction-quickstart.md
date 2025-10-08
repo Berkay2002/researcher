@@ -11,19 +11,19 @@ This quickstart takes you from a simple setup to a fully functional AI agent in 
 ## Install
 
 <CodeGroup>
-  ```bash npm
+  ```bash npm theme={null}
   npm install langchain@next @langchain/anthropic@next
   ```
 
-  ```bash pnpm
+  ```bash pnpm theme={null}
   pnpm add langchain@next @langchain/anthropic@next
   ```
 
-  ```bash yarn
+  ```bash yarn theme={null}
   yarn add langchain@next @langchain/anthropic@next
   ```
 
-  ```bash bun
+  ```bash bun theme={null}
   bun add langchain@next @langchain/anthropic@next
   ```
 </CodeGroup>
@@ -34,12 +34,12 @@ Start by creating a simple agent that can answer questions and call tools.
 
 The agent will have the following components:
 
-* A language model (Claude 3.7 Sonnet)
+* A language model (Claude Sonnet 4.5)
 * A simple tool (weather function)
 * A basic prompt
 * The ability to invoke it with messages
 
-```ts
+```ts  theme={null}
 import { createAgent, tool } from "langchain";
 
 const getWeather = tool(
@@ -52,7 +52,7 @@ const getWeather = tool(
 );
 
 const agent = createAgent({
-  model: "anthropic:claude-3-7-sonnet-latest",
+  model: "anthropic:claude-sonnet-4-5-20250929",
   tools: [getWeather],
 });
 
@@ -64,7 +64,7 @@ console.log(
 ```
 
 <Info>
-  For this example, you will need to set up an [Anthropic](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
+  For this example, you will need to set up a [Claude (Anthropic)](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
 </Info>
 
 ## Build a real-world agent
@@ -84,7 +84,7 @@ Let's walk through each step:
   <Step title="Define the system prompt">
     The system prompt defines your agent’s role and behavior. Keep it specific and actionable:
 
-    ```ts
+    ```ts  theme={null}
     const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
 
     You have access to two tools:
@@ -99,7 +99,7 @@ Let's walk through each step:
   <Step title="Create tools">
     [Tools](/oss/javascript/langchain/tools) are functions your agent can call. They should be well-documented. Oftentimes tools will want to connect to external systems, and will rely on runtime configuration to do so. Notice here how the `getUserLocation` tool does exactly that:
 
-    ```ts
+    ```ts  theme={null}
     import { type Runtime } from "@langchain/langgraph";
     import { tool } from "langchain";
     import { z } from "zod";
@@ -134,7 +134,7 @@ Let's walk through each step:
       Alternatively, you can define the `schema` property as a JSON schema object. Keep in mind that JSON schemas *won't* be validated at runtime.
 
       <Accordion title="Example: Using JSON schema for tool input">
-        ```ts
+        ```ts  theme={null}
         const getWeather = tool(
           ({ city }) => `It's always sunny in ${city}!`,
           {
@@ -158,14 +158,14 @@ Let's walk through each step:
   </Step>
 
   <Step title="Configure your model">
-    Set up your [language model](/oss/javascript/langchain/models) with the right parameters for your use case:
+    Set up your [language model](/oss/javascript/langchain/models) with the right [parameters](/oss/javascript/langchain/models#parameters) for your use case:
 
-    ```ts
+    ```ts  theme={null}
     import { initChatModel } from "langchain";
 
     const model = await initChatModel(
-      "anthropic:claude-3-7-sonnet-latest",
-      { temperature: 0 }
+      "anthropic:claude-sonnet-4-5-20250929",
+      { temperature: 0.5, timeout: 10, maxTokens: 1000 }
     );
     ```
   </Step>
@@ -174,7 +174,7 @@ Let's walk through each step:
     Optionally, define a structured response format if you need the agent responses to match
     a specific schema.
 
-    ```ts
+    ```ts  theme={null}
     const responseFormat = z.object({
       punny_response: z.string(),
       weather_conditions: z.string().optional(),
@@ -186,7 +186,7 @@ Let's walk through each step:
     Add [memory](/oss/javascript/langchain/short-term-memory) to your agent to maintain state across interactions. This allows
     the agent to remember previous conversations and context.
 
-    ```ts
+    ```ts  theme={null}
     import { MemorySaver } from "@langchain/langgraph";
 
     const checkpointer = new MemorySaver();
@@ -194,18 +194,18 @@ Let's walk through each step:
 
     <Info>
       In production, use a persistent checkpointer that saves to a database.
-      See [add and manage memory](/oss/javascript/python/langgraph/add-memory) for more details.
+      See [Add and manage memory](/oss/javascript/langgraph/add-memory#manage-short-term-memory) for more details.
     </Info>
   </Step>
 
   <Step title="Create and run the agent">
     Now assemble your agent with all the components and run it!
 
-    ```ts
+    ```ts  theme={null}
     import { createAgent } from "langchain";
 
     const agent = createAgent({
-      model: "anthropic:claude-3-7-sonnet-latest",
+      model: "anthropic:claude-sonnet-4-5-20250929",
       prompt: systemPrompt,
       tools: [getUserLocation, getWeather],
       responseFormat,
@@ -243,7 +243,7 @@ Let's walk through each step:
 </Steps>
 
 <Expandable title="Full example code">
-  ```ts
+  ```ts  theme={null}
   import { createAgent, tool } from "langchain";
   import { initChatModel } from "langchain/chat_models";
   import { MemorySaver, type Runtime } from "@langchain/langgraph";
@@ -285,7 +285,7 @@ Let's walk through each step:
 
   // Configure model
   const model = await initChatModel(
-    "anthropic:claude-3-7-sonnet-latest",
+    "anthropic:claude-sonnet-4-5-20250929",
     { temperature: 0 }
   );
 
@@ -300,7 +300,7 @@ Let's walk through each step:
 
   // Create agent
   const agent = createAgent({
-    model: "anthropic:claude-3-7-sonnet-latest",
+    model: "anthropic:claude-sonnet-4-5-20250929",
     prompt: systemPrompt,
     tools: [getUserLocation, getWeather],
     responseFormat,

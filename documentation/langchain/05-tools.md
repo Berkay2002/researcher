@@ -16,7 +16,7 @@ Tools are components that [agents](/oss/javascript/langchain/agents) call to per
 
 The simplest way to create a tool is by importing the `tool` function from the `langchain` package. You can use [zod](https://zod.dev/) to define the tool's input schema:
 
-```ts
+```ts  theme={null}
 import { z } from "zod"
 import { tool } from "langchain"
 
@@ -37,7 +37,7 @@ const searchDatabase = tool(
 
 Alternatively, you can define the `schema` property as a JSON schema object:
 
-```ts
+```ts  theme={null}
 const searchDatabase = tool(
     (input) => {
         const { query, limit } = input as { query: string; limit: number }
@@ -74,7 +74,7 @@ ToolNode is a prebuilt LangGraph component that handles tool calls within an age
 
 `ToolNode` accepts the following parameters:
 
-```ts
+```ts  theme={null}
 import { ToolNode } from "langchain";
 
 const toolNode = new ToolNode([searchDatabase, calculate], {
@@ -99,8 +99,6 @@ const toolNode = new ToolNode([searchDatabase, calculate], {
 
 #### Error handling strategies
 
-{/* TODO this section isn't very visually appealing */}
-
 `ToolNode` provides built-in error handling for tool execution through its `handleToolErrors` property.
 
 To customize the error handling behavior, you can configure `handleToolErrors` to either be a `boolean` or a custom error handler function:
@@ -111,7 +109,7 @@ To customize the error handling behavior, you can configure `handleToolErrors` t
 
 Examples of how to use the different error handling strategies:
 
-```ts
+```ts  theme={null}
 const toolNode = new ToolNode([my_tool], {
     handleToolErrors: true
 })
@@ -130,7 +128,7 @@ const toolNode = new ToolNode([my_tool], {
 
 Pass a configured `ToolNode` directly to `createAgent()`:
 
-```ts wrap
+```ts wrap theme={null}
 import { z } from "zod"
 import { ChatOpenAI } from "@langchain/openai"
 import { ToolNode, createAgent } from "langchain"
@@ -199,7 +197,7 @@ When you pass a `ToolNode` to `createAgent()`, the agent uses your exact configu
 
     Tools can access an agent's runtime context through the `config` parameter:
 
-    ```ts wrap
+    ```ts wrap theme={null}
     import { z } from "zod"
     import { ChatOpenAI } from "@langchain/openai"
     import { ToolNode, createAgent } from "langchain"
@@ -243,7 +241,7 @@ When you pass a `ToolNode` to `createAgent()`, the agent uses your exact configu
 
     You can initialize an `InMemoryStore` to store long-term memory:
 
-    ```ts wrap
+    ```ts wrap theme={null}
     import { z } from "zod";
     import { createAgent, InMemoryStore } from "langchain";
     import { ChatOpenAI } from "@langchain/openai";
@@ -274,7 +272,7 @@ When you pass a `ToolNode` to `createAgent()`, the agent uses your exact configu
   <Accordion title="Updating long-term memory inside a tool">
     To update long-term memory, you can use the `.put()` method of `InMemoryStore`. A complete example of persistent memory across sessions:
 
-    ```ts wrap expandable
+    ```ts wrap expandable theme={null}
     import { z } from "zod";
     import { createAgent, tool, InMemoryStore } from "langchain";
     import { ChatOpenAI } from "@langchain/openai";

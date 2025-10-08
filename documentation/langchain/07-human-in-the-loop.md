@@ -37,7 +37,7 @@ To use HITL, add the middleware to the agent’s `middleware` list when creating
 
 You configure it with a mapping of tool actions to the response types that are allowed for each action. The middleware will interrupt execution when a tool call matches an action in the mapping.
 
-```ts
+```ts  theme={null}
 import { createAgent } from "langchain";
 import { MemorySaver } from "@langchain/langgraph"; // [!code highlight]
 import { humanInTheLoopMiddleware } from "langchain/middleware"; // [!code highlight]
@@ -82,7 +82,7 @@ const agent = createAgent({
 
 When you invoke the agent, it runs until it either completes or an interrupt is raised. An interrupt is triggered when a tool call matches the policy you configured in `interrupt_on`. In that case, the invocation result will include an `__interrupt__` field with the actions that require review. You can then present those actions to a reviewer and resume execution once responses are provided.
 
-```typescript
+```typescript  theme={null}
 import { HumanMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
 
@@ -127,7 +127,7 @@ await agent.invoke(
   <Tab title="✅ accept">
     Use `accept` to approve the tool call as-is and execute it without changes.
 
-    ```typescript
+    ```typescript  theme={null}
     await agent.invoke(
         new Command({
             // Responses are provided as a list, one per action under review.
@@ -148,7 +148,7 @@ await agent.invoke(
     Use `edit` to modify the tool call before execution.
     Provide the new tool name and arguments.
 
-    ```typescript
+    ```typescript  theme={null}
     await agent.invoke(
         new Command({
             // Responses are provided as a list, one per action under review.
@@ -177,7 +177,7 @@ await agent.invoke(
   <Tab title="❌ respond">
     Use `respond` to reject the tool call and provide feedback instead of execution.
 
-    ```typescript
+    ```typescript  theme={null}
     await agent.invoke(
         new Command({
             // Responses are provided as a list, one per action under review.

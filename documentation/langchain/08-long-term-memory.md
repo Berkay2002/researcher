@@ -18,7 +18,7 @@ Each memory is organized under a custom `namespace` (similar to a folder) and a 
 
 This structure enables hierarchical organization of memories. Cross-namespace searching is then supported through content filters.
 
-```typescript
+```typescript  theme={null}
 import { InMemoryStore } from "@langchain/langgraph";
 
 const embed = (texts: string[]): number[][] => {
@@ -61,7 +61,7 @@ For more information about the memory store, see the [Persistence](/oss/javascri
 
 ## Read long-term memory in tools
 
-```typescript A tool the agent can use to look up user information
+```typescript A tool the agent can use to look up user information theme={null}
 import { z } from "zod";
 import { createAgent, tool } from "langchain";
 import { InMemoryStore, type Runtime } from "@langchain/langgraph";
@@ -128,7 +128,7 @@ console.log(result.messages.at(-1)?.content);
 
 ## Write long-term memory from tools
 
-```typescript Example of a tool that updates user information
+```typescript Example of a tool that updates user information theme={null}
 import { z } from "zod";
 import { tool, createAgent, type AgentRuntime } from "langchain";
 import { InMemoryStore, type Runtime } from "@langchain/langgraph";

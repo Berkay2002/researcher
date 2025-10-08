@@ -1,7 +1,5 @@
 # Agents
 
-These guides provide explanations of the key concepts behind the LangGraph framework. For a practical implementation of these concepts in a research assistant application, see the [project brief](../../brief.md) and [implementation plan](../../plan.md).
-
 <Warning>
   **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
 
@@ -14,9 +12,9 @@ Agents combine language models with tools to create systems that can reason abou
 
 ReAct frames an agent's behavior as an interleaving of `thought` -> `action` -> `observation` steps, where the model writes out its reasoning, picks a tool, sees the tool's result, and then repeats. ReAct reduces hallucinations and makes the decision process auditable: the agent can form hypotheses (`thought`), test them with tools (`action`), and update its plan based on feedback (`observation`).
 
-A ReAct loop runs until a stop condition - i.e., when the model emits a final answer or a max-iterations limit is reached.
+A ReAct loop runs until a stop condition - i.e., when the model emits a final answer or an iteration limit is reached.
 
-```mermaid
+```mermaid  theme={null}
 %%{
   init: {
     "fontFamily": "monospace",
@@ -46,7 +44,9 @@ graph TD
 ```
 
 <Info>
-  `create_agent()` builds a **graph**-based agent runtime using [LangGraph](/oss/javascript/langgraph/overview). A graph consists of nodes (steps) and edges (connections) that define how your agent processes information. The agent moves through this graph, executing nodes like the model node (which calls the model), the tools node (which executes tools), or pre/post model hook nodes. Learn more about the [graph API](/oss/javascript/langgraph/graph-api).
+  `create_agent()` builds a **graph**-based agent runtime using [LangGraph](/oss/javascript/langgraph/overview). A graph consists of nodes (steps) and edges (connections) that define how your agent processes information. The agent moves through this graph, executing nodes like the model node (which calls the model), the tools node (which executes tools), or pre/post model hook nodes.
+
+  Learn more about the [graph API](/oss/javascript/langgraph/graph-api).
 </Info>
 
 ## Core components
@@ -57,9 +57,9 @@ The [model](/oss/javascript/langchain/models) is the reasoning engine of your ag
 
 #### Static model
 
-Static models are configured once when creating the agent and remain unchanged throughout execution. This is the most common and straightforward approach. To initialize a static model from a model identifier string:
+Static models are configured once when creating the agent and remain unchanged throughout execution. This is the most common and straightforward approach. To initialize a static model from a <Tooltip tip="A string that follows the format `provider:model` (e.g. openai:gpt-5)">model identifier string</Tooltip>:
 
-```ts wrap
+```ts wrap theme={null}
 import { createAgent } from "langchain";
 
 const agent = createAgent({
@@ -70,7 +70,7 @@ const agent = createAgent({
 
 Model identifier strings use the format `provider:model` (e.g. `"openai:gpt-5"`). You may want more control over the model configuration, in which case you can initialize a model instance directly using the provider package:
 
-```ts wrap
+```ts wrap theme={null}
 import { createAgent } from "langchain";
 import { ChatOpenAI } from "@langchain/openai";
 
@@ -95,7 +95,7 @@ Dynamic models are selected at <Tooltip tip="The execution environment of your a
 
 To use a dynamic model, you need to provide a function that receives the graph state and runtime and returns an instance of `BaseChatModel` with the tools bound to it using `.bindTools(tools)`, where `tools` is a subset of the `tools` parameter.
 
-```ts wrap
+```ts wrap theme={null}
 import { createAgent, AgentState } from "langchain";
 import { ChatOpenAI } from "@langchain/openai";
 
@@ -122,22 +122,22 @@ const agent = createAgent({
 
 Tools give agents the ability to take actions. Agents go beyond simple model-only tool binding by facilitating:
 
-* Multiple tool calls in sequence triggered by a single prompt
+* Multiple tool calls in sequence (triggered by a single prompt)
 * Parallel tool calls when appropriate
-* Dynamic tool selection based on results
+* Dynamic tool selection based on previous results
 * Tool retry logic and error handling
 * State persistence across tool calls
 
 Tools can be provided to the agent as either:
 
-1. A list of tools (created with `tool` function, or object that represents a builtin provider tool)
-2. A configured `ToolNode`
+1. A list of tools (created with @\[`tool`]\[@tool] function, or object that represents a built-in provider tool)
+2. A configured [`ToolNode`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html)
 
 #### Pass a list of tools
 
-Passing a list of tools to the agent will create a `ToolNode` under the hood. This is the simplest way to set up a tool-calling agent:
+Passing a list of tools to the agent will create a [`ToolNode`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html) under the hood. This is the simplest way to set up a tool-calling agent:
 
-```ts wrap
+```ts wrap theme={null}
 import { z } from "zod";
 import { createAgent, tool } from "langchain";
 
@@ -189,9 +189,9 @@ If an empty tool list is provided, the agent will consist of a single LLM node w
 
 #### Pass a configured ToolNode
 
-Alternatively, you can create a `ToolNode` directly and pass it to the agent. This allows you to customize the tool node's behavior, such as handling tool errors:
+Alternatively, you can create a [`ToolNode`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html) directly and pass it to the agent. This allows you to customize the tool node's behavior, such as handling tool errors:
 
-```ts wrap
+```ts wrap theme={null}
 import { ToolNode, ToolMessage } from "langchain";
 
 const toolNode = new ToolNode([search, calculate], {
@@ -205,7 +205,7 @@ const toolNode = new ToolNode([search, calculate], {
 ```
 
 <Tip>
-  To learn more about error handling in `ToolNode`, see [ToolNode](/oss/javascript/langchain/tools#toolnode).
+  To learn more about error handling in [`ToolNode`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph_prebuilt.ToolNode.html), see [ToolNode](/oss/javascript/langchain/tools#toolnode).
 </Tip>
 
 #### Tool use in the ReAct loop
@@ -221,9 +221,9 @@ Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between br
   Find the most popular wireless headphones right now and check if they're in stock
   ```
 
-  *Reasoning*: "Popularity is time-sensitive, I need to use the provided search tool."
+  **Reasoning**: "Popularity is time-sensitive, I need to use the provided search tool."
 
-  *Acting*: Call `search_products("wireless headphones")`
+  **Acting**: Call `search_products("wireless headphones")`
 
   ```
   ================================== Ai Message ==================================
@@ -240,9 +240,9 @@ Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between br
   Found 5 products matching "wireless headphones". Top 5 results: WH-1000XM5, ...
   ```
 
-  *Reasoning*: "I need to confirm availability for the top-ranked item before answering."
+  **Reasoning**: "I need to confirm availability for the top-ranked item before answering."
 
-  *Acting*: Call `check_inventory("WH-1000XM5")`
+  **Acting**: Call `check_inventory("WH-1000XM5")`
 
   ```
   ================================== Ai Message ==================================
@@ -259,9 +259,9 @@ Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between br
   Product WH-1000XM5: 10 units in stock
   ```
 
-  *Reasoning*: "I have the most popular model and its stock status. I can now answer the user's question."
+  **Reasoning**: "I have the most popular model and its stock status. I can now answer the user's question."
 
-  *Acting*: Produce final answer
+  **Acting**: Produce final answer
 
   ```
   ================================== Ai Message ==================================
@@ -279,7 +279,7 @@ Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between br
 You can shape how your agent approaches tasks by providing a prompt. The `prompt` parameter can be provided as a string, SystemMessage, or a callable:
 
 <CodeGroup>
-  ```ts String
+  ```ts String theme={null}
   const agent = createAgent({
       model,
       tools,
@@ -287,7 +287,7 @@ You can shape how your agent approaches tasks by providing a prompt. The `prompt
   });
   ```
 
-  ```ts SystemMessage
+  ```ts SystemMessage theme={null}
   import { SystemMessage } from "langchain";
 
   const agent = createAgent({
@@ -297,7 +297,7 @@ You can shape how your agent approaches tasks by providing a prompt. The `prompt
   });
   ```
 
-  ```ts Callable
+  ```ts Callable theme={null}
   import { createAgent } from "langchain";
 
   const agent = createAgent({
@@ -326,7 +326,7 @@ For more advanced use cases where you need to modify the system prompt based on 
 
 Dynamic system prompt is especially useful for personalizing prompts based on user roles, conversation context, or other changing factors:
 
-```typescript wrap
+```typescript wrap theme={null}
 import { z } from "zod";
 import { createAgent } from "langchain";
 import { dynamicSystemPromptMiddleware } from "langchain/middleware";
@@ -371,7 +371,7 @@ const result = await agent.invoke(
 
 In some situations, you may want the agent to return an output in a specific format. LangChain provides a simple, universal way to do this with the `responseFormat` parameter.
 
-```ts wrap
+```ts wrap theme={null}
 import { z } from "zod";
 import { createAgent } from "langchain";
 
@@ -417,7 +417,7 @@ Agents maintain conversation history automatically through the message state. Yo
 
 Information stored in the state can be thought of as the [short-term memory](/oss/javascript/langchain/short-term-memory) of the agent:
 
-```ts wrap
+```ts wrap theme={null}
 import { z } from "zod";
 import { MessagesZodState } from "@langchain/langgraph";
 import { createAgent, type BaseMessage } from "langchain";
@@ -442,7 +442,7 @@ const CustomAgentState = createAgent({
 
 Pre-model hook is an optional node that can process state before the model is called. Use cases include message trimming, summarization, and context injection.
 
-```mermaid
+```mermaid  theme={null}
 %%{
     init: {
         "fontFamily": "monospace",
@@ -478,12 +478,12 @@ graph TD
 
 It must be a callable or a runnable that takes in current graph state and returns a state update in the form of:
 
-```ts wrap
+```ts wrap theme={null}
 const agent = createAgent({
     model: "openai:gpt-4o",
     preModelHook: (state) => {
         return {
-        messages: [RemoveMessage({ id: REMOVE_ALL_MESSAGES }), ...state.messages],
+            messages: [RemoveMessage({ id: REMOVE_ALL_MESSAGES }), ...state.messages],
         };
     },
 });
@@ -491,8 +491,10 @@ const agent = createAgent({
 
 Example of a pre-model hook that trims messages to fit the context window:
 
-```ts wrap
+```ts wrap theme={null}
 import { createAgent, type AgentState } from "langchain";
+import { REMOVE_ALL_MESSAGES } from "@langchain/langgraph";
+import { RemoveMessage } from "@langchain/core/messages";
 
 const trimMessages = (state: AgentState) => {
     const messages = state.messages;
@@ -507,7 +509,13 @@ const trimMessages = (state: AgentState) => {
         : messages.slice(-4);
 
     const newMessages = [firstMsg, ...recentMessages];
-    return { messages: newMessages };
+
+    return {
+        messages: [
+            new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
+            ...newMessages
+        ]
+    };
 };
 
 const agent = createAgent({
@@ -522,9 +530,9 @@ const agent = createAgent({
 </Info>
 
 <Warning>
-  If you are returning `messages` in the pre-model hook, you should OVERWRITE the `messages` key by doing the following:
+  If you are returning `messages` in the pre-model hook, you should **overwrite the `messages` key** by doing the following:
 
-  ```ts wrap
+  ```ts wrap theme={null}
   import { RemoveMessage } from "@langchain/core/messages";
   import { REMOVE_ALL_MESSAGES } from "@langchain/langgraph";
 
@@ -533,10 +541,10 @@ const agent = createAgent({
       preModelHook: (state) => {
           // ...
           return {
-          messages: [
-              RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
-              ...state.messages
-          ],
+              messages: [
+                  RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
+                  ...state.messages
+              ],
           };
       };
   });
@@ -547,7 +555,7 @@ const agent = createAgent({
 
 Post-model hook is an optional node that can process the model's response before tool execution. Use cases include validation, guardrails, or other post-processing.
 
-```mermaid
+```mermaid  theme={null}
 %%{
     init: {
         "fontFamily": "monospace",
@@ -585,7 +593,7 @@ It must be a callable or a runnable that takes in current graph state and return
 
 Example of a post-model hook that filters out confidential information:
 
-```ts wrap
+```ts wrap theme={null}
 import { createAgent, type AgentState, AIMessage, RemoveMessage } from "langchain";
 import { REMOVE_ALL_MESSAGES } from "@langchain/langgraph";
 
@@ -614,7 +622,7 @@ const agent = createAgent({
 
 We've seen how the agent can be called with `.invoke` to get a final response. If the agent executes multiple steps, this may take a while. To show intermediate progress, we can stream back messages as they occur.
 
-```ts wrap
+```ts wrap theme={null}
 const stream = await agent.stream(
     {
         messages: [new HumanMessage("What's the weather in NYC?")],

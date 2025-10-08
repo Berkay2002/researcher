@@ -1,4 +1,4 @@
-# Models
+# Messages
 
 <Warning>
   **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
@@ -6,921 +6,877 @@
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
 
-[LLMs](https://en.wikipedia.org/wiki/Large_language_model) are powerful AI tools that can interpret and generate text like humans. They're versatile enough to write content, translate languages, summarize, and answer questions without needing specialized training for each task.
+Messages are the fundamental unit of context for models in LangChain. They represent the input and output of models, carrying both the content and metadata needed to represent the state of a conversation when interacting with an LLM.
 
-In addition to text generation, many models support:
+Messages are objects that contain:
 
-* <Icon icon="hammer" size={16} /> [Tool calling](#tool-calling) - calling external tools (like databases queries or API calls) and use results in their responses.
-* <Icon icon="shapes" size={16} /> [Structured output](#structured-outputs) - where the model's response is constrained follow a defined format.
-* <Icon icon="image" size={16} /> [Multimodal](#multimodal) - process and return data other than text, such as images, audio, and video.
-* <Icon icon="brain" size={16} /> [Reasoning](#reasoning) - models perform multi-step reasoning to arrive at a conclusion.
+* <Icon icon="user" size={16} /> [**Role**](#message-types) - Identifies the message type (e.g. `system`, `user`)
+* <Icon icon="folder-closed" size={16} /> [**Content**](#content) - Represents the actual content of the message (like text, images, audio, documents, etc.)
+* <Icon icon="tag" size={16} /> [**Metadata**](#message-metadata) - Optional fields such as response information, message IDs, and token usage
 
-For provider-specific integration information and capabilities, see the provider's [integration page](/oss/javascript/integrations/providers).
+LangChain provides a standard message type that works across all model providers, ensuring consistent behavior regardless of the model being called.
 
 ## Basic usage
 
-The easiest way to get started with a model in LangChain is to use `initChatModel` to initialize one from a [provider](/oss/javascript/integrations/providers) of your choice (examples below):
+The simplest way to use messages is to create message objects and pass them to a model when [invoking](/oss/javascript/langchain/models#invocation).
 
-<Tabs>
-  <Tab title="OpenAI">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/openai
-      ```
+```typescript  theme={null}
+import { initChatModel, HumanMessage, SystemMessage } from "langchain";
 
-      ```bash yarn
-      yarn add @langchain/openai
-      ```
+const model = await initChatModel("openai:gpt-5-nano");
 
-      ```bash pnpm
-      pnpm add @langchain/openai
-      ```
-    </CodeGroup>
+const systemMsg = new SystemMessage("You are a helpful assistant.");
+const humanMsg = new HumanMessage("Hello, how are you?");
 
-    ```bash
-    OPENAI_API_KEY=your-api-key
-    ```
-
-    ```typescript
-    import { ChatOpenAI } from "@langchain/openai";
-
-    const llm = new ChatOpenAI({
-      model: "gpt-4o-mini",
-    });
-    ```
-  </Tab>
-
-  <Tab title="Anthropic">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/anthropic
-      ```
-
-      ```bash yarn
-      yarn add @langchain/anthropic
-      ```
-
-      ```bash pnpm
-      pnpm add @langchain/anthropic
-      ```
-    </CodeGroup>
-
-    ```bash
-    ANTHROPIC_API_KEY=your-api-key
-    ```
-
-    ```typescript
-    import { ChatAnthropic } from "@langchain/anthropic";
-
-    const llm = new ChatAnthropic({
-      model: "claude-3-5-sonnet-20240620",
-    });
-    ```
-  </Tab>
-
-  <Tab title="Google Gemini">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/google-genai
-      ```
-
-      ```bash yarn
-      yarn add @langchain/google-genai
-      ```
-
-      ```bash pnpm
-      pnpm add @langchain/google-genai
-      ```
-    </CodeGroup>
-
-    ```bash
-    GOOGLE_API_KEY=your-api-key
-    ```
-
-    ```typescript
-    import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-
-    const llm = new ChatGoogleGenerativeAI({
-      model: "gemini-2.0-flash",
-    });
-    ```
-  </Tab>
-
-  <Tab title="Fireworks AI">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/community
-      ```
-
-      ```bash yarn
-      yarn add @langchain/community
-      ```
-
-      ```bash pnpm
-      pnpm add @langchain/community
-      ```
-    </CodeGroup>
-
-    ```bash
-    FIREWORKS_API_KEY=your-api-key
-    ```
-
-    ```typescript
-    import { ChatFireworks } from "@langchain/community/chat_models/fireworks";
-
-    const llm = new ChatFireworks({
-      model: "accounts/fireworks/models/llama-v3p1-70b-instruct",
-    });
-    ```
-  </Tab>
-
-  <Tab title="MistralAI">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/mistralai
-      ```
-
-      ```bash yarn
-      yarn add @langchain/mistralai
-      ```
-
-      ```bash pnpm
-      pnpm add @langchain/mistralai
-      ```
-    </CodeGroup>
-
-    ```bash
-    MISTRAL_API_KEY=your-api-key
-    ```
-
-    ```typescript
-    import { ChatMistralAI } from "@langchain/mistralai";
-
-    const llm = new ChatMistralAI({
-      model: "mistral-large-latest",
-    });
-    ```
-  </Tab>
-
-  <Tab title="VertexAI">
-    <CodeGroup>
-      ```bash npm
-      npm i @langchain/google-vertexai
-      ```
-
-      ```bash yarn
-      yarn add @langchain/google-vertexai
-      ```
-
-      ```bash pnpm
-      pnpm add @langchain/google-vertexai
-      ```
-    </CodeGroup>
-
-    ```bash
-    GOOGLE_APPLICATION_CREDENTIALS=credentials.json
-    ```
-
-    ```typescript
-    import { ChatVertexAI } from "@langchain/google-vertexai";
-
-    const llm = new ChatVertexAI({
-      model: "gemini-1.5-flash",
-    });
-    ```
-  </Tab>
-</Tabs>
-
-```typescript
-const response = await model.invoke("Why do parrots talk?");
+const messages = [systemMsg, humanMsg];
+const response = await model.invoke(messages);  // Returns AIMessage
 ```
 
-See [`initChatModel`](https://v03.api.js.langchain.com/functions/langchain.chat_models_universal.initChatModel.html) for more detail.
+### Text prompts
 
-### Key methods
+Text prompts are strings - ideal for straightforward generation tasks where you don't need to retain conversation history.
 
-<Card title="Invoke" href="#invoke" icon="paper-plane" arrow="true" horizontal>
-  The model takes messages as input and outputs messages after generating a complete response.
-</Card>
+```typescript  theme={null}
+const response = await model.invoke("Write a haiku about spring");
+```
 
-<Card title="Stream" href="#stream" icon="tower-broadcast" arrow="true" horizontal>
-  Invoke the model, but stream the output as it is generated in real-time.
-</Card>
+**Use text prompts when:**
 
-<Card title="Batch" href="#batch" icon="grip" arrow="true" horizontal>
-  Send multiple requests to a model in a batch for more efficient processing.
-</Card>
+* You have a single, standalone request
+* You don't need conversation history
+* You want minimal code complexity
 
-<Info>
-  In addition to chat models, LangChain provides support for other adjacent technologies, such as embedding models and vector stores. See the [integrations page](/oss/javascript/integrations/providers) for details.
-</Info>
+### Message prompts
 
-## Parameters
+Alternatively, you can pass in a list of messages to the model by providing a list of message objects.
 
-A chat model takes parameters that can be used to configure its behavior. The full set of supported parameters varies by model and provider, but standard ones include:
+```typescript  theme={null}
+import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 
-<ParamField body="model" type="string" required>
-  The name or identifier of the specific model you want to use with a provider.
-</ParamField>
+const messages = [
+    new SystemMessage("You are a poetry expert"),
+    new HumanMessage("Write a haiku about spring"),
+    new AIMessage("Cherry blossoms bloom...")
+]
+const response = await model.invoke(messages);
+```
 
-<ParamField body="apiKey" type="string">
-  The key required for authenticating with the model's provider. This is usually issued when you sign up for access to the model. Often accessed by setting an <Tooltip tip="A variable whose value is set outside the program, typically through functionality built into the operating system or microservice.">environment variable</Tooltip>.
-</ParamField>
+**Use message prompts when:**
 
-<ParamField body="temperature" type="number">
-  Controls the randomness of the model's output. A higher number makes responses more creative; lower ones make them more deterministic.
-</ParamField>
+* Managing multi-turn conversations
+* Working with multimodal content (images, audio, files)
+* Including system instructions
 
-<ParamField body="timeout" type="number">
-  The maximum time (in seconds) to wait for a response from the model before canceling the request.
-</ParamField>
+### Dictionary format
 
-<ParamField body="maxTokens" type="number">
-  Limits the total number of <Tooltip tip="The basic unit that a model reads and generates. Providers may define them differently, but in general, they can represent a whole or part of word.">tokens</Tooltip> in the response, effectively controlling how long the output can be.
-</ParamField>
+You can also specify messages directly in OpenAI chat completions format.
 
-<ParamField body="maxRetries" type="number">
-  The maximum number of attempts the system will make to resend a request if it fails due to issues like network timeouts or rate limits.
-</ParamField>
+```typescript  theme={null}
+const messages = [
+    { role: "system", content: "You are a poetry expert" },
+    { role: "user", content: "Write a haiku about spring" },
+    { role: "assistant", content: "Cherry blossoms bloom..." }
+]
+const response = await model.invoke(messages);
+```
 
-<Info>
-  To find all the parameters supported by a given chat model, head to the [reference docs](https://v03.api.js.langchain.com/index.html).
-</Info>
+## Message types
+
+* <Icon icon="gear" size={16} /> [System message](#system-message) - Tells the model how to behave and provide context for interactions
+* <Icon icon="user" size={16} /> [Human message](#human-message) - Represents user input and interactions with the model
+* <Icon icon="robot" size={16} /> [AI message](#ai-message) - Responses generated by the model, including text content, tool calls, and metadata
+* <Icon icon="wrench" size={16} /> [Tool message](#tool-message) - Represents the outputs of [tool calls](/oss/javascript/langchain/models#tool-calling)
+
+### System Message
+
+A `SystemMessage` represent an initial set of instructions that primes the model's behavior. You can use a system message to set the tone, define the model's role, and establish guidelines for responses.
+
+```typescript Basic instructions theme={null}
+import { SystemMessage, HumanMessage, AIMessage } from "langchain";
+
+const systemMsg = new SystemMessage("You are a helpful coding assistant.");
+
+const messages = [
+    systemMsg,
+    new HumanMessage("How do I create a REST API?")
+]
+const response = await model.invoke(messages);
+```
+
+```typescript Detailed persona theme={null}
+import { SystemMessage, HumanMessage } from "langchain";
+
+const systemMsg = new SystemMessage(`
+You are a senior TypeScript developer with expertise in web frameworks.
+Always provide code examples and explain your reasoning.
+Be concise but thorough in your explanations.
+`);
+
+const messages = [
+    systemMsg,
+    new HumanMessage("How do I create a REST API?")
+]
+const response = await model.invoke(messages);
+```
 
 ***
 
-## Invocation
+### Human Message
 
-A chat model must be invoked to generate an output. There are three primary invocation methods, each suited to different use cases.
+A `HumanMessage` represents user input and interactions. They can contain text, images, audio, files, and any other amount of multimodal [content](#content).
 
-### Invoke
+#### Text content
 
-The most straightforward way to call a model is to use [`invoke()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#invoke) with a single message or a list of messages.
-
-```typescript Single message
-const response = await model.invoke("Why do parrots have colorful feathers?");
-console.log(response);
+```typescript Message object theme={null}
+const humanMsg = new HumanMessage("What is machine learning?");
+const response = await model.invoke([humanMsg]);
 ```
 
-A list of messages can be provided to a model to represent conversation history. Each message has a role that models use to indicate who sent the message in the conversation. See the [messages](/oss/javascript/langchain/messages) guide for more detail on roles, types, and content.
-
-```typescript Conversation history
-import { HumanMessage, AIMessage, SystemMessage } from "langchain";
-
-const conversation = [
-    new SystemMessage("You are a helpful assistant that translates English to French."),
-    new HumanMessage("Translate: I love programming."),
-    new AIMessage("J'adore la programmation."),
-    new HumanMessage("Translate: I love building applications.")
-];
-
-const response = await model.invoke(conversation);
-console.log(response);  // AIMessage("J'adore créer des applications.")
+```typescript String shortcut theme={null}
+const response = await model.invoke("What is machine learning?");
 ```
 
-### Stream
+#### Message metadata
 
-Most models can stream their output content while it is being generated. By displaying output progressively, streaming significantly improves user experience, particularly for longer responses.
+```typescript Add metadata theme={null}
+const humanMsg = new HumanMessage({
+    content: "Hello!",
+    name: "alice",
+    id: "msg_123"
+});
+```
 
-Calling [`stream()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#stream) returns an <Tooltip tip="An object that progressively provides access to each item of a collection, in order.">iterator</Tooltip> that yields output chunks as they are produced. You can use a loop to process each chunk in real-time:
+<Note>
+  The `name` field behavior varies by provider - some use it for user identification, others ignore it. To check, refer to the model provider's [reference](https://v03.api.js.langchain.com/index.html).
+</Note>
+
+***
+
+### AI Message
+
+An `AIMessage` represents the output of a model invocation. They can include multimodal data, tool calls, and provider-specific metadata that you can later access.
+
+```typescript  theme={null}
+const response = await model.invoke("Explain AI");
+console.log(typeof response);  // AIMessage
+```
+
+`AIMessage` objects are returned by the model when calling it, which contains all of the associated metadata in the response. However, that doesn't mean that's the only place they can be created/ modified from.
+
+Providers weight/contextualize types of messages differently, which means it is sometimes helpful to create a new `AIMessage` object and insert it into the message history as if it came from the model.
+
+```typescript  theme={null}
+import { AIMessage, SystemMessage, HumanMessage } from "langchain";
+
+const aiMsg = new AIMessage("I'd be happy to help you with that question!");
+
+const messages = [
+    new SystemMessage("You are a helpful assistant"),
+    new HumanMessage("Can you help me?"),
+    aiMsg,  // Insert as if it came from the model
+    new HumanMessage("Great! What's 2+2?")
+]
+
+const response = await model.invoke(messages);
+```
+
+<Accordion title="Attributes">
+  <ParamField path="text" type="string">
+    The text content of the message.
+  </ParamField>
+
+  <ParamField path="content" type="string | ContentBlock[]">
+    The raw content of the message.
+  </ParamField>
+
+  <ParamField path="content_blocks" type="ContentBlock.Standard[]">
+    The standardized content blocks of the message. (See [content](#content))
+  </ParamField>
+
+  <ParamField path="tool_calls" type="ToolCall[] | None">
+    The tool calls made by the model. Empty if no tools are called.
+  </ParamField>
+
+  <ParamField path="id" type="string">
+    A unique identifier for the message (either automatically generated by LangChain or returned in the provider response)
+  </ParamField>
+
+  <ParamField path="usage_metadata" type="UsageMetadata | None">
+    The usage metadata of the message, which can contain token counts when available.
+  </ParamField>
+
+  <ParamField path="response_metadata" type="ResponseMetadata | None">
+    The response metadata of the message.
+  </ParamField>
+</Accordion>
+
+#### Tool calls
+
+When models make [tool calls](/oss/javascript/langchain/models#tool-calling), they're included in the AI message:
+
+```typescript  theme={null}
+const modelWithTools = model.bindTools([getWeather]);
+const response = await modelWithTools.invoke("What's the weather in Paris?");
+
+for (const toolCall of response.tool_calls) {
+    console.log(`Tool: ${toolCall.name}`);
+    console.log(`Args: ${toolCall.args}`);
+    console.log(`ID: ${toolCall.id}`);
+}
+```
+
+Other structured data, such as reasoning or citations, can also appear in message [content](/oss/javascript/langchain/messages#content).
+
+#### Token usage
+
+An `AIMessage` can hold token counts and other usage metadata in its `usage_metadata` field:
+
+```typescript  theme={null}
+import { initChatModel } from "langchain";
+
+const model = await initChatModel("openai:gpt-5-nano");
+
+const response = await model.invoke("Hello!");
+console.log(response.usage_metadata);
+```
+
+```json  theme={null}
+{
+  "output_tokens": 304,
+  "input_tokens": 8,
+  "total_tokens": 312,
+  "input_token_details": {
+    "cache_read": 0
+  },
+  "output_token_details": {
+    "reasoning": 256
+  }
+}
+```
+
+See @\[UsageMetadata] for details.
+
+#### Streaming and chunks
+
+During streaming, you'll receive `AIMessageChunk` objects that can be combined into a full message:
 
 <CodeGroup>
-  ```typescript Basic text streaming
-  const stream = await model.stream("Why do parrots have colorful feathers?");
-  for await (const chunk of stream) {
-      console.log(chunk.text)
-  }
-  ```
+  ```typescript  theme={null}
+  import { AIMessageChunk } from "langchain";
 
-  ```typescript Stream tool calls, reasoning, and other content
-  const stream = await model.stream("What color is the sky?");
-  for await (const chunk of stream) {
-      for (const block of chunk.contentBlocks) {
-          if (block.type === "reasoning") {
-              console.log(`Reasoning: ${block.reasoning}`);
-          } else if (block.type === "tool_call_chunk") {
-              console.log(`Tool call chunk: ${block}`);
-          } else if (block.type === "text") {
-              console.log(block.text);
-          } else {
-              ...
-          }
-      }
+  let finalChunk: AIMessageChunk | undefined;
+  for (const chunk of chunks) {
+      finalChunk = finalChunk ? finalChunk.concat(chunk) : chunk;
   }
   ```
 </CodeGroup>
 
-As opposed to `invoke()`, which returns a single [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) after the model has finished generating its full response, `stream()` returns multiple [`AIMessageChunk`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessageChunk.html) objects, each containing a portion of the output text. Importantly, each chunk in a stream is designed to be gathered into a full message via summation:
-
-```typescript Construct AIMessage
-let full: AIMessageChunk | null = null;
-for await (const chunk of stream) {
-    full = full ? full.concat(chunk) : chunk;
-    console.log(full.text);
-}
-
-// The
-// The sky
-// The sky is
-// The sky is typically
-// The sky is typically blue
-// ...
-
-console.log(full.contentBlocks);
-// [{"type": "text", "text": "The sky is typically blue..."}]
-```
-
-The resulting message can be treated the same as a message that was generated with [`invoke()`](#invoke) - for example, it can be aggregated into a message history and passed back to the model as conversational context.
-
-<Warning>
-  Streaming only works if all steps in the program know how to process a stream of chunks. For instance, an application that isn't streaming-capable would be one that needs to store the entire output in memory before it can be processed.
-</Warning>
-
-<Accordion title="Advanced streaming topics">
-  <Accordion title="&#x22;Auto-streaming&#x22; chat models">
-    LangChain simplifies streaming from chat models by automatically enabling streaming mode in certain cases, even when you're not explicitly calling the streaming methods. This is particularly useful when you use the non-streaming invoke method but still want to stream the entire application, including intermediate results from the chat model.
-
-    In [LangGraph agents](/oss/javascript/langchain/agents), for example, you can call `model.invoke()` within nodes, but LangChain will automatically delegate to streaming if running in a streaming mode.
-
-    #### How it works
-
-    When you `invoke()` a chat model, LangChain will automatically switch to an internal streaming mode if it detects that you are trying to stream the overall application. The result of the invocation will be the same as far as the code that was using invoke is concerned; however, while the chat model is being streamed, LangChain will take care of invoking `on_llm_new_token` events in LangChain's callback system.
-
-    Callback events allow LangGraph `stream()` and [`streamEvents()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#streamEvents) to surface the chat model's output in real-time.
-  </Accordion>
-
-  <Accordion title="Streaming events">
-    LangChain chat models can also stream semantic events using
-    \[`streamEvents()`]\[BaseChatModel.streamEvents].
-
-    This simplifies filtering based on event types and other metadata, and will aggregate the full message in the background. See below for an example.
-
-    ```typescript
-    const stream = await model.streamEvents("Hello");
-    for await (const event of stream) {
-        if (event.event === "on_chat_model_start") {
-            console.log(`Input: ${event.data.input}`);
-        }
-        if (event.event === "on_chat_model_stream") {
-            console.log(`Token: ${event.data.chunk.text}`);
-        }
-        if (event.event === "on_chat_model_end") {
-            console.log(`Full message: ${event.data.output.text}`);
-        }
-    }
-    ```
-
-    ```txt
-    Input: Hello
-    Token: Hi
-    Token:  there
-    Token: !
-    Token:  How
-    Token:  can
-    Token:  I
-    ...
-    Full message: Hi there! How can I help today?
-    ```
-
-    See the [`streamEvents()`](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#streamEvents) reference for event types and other details.
-  </Accordion>
-</Accordion>
-
-### Batch
-
-Batching a collection of independent requests to a model can significantly improve performance and reduce costs, as the processing can be done in parallel:
-
-```typescript Batch
-const responses = await model.batch([
-    "Why do parrots have colorful feathers?",
-    "How do airplanes fly?",
-    "What is quantum computing?",
-    "Why do parrots have colorful feathers?",
-    "How do airplanes fly?",
-    "What is quantum computing?"
-]);
-for (const response of responses) {
-    console.log(response);
-}
-```
-
-<Tip>
-  When processing a large number of inputs using `batch()`, you may want to control the maximum number of parallel calls. This can be done by setting the `maxConcurrency` attribute in the `RunnableConfig` dictionary.
-
-  ```typescript Batch with max concurrency
-  model.batch(
-      listOfInputs,
-      {
-          maxConcurrency: 5,  // Limit to 5 parallel calls
-      }
-  )
-  ```
-
-  See the [`RunnableConfig`](https://v03.api.js.langchain.com/interfaces/_langchain_core.runnables.RunnableConfig.html) reference for a full list of supported attributes.
-</Tip>
-
-For more details on batching, see the [reference](https://v03.api.js.langchain.com/classes/_langchain_core.language_models_chat_models.BaseChatModel.html#batch).
-
-***
-
-## Tool calling
-
-Models can request to call tools that perform tasks such as fetching data from a database, searching the web, or running code. Tools are pairings of:
-
-1. A schema, including the name of the tool, a description, and/or argument definitions (often a JSON schema)
-2. A function or <Tooltip tip="A method that can suspend execution and resume at a later time">coroutine</Tooltip> to execute.
-
 <Note>
-  You may hear the term "function calling". We use this interchangeably with "tool calling".
+  Learn more:
+
+  * [Streaming tokens from chat models](/oss/javascript/langchain/models#stream)
+  * [Streaming tokens and/or steps from agents](/oss/javascript/langchain/streaming)
 </Note>
 
-To make tools that you have defined available for use by a model, you must bind them using [`bindTools()`](https://v03.api.js.langchain.com/classes/langchain.chat_models_universal.ConfigurableModel.html#bindTools). In subsequent invocations, the model can choose to call any of the bound tools as needed.
+***
 
-Some model providers offer built-in tools that can be enabled via model parameters. Check the respective [provider reference](/oss/javascript/integrations/providers) for details.
+### Tool Message
 
-<Tip>
-  See the [tools guide](/oss/javascript/langchain/tools) for details and other options for creating tools.
-</Tip>
+For models that support [tool calling](/oss/javascript/langchain/models#tool-calling), AI messages can contain tool calls. Tool messages are used to pass the results of a single tool execution back to the model.
 
-```typescript Binding user tools highlight={17}
-import { tool } from "langchain";
-import { z } from "zod";
-import { ChatOpenAI } from "@langchain/openai";
+[Tools](/oss/javascript/langchain/tools) can generate ToolMessages directly. Below, we show a simple example. Read more in the [tools guide](/oss/javascript/langchain/tools).
 
-const getWeather = tool(
-    (input) => {
-        return `It's sunny in ${input.location}.`
-    },
-    {
+```typescript  theme={null}
+import { AIMessage, ToolMessage } from "langchain";
+
+const aiMessage = new AIMessage({
+    content: [],
+    tool_calls: [{
         name: "get_weather",
-        description: "Get the weather at a location.",
-        schema: z.object({
-            location: z.string().describe("The location to get the weather for")
-        })
-    }
-)
+        args: { location: "San Francisco" },
+        id: "call_123"
+    }]
+});
 
-const model = new ChatOpenAI({ model: "gpt-4o" })
-const modelWithTools = model.bindTools([getWeather])
+const toolMessage = new ToolMessage({
+    content: "Sunny, 72°F",
+    tool_call_id: "call_123"
+});
 
-const response = await modelWithTools.invoke("What's the weather like in Boston?")
-const toolCalls = response.tool_calls || []
-for (const tool_call of toolCalls) {
-    // View tool calls made by the model
-    console.log(`Tool: ${tool_call.name}`);
-    console.log(`Args: ${tool_call.args}`);
-}
+const messages = [
+    new HumanMessage("What's the weather in San Francisco?"),
+    aiMessage,  // Model's tool call
+    toolMessage,  // Tool execution result
+];
+
+const response = await model.invoke(messages);  // Model processes the result
 ```
 
-When binding user-defined tools, the model's response includes a **request** to execute a tool. It is up to you to perform the requested action and return the result back to the model for use in subsequent reasoning.
+<Accordion title="Attributes">
+  <ParamField path="content" type="string" required>
+    The stringified output of the tool call.
+  </ParamField>
 
-Below, we show some common ways you can use tool calling.
+  <ParamField path="tool_call_id" type="string" required>
+    The ID of the tool call that this message is responding to. (this must match the ID of the tool call in the AI message)
+  </ParamField>
 
-<AccordionGroup>
-  <Accordion title="Tool execution loop" icon="arrow-rotate-right">
-    When a model returns tool calls, you need to execute the tools and pass the results back to the model. This creates a conversation loop where the model can use tool results to generate its final response.
+  <ParamField path="name" type="string" required>
+    The name of the tool that was called.
+  </ParamField>
 
-    ```typescript Tool execution loop
-    //  Bind (potentially multiple) tools to the model
-    const modelWithTools = model.bindTools([get_weather])
+  <ParamField path="artifact" type="dict">
+    Additional data not sent to the model but can be accessed programmatically.
+  </ParamField>
+</Accordion>
 
-    // Step 1: Model generates tool calls
-    const messages = [{"role": "user", "content": "What's the weather in Boston?"}]
-    const response = await modelWithTools.invoke(messages)
-    messages.push(response)
+<Note>
+  The `artifact` field stores supplementary data that won't be sent to the model but can be accessed programmatically. This is useful for storing raw results, debugging information, or data for downstream processing without cluttering the model's context.
 
-    // Step 2: Execute tools and collect results
-    for (const tool_call of response.tool_calls || []) {
-        // Execute the tool with the generated arguments
-        const tool_result = await get_weather.invoke(tool_call)
-        messages.push(tool_result)
-    }
+  <Accordion title="Example: Using artifact for retrieval metadata">
+    For example, a [retrieval](/oss/javascript/langchain/retrieval) tool could retrieve a passage from a document for reference by a model. Where message `content` contains text that the model will reference, an `artifact` can contain document identifiers or other metadata that an application can use (e.g., to render a page). See example below:
 
-    // Step 3: Pass results back to model for final response
-    const final_response = await modelWithTools.invoke(messages)
-    console.log(final_response.text)
-    // "The current weather in Boston is 72°F and sunny."
+    ```typescript  theme={null}
+    import { ToolMessage } from "langchain";
+
+    // Artifact available downstream
+    const artifact = { document_id: "doc_123", page: 0 };
+
+    const toolMessage = new ToolMessage({
+        content: "It was the best of times, it was the worst of times.",
+        tool_call_id: "call_123",
+        name: "search_books",
+        artifact
+    });
     ```
 
-    Each `ToolMessage` returned by the tool includes a `tool_call_id` that matches the original tool call, helping the model correlate results with requests.
+    See the [RAG tutorial](/oss/javascript/langchain/rag) for an end-to-end example of building retrieval [agents](/oss/javascript/langchain/agents) with LangChain.
   </Accordion>
-
-  <Accordion title="Forcing tool calls" icon="asterisk">
-    By default, the model has the freedom to choose which bound tool to use based on the user's input. However, you might want to force choosing a tool, ensuring the model uses either a particular tool or *any* tool from a given list:
-
-    <CodeGroup>
-      ```typescript Force use of any tool
-      const modelWithTools = model.bindTools([tool_1], { toolChoice: "any" })
-      ```
-
-      ```typescript Force use of specific tools
-      const modelWithTools = model.bindTools([tool_1], { toolChoice: "tool_1" })
-      ```
-    </CodeGroup>
-  </Accordion>
-
-  <Accordion title="Parallel tool calls" icon="layer-group">
-    Many models support calling multiple tools in parallel when appropriate. This allows the model to gather information from different sources simultaneously.
-
-    ```typescript Parallel tool calls
-    const modelWithTools = model.bind_tools([get_weather])
-
-    const response = await modelWithTools.invoke(
-        "What's the weather in Boston and Tokyo?"
-    )
-
-
-    // The model may generate multiple tool calls
-    console.log(response.tool_calls)
-    // [
-    //   { name: 'get_weather', args: { location: 'Boston' }, id: 'call_1' },
-    //   { name: 'get_time', args: { location: 'Tokyo' }, id: 'call_2' }
-    // ]
-
-
-    // Execute all tools (can be done in parallel with async)
-    const results = []
-    for (const tool_call of response.tool_calls || []) {
-        if (tool_call.name === 'get_weather') {
-            const result = await get_weather.invoke(tool_call)
-            results.push(result)
-        }
-    }
-    ```
-
-    The model intelligently determines when parallel execution is appropriate based on the independence of the requested operations.
-  </Accordion>
-
-  <Accordion title="Streaming tool calls" icon="rss">
-    When streaming responses, tool calls are progressively built through `ToolCallChunk`. This allows you to see tool calls as they're being generated rather than waiting for the complete response.
-
-    ```typescript Streaming tool calls
-    const stream = await modelWithTools.stream(
-        "What's the weather in Boston and Tokyo?"
-    )
-    for await (const chunk of stream) {
-        // Tool call chunks arrive progressively
-        if (chunk.tool_call_chunks) {
-            for (const tool_chunk of chunk.tool_call_chunks) {
-            console.log(`Tool: ${tool_chunk.get('name', '')}`)
-            console.log(`Args: ${tool_chunk.get('args', '')}`)
-            }
-        }
-    }
-
-    // Output:
-    // Tool: get_weather
-    // Args:
-    // Tool:
-    // Args: {"loc
-    // Tool:
-    // Args: ation": "BOS"}
-    // Tool: get_time
-    // Args:
-    // Tool:
-    // Args: {"timezone": "Tokyo"}
-    ```
-
-    You can accumulate chunks to build complete tool calls:
-
-    ```typescript Accumulate tool calls
-    let full: AIMessageChunk | null = null
-    const stream = await modelWithTools.stream("What's the weather in Boston?")
-    for await (const chunk of stream) {
-        full = full ? full.concat(chunk) : chunk
-        console.log(full.contentBlocks)
-    }
-    ```
-  </Accordion>
-</AccordionGroup>
+</Note>
 
 ***
 
-## Structured outputs
+## Content
 
-Models can be requested to provide their response in a format matching a given schema. This is useful for ensuring the output can be easily parsed and used in subsequent processing. LangChain supports multiple schema types and methods for enforcing structured outputs.
+You can think of a message's content as the payload of data that gets sent to the model. Messages have a `content` attribute that is loosely-typed, supporting strings and lists of untyped objects (e.g., dictionaries). This allows support for provider-native structures directly in LangChain chat models, such as [multimodal](#multimodal) content and other data.
+
+Separately, LangChain provides dedicated content types for text, reasoning, citations, multi-modal data, server-side tool calls, and other message content. See [content blocks](#standard-content-blocks) below.
+
+LangChain chat models accept message content in the `.content` attribute, and can contain:
+
+1. A string
+2. A list of content blocks in a provider-native format
+3. A list of [LangChain's standard content blocks](#standard-content-blocks)
+
+See below for an example using [multimodal](#multimodal) inputs:
+
+```typescript  theme={null}
+import { HumanMessage } from "langchain";
+
+// String content
+const humanMessage = new HumanMessage("Hello, how are you?");
+
+// Provider-native format (e.g., OpenAI)
+const humanMessage = new HumanMessage({
+  content: [
+    { type: "text", text: "Hello, how are you?" },
+    { type: "image_url", image_url: { url: "https://example.com/image.jpg" } },
+  ],
+});
+
+// List of standard content blocks
+const humanMessage = new HumanMessage({
+  contentBlocks: [
+    { type: "text", text: "Hello, how are you?" },
+    { type: "image", url: "https://example.com/image.jpg" },
+  ],
+});
+```
+
+<Tip>
+  Specifying `contentBlocks` when initializing a message will still populate message
+  `content`, but provides a type-safe interface for doing so.
+</Tip>
+
+### Standard content blocks
+
+LangChain maintains a standard set of types for message content that works across
+providers (see the [reference](#content-block-reference) section below).
+
+Messages also implement a `contentBlocks` property that will lazily parse the `content` attribute into this standard, type-safe representation. For example, messages generated from [ChatAnthropic](/oss/javascript/integrations/chat/anthropic) or [ChatOpenAI](/oss/javascript/integrations/chat/openai) will include `thinking` or `reasoning` blocks in the format of the respective provider, but these can be lazily parsed into a consistent [`ReasoningContentBlock`](#content-block-reference) representation:
 
 <Tabs>
-  <Tab title="Zod">
-    A [zod schema](https://zod.dev/) is the preferred method of defining an output schema. Note that when a zod schema is provided, the model output will also be validated against the schema using zod's parse methods.
+  <Tab title="Anthropic">
+    ```typescript  theme={null}
+    import { AIMessage } from "@langchain/core/messages";
 
-    ```typescript
-    import { z } from "zod";
-
-    const Movie = z.object({
-        title: z.string().describe("The title of the movie"),
-        year: z.number().describe("The year the movie was released"),
-        director: z.string().describe("The director of the movie"),
-        rating: z.number().describe("The movie's rating out of 10"),
+    const message = new AIMessage({
+        content: [
+            {"type": "thinking", "thinking": "...", "signature": "WaUjzkyp..."},
+            {"type": "text", "text": "...", "id": "msg_abc123"},
+        ],
+        response_metadata: { model_provider: "anthropic" },
     });
 
-    const modelWithStructure = model.withStructuredOutput(Movie);
-
-    const response = await modelWithStructure.invoke("Provide details about the movie Inception");
-    console.log(response);
-    // {
-    //     title: "Inception",
-    //     year: 2010,
-    //     director: "Christopher Nolan",
-    //     rating: 8.8,
-    // }
+    console.log(message.contentBlocks);
     ```
   </Tab>
 
-  <Tab title="JSON Schema">
-    For maximum control or interoperability, you can provide a raw JSON Schema.
+  <Tab title="OpenAI">
+    ```typescript  theme={null}
+    import { AIMessage } from "@langchain/core/messages";
 
-    ```typescript
-    const jsonSchema = {
-        "title": "Movie",
-        "description": "A movie with details",
-        "type": "object",
-        "properties": {
-            "title": {
-                "type": "string",
-                "description": "The title of the movie"
+    const message = new AIMessage({
+        content: [
+            {
+            "type": "reasoning",
+            "id": "rs_abc123",
+            "summary": [
+                {"type": "summary_text", "text": "summary 1"},
+                {"type": "summary_text", "text": "summary 2"},
+            ],
             },
-            "year": {
-                "type": "integer",
-                "description": "The year the movie was released"
-            },
-            "director": {
-                "type": "string",
-                "description": "The director of the movie"
-            },
-            "rating": {
-                "type": "number",
-                "description": "The movie's rating out of 10"
-            }
-        },
-        "required": ["title", "year", "director", "rating"]
-    }
+            {"type": "text", "text": "..."},
+        ],
+        response_metadata: { model_provider: "openai" },
+    });
 
-    const modelWithStructure = model.withStructuredOutput(
-        jsonSchema,
-        { method: "jsonSchema" }
-    )
-
-    const response = await modelWithStructure.invoke("Provide details about the movie Inception")
-    console.log(response)  // {'title': 'Inception', 'year': 2010, ...}
+    console.log(message.contentBlocks);
     ```
   </Tab>
 </Tabs>
 
+See the [integrations guides](/oss/javascript/integrations/providers) to get started with the
+inference provider of your choice.
+
 <Note>
-  **Key considerations for structured outputs:**
+  **Serializing standard content**
 
-  * **Method parameter**: Some providers support different methods (`'jsonSchema'`, `'functionCalling'`, `'jsonMode'`)
-  * **Include raw**: Use `includeRaw=true` to get both the parsed output and the raw AI message
-  * **Validation**: Zod models provide automatic validation, while JSON Schema requires manual validation
+  If an application outside of LangChain needs access to the standard content block
+  representation, you can opt-in to storing content blocks in message content.
+
+  To do this, you can set the `LC_OUTPUT_VERSION` environment variable to `v1`. Or,
+  initialize any chat model with `outputVersion: "v1"`:
+
+  ```typescript  theme={null}
+  import { initChatModel } from "langchain";
+
+  const model = await initChatModel("openai:gpt-5-nano", { outputVersion: "v1" });
+  ```
 </Note>
-
-<Accordion title="Example: Message output alongside parsed structure">
-  It can be useful to return the raw `AIMessage` object alongside the parsed representation to access response metadata such as [token counts](#token-usage). To do this, set `include_raw=True` when calling `with_structured_output`:
-
-  ```typescript highlight={10}
-  import { z } from "zod";
-
-  const Movie = z.object({
-      title: z.string().describe("The title of the movie"),
-      year: z.number().describe("The year the movie was released"),
-      director: z.string().describe("The director of the movie"),
-      rating: z.number().describe("The movie's rating out of 10"),
-      title: z.string().describe("The title of the movie"),
-      year: z.number().describe("The year the movie was released"),
-      director: z.string().describe("The director of the movie"),
-      rating: z.number().describe("The movie's rating out of 10"),
-  });
-
-  const modelWithStructure = model.withStructuredOutput(Movie, { includeRaw: true });
-
-  const response = await modelWithStructure.invoke("Provide details about the movie Inception");
-  console.log(response);
-  // {
-  //     raw: AIMessage { ... },
-  //     parsed: { title: "Inception", ... }
-  // }
-  ```
-</Accordion>
-
-<Accordion title="Example: Nested structures">
-  Schemas can be nested:
-
-  ```typescript
-  import { z } from "zod";
-
-  const Actor = z.object({
-  name: str
-  role: z.string(),
-  });
-
-  const MovieDetails = z.object({
-      title: z.string(),
-      year: z.number(),
-      cast: z.array(Actor),
-      genres: z.array(z.string()),
-      budget: z.number().nullable().describe("Budget in millions USD"),
-  });
-
-  const modelWithStructure = model.withStructuredOutput(MovieDetails);
-  ```
-</Accordion>
-
-***
-
-## Supported models
-
-LangChain supports all major model providers, including OpenAI, Anthropic, Google, Azure, AWS Bedrock, and more. Each provider offers a variety of models with different capabilities. For a full list of supported models in LangChain, see the [integrations page](/oss/javascript/integrations/providers).
-
-***
-
-## Advanced topics
 
 ### Multimodal
 
-Certain models can process and return non-textual data such as images, audio, and video. You can pass non-textual data to a model by providing [content blocks](/oss/javascript/langchain/messages#content).
+**Multimodality** refers to the ability to work with data that comes in different
+forms, such as text, audio, images, and video. LangChain includes standard types
+for these data that can be used across providers.
 
-<Tip>
-  All LangChain chat models with underlying multimodal capabilities support:
-
-  1. Data in the cross-provider standard format (see [our messages guide](/oss/javascript/langchain/messages))
-  2. OpenAI [chat completions](https://platform.openai.com/docs/guides/images-vision?api-mode=chat) format
-  3. Any format that is native to that specific provider (e.g., Anthropic models accept Anthropic native format)
-</Tip>
-
-See the [multimodal section](/oss/javascript/langchain/messages#multimodal) of the messages guide for details.
-
-Some models can also return multimodal data as part of their response. In such cases, the resulting `AIMessage` will have content blocks with multimodal types.
-
-```typescript Multimodal output
-const response = await model.invoke("Create a picture of a cat");
-console.log(response.contentBlocks);
-// [
-//   { type: "text", text: "Here's a picture of a cat" },
-//   { type: "image", data: "...", mimeType: "image/jpeg" },
-// ]
-```
-
-See the [integrations page](/oss/javascript/integrations/providers) for details on specific providers.
-
-### Reasoning
-
-Newer models are capable of performing multi-step reasoning to arrive at a conclusion. This involves breaking down complex problems into smaller, more manageable steps.
-
-If supported by the underlying model, you can surface this reasoning process to better understand how the model arrived at its final answer.
+[Chat models](/oss/javascript/langchain/models) can accept multimodal data as input and generate
+it as output. Below we show short examples of input messages featuring multimodal data:
 
 <CodeGroup>
-  ```typescript Stream reasoning output
-  const stream = model.stream("Why do parrots have colorful feathers?");
-  for await (const chunk of stream) {
-      const reasoningSteps = chunk.contentBlocks.filter(b => b.type === "reasoning");
-      console.log(reasoningSteps.length > 0 ? reasoningSteps : chunk.text);
-  }
+  ```typescript Image input theme={null}
+  // From URL
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this image." },
+          { type: "image", url: "https://example.com/path/to/image.jpg" },
+      ],
+  });
+
+  // From base64 data
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this image." },
+          {
+              type: "image",
+              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+              mimeType: "image/jpeg",
+          },
+      ],
+  });
+
+  // From provider-managed File ID
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this image." },
+          { type: "image", fileId: "file-abc123" },
+      ],
+  });
   ```
 
-  ```typescript Complete reasoning output
-  const response = await model.invoke("Why do parrots have colorful feathers?");
-  const reasoningSteps = response.contentBlocks.filter(b => b.type === "reasoning");
-  console.log(reasoningSteps.map(step => step.reasoning).join(" "));
+  ```typescript PDF document input theme={null}
+  // From URL
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this document." },
+          { type: "file", url: "https://example.com/path/to/document.pdf" },
+      ],
+  });
+
+  // From base64 data
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this document." },
+          {
+              type: "file",
+              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+              mimeType: "application/pdf",
+          },
+      ],
+  });
+
+  // From provider-managed File ID
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this document." },
+          { type: "file", fileId: "file-abc123" },
+      ],
+  });
+  ```
+
+  ```typescript Audio input theme={null}
+  // From base64 data
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this audio." },
+          {
+              type: "audio",
+              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+              mimeType: "audio/wav",
+          },
+      ],
+  });
+
+  // From provider-managed File ID
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this audio." },
+          { type: "audio", fileId: "file-abc123" },
+      ],
+  });
+  ```
+
+  ```typescript Video input theme={null}
+  // From base64 data
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this video." },
+          {
+              type: "video",
+              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+              mimeType: "video/mp4",
+          },
+      ],
+  });
+
+  // From provider-managed File ID
+  const message = new HumanMessage({
+      content: [
+          { type: "text", text: "Describe the content of this video." },
+          { type: "video", fileId: "file-abc123" },
+      ],
+  });
   ```
 </CodeGroup>
 
-Depending on the model, you can sometimes specify the level of effort it should put into reasoning. Alternatively, you can request that the model turn off reasoning entirely. This may take the form of categorical "tiers" of reasoning (e.g., `'low'` or `'high'`) or integer token budgets.
+<Warning>
+  Not all models support all file types. Check the model provider's [reference](https://v03.api.js.langchain.com/index.html) for supported formats and size limits.
+</Warning>
 
-For details, see the relevant chat model in the [integrations page](/oss/javascript/integrations/providers).
+### Content block reference
 
-### Local models
+Content blocks are represented (either when creating a message or accessing the `contentBlocks` field) as a list of typed objects. Each item in the list must adhere to one of the following block types:
 
-LangChain supports running models locally on your own hardware. This is useful for scenarios where data privacy is critical, or when you want to avoid the cost of using a cloud-based model.
+<AccordionGroup>
+  <Accordion title="Core" icon="cube">
+    <AccordionGroup>
+      <Accordion title="ContentBlock.Text" icon="text">
+        **Purpose:** Standard text output
 
-[Ollama](/oss/javascript/integrations/chat/ollama) is one of the easiest ways to run models locally. See the full list of local integrations on the [integrations page](/oss/javascript/integrations/providers).
+        <ParamField body="text" type="string" required>
+          The text content
+        </ParamField>
 
-### Prompt caching
+        <ParamField body="annotations" type="Citation[]">
+          List of annotations for the text
+        </ParamField>
 
-Many providers offer prompt caching features to reduce latency and cost on repeat processing of the same tokens. These features can be **implicit** or **explicit**:
+        **Example:**
 
-* Implicit prompt caching: providers will automatically pass on cost savings if a request hits a cache. Examples: [OpenAI](/oss/javascript/integrations/chat/openai) and [Gemini](/oss/javascript/integrations/chat/google_generative_ai) (Gemini 2.5 and above).
-* Explicit caching: providers allow you to manually indicate cache points for greater control or to guarantee cost savings. Examples: [OpenAI](https://python.langchain.com/api_reference/openai/chat_models/langchain_openai.chat_models.base.ChatOpenAI.html) (via `prompt_cache_key`), [Anthropic](/oss/javascript/integrations/chat/anthropic#prompt-caching), [AWS Bedrock](/oss/javascript/integrations/chat/bedrock#prompt-caching), [Gemini](https://python.langchain.com/api_reference/google_genai/chat_models/langchain_google_genai.chat_models.ChatGoogleGenerativeAI.html).
+        ```typescript  theme={null}
+        {
+            type: "text",
+            text: "Hello world",
+            annotations: []
+        }
+        ```
+      </Accordion>
 
-Prompt caching is often only engaged above a minimum input token threshold. See [provider pages](/oss/javascript/python/integrations/chat) for details.
+      <Accordion title="ContentBlock.Reasoning" icon="brain">
+        **Purpose:** Model reasoning steps
 
-Cache usage will be reflected in the [usage metadata](/oss/javascript/langchain/messages#token-usage) of the model response.
+        <ParamField body="reasoning" type="string" required>
+          The reasoning content
+        </ParamField>
 
-### Server-side tool use
+        **Example:**
 
-Some providers support server-side [tool-calling](#tool-calling) loops: models can interact with web search, code interpreters, and other tools and analyze the results in a single conversational turn.
+        ```typescript  theme={null}
+        {
+            type: "reasoning",
+            reasoning: "The user is asking about..."
+        }
+        ```
+      </Accordion>
+    </AccordionGroup>
+  </Accordion>
 
-If a model invokes a tool server-side, the content of the response message will include content representing the invocation and result of the tool. Accessing the [content blocks](/oss/javascript/langchain/messages#standard-content-blocks) of the response will return the server-side tool calls and results in a provider-agnostic format:
+  <Accordion title="Multimodal" icon="images">
+    <AccordionGroup>
+      <Accordion title="ContentBlock.Multimodal.Image" icon="image">
+        **Purpose:** Image data
 
-```typescript
-import { initChatModel } from "langchain";
+        <ParamField body="url" type="string">
+          URL pointing to the image location.
+        </ParamField>
 
-const model = await initChatModel("openai:gpt-4.1-mini");
-const modelWithTools = model.bindTools([{ type: "web_search" }])
+        <ParamField body="data" type="string">
+          Base64-encoded image data.
+        </ParamField>
 
-const message = await modelWithTools.invoke("What was a positive news story from today?");
-console.log(message.contentBlocks);
+        <ParamField body="fileId" type="string">
+          Reference ID to an externally stored image (e.g., in a provider's file system or in a bucket).
+        </ParamField>
+
+        <ParamField body="mimeType" type="string">
+          Image [MIME type](https://www.iana.org/assignments/media-types/media-types.xhtml#image) (e.g., `image/jpeg`, `image/png`)
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Multimodal.Audio" icon="volume-high">
+        **Purpose:** Audio data
+
+        <ParamField body="url" type="string">
+          URL pointing to the audio location.
+        </ParamField>
+
+        <ParamField body="data" type="string">
+          Base64-encoded audio data.
+        </ParamField>
+
+        <ParamField body="fileId" type="string">
+          Reference ID to an externally stored audio file (e.g., in a provider's file system or in a bucket).
+        </ParamField>
+
+        <ParamField body="mimeType" type="string">
+          Audio [MIME type](https://www.iana.org/assignments/media-types/media-types.xhtml#audio) (e.g., `audio/mpeg`, `audio/wav`)
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Multimodal.Video" icon="video">
+        **Purpose:** Video data
+
+        <ParamField body="url" type="string">
+          URL pointing to the video location.
+        </ParamField>
+
+        <ParamField body="data" type="string">
+          Base64-encoded video data.
+        </ParamField>
+
+        <ParamField body="fileId" type="string">
+          Reference ID to an externally stored video file (e.g., in a provider's file system or in a bucket).
+        </ParamField>
+
+        <ParamField body="mimeType" type="string">
+          Video [MIME type](https://www.iana.org/assignments/media-types/media-types.xhtml#video) (e.g., `video/mp4`, `video/webm`)
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Multimodal.File" icon="file">
+        **Purpose:** Generic files (PDF, etc)
+
+        <ParamField body="url" type="string">
+          URL pointing to the file location.
+        </ParamField>
+
+        <ParamField body="data" type="string">
+          Base64-encoded file data.
+        </ParamField>
+
+        <ParamField body="fileId" type="string">
+          Reference ID to an externally stored file (e.g., in a provider's file system or in a bucket).
+        </ParamField>
+
+        <ParamField body="mimeType" type="string">
+          File [MIME type](https://www.iana.org/assignments/media-types/media-types.xhtml) (e.g., `application/pdf`)
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Multimodal.PlainText" icon="align-left">
+        **Purpose:** Document text (`.txt`, `.md`)
+
+        <ParamField body="text" type="string" required>
+          The text content
+        </ParamField>
+
+        <ParamField body="title" type="string">
+          Title of the text content
+        </ParamField>
+
+        <ParamField body="mimeType" type="string">
+          [MIME type](https://www.iana.org/assignments/media-types/media-types.xhtml) of the text (e.g., `text/plain`, `text/markdown`)
+        </ParamField>
+      </Accordion>
+    </AccordionGroup>
+  </Accordion>
+
+  <Accordion title="Tool Calling" icon="wrench">
+    <AccordionGroup>
+      <Accordion title="ContentBlock.Tools.ToolCall" icon="function">
+        **Purpose:** Function calls
+
+        <ParamField body="name" type="string" required>
+          Name of the tool to call
+        </ParamField>
+
+        <ParamField body="args" type="object" required>
+          Arguments to pass to the tool
+        </ParamField>
+
+        <ParamField body="id" type="string" required>
+          Unique identifier for this tool call
+        </ParamField>
+
+        **Example:**
+
+        ```typescript  theme={null}
+        {
+            type: "tool_call",
+            name: "search",
+            args: { query: "weather" },
+            id: "call_123"
+        }
+        ```
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.ToolCallChunk" icon="puzzle-piece">
+        **Purpose:** Streaming tool fragments
+
+        <ParamField body="name" type="string">
+          Name of the tool being called
+        </ParamField>
+
+        <ParamField body="args" type="string">
+          Partial tool arguments (may be incomplete JSON)
+        </ParamField>
+
+        <ParamField body="id" type="string">
+          Tool call identifier
+        </ParamField>
+
+        <ParamField body="index" type="number | string" required>
+          Position of this chunk in the stream
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.InvalidToolCall" icon="triangle-exclamation">
+        **Purpose:** Malformed calls
+
+        <ParamField body="name" type="string">
+          Name of the tool that failed to be called
+        </ParamField>
+
+        <ParamField body="args" type="string">
+          Raw arguments that failed to parse
+        </ParamField>
+
+        <ParamField body="error" type="string" required>
+          Description of what went wrong
+        </ParamField>
+
+        **Common errors:** Invalid JSON, missing required fields
+      </Accordion>
+    </AccordionGroup>
+  </Accordion>
+
+  <Accordion title="Server-Side Tool Execution" icon="server">
+    <AccordionGroup>
+      <Accordion title="ContentBlock.Tools.WebSearchCall" icon="magnifying-glass">
+        **Purpose:** Built-in web search
+
+        <ParamField body="query" type="string" required>
+          The search query to execute
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.WebSearchResult" icon="globe">
+        **Purpose:** Search results
+
+        <ParamField body="urls" type="string[]" required>
+          URLs of the search results
+        </ParamField>
+
+        **Returns:** Top search results with optional snippets
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.CodeInterpreterCall" icon="code">
+        **Purpose:** Code execution
+
+        <ParamField body="language" type="string" required>
+          Programming language to execute (e.g. `python`,
+          `javascript`, `sql`)
+        </ParamField>
+
+        <ParamField body="code" type="string" required>
+          Code to execute
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.CodeInterpreterResult" icon="terminal">
+        **Purpose:** Execution results
+
+        <ParamField body="output" type="string" required>
+          Output from the code execution
+        </ParamField>
+
+        <ParamField body="error" type="string">
+          Error message if execution failed
+        </ParamField>
+      </Accordion>
+    </AccordionGroup>
+  </Accordion>
+</AccordionGroup>
+
+Each of these content blocks mentioned above are indvidually addressable as types when importing the `ContentBlock` type.
+
+```typescript  theme={null}
+import { ContentBlock } from "langchain";
+
+// Text block
+const textBlock: ContentBlock.Text = {
+    type: "text",
+    text: "Hello world",
+}
+
+// Image block
+const imageBlock: ContentBlock.Multimodal.Image = {
+    type: "image",
+    url: "https://example.com/image.png",
+    mimeType: "image/png",
+}
 ```
 
-This represents a single conversational turn; there are no associated [ToolMessage](/oss/javascript/langchain/messages#tool-message) objects that need to be passed in as in client-side [tool-calling](#tool-calling).
+<Info>
+  Content blocks were introduced as a new property on messages in LangChain v1 to standardize content formats across providers while maintaining backward compatibility with existing code. Content blocks are not a replacement for the `content` property, but rather a new property that can be used to access the content of a message in a standardized format.
+</Info>
 
-See the [integration page](/oss/javascript/integrations/chat) for your given provider for available tools and usage details.
+## Use with chat models
 
-### Base URL or proxy
+[Chat models](/oss/javascript/langchain/models) accept a sequence of message objects as input and return an `AIMessage` as output. Interactions are often stateless, so that a simple conversational loop involves invoking a model with a growing list of messages.
 
-For many chat model integrations, you can configure the base URL for API requests, which allows you to use model providers that have OpenAI-compatible APIs or to use a proxy server.
+Refer to the below guides to learn more:
 
-<Accordion title="Base URL" icon="link">
-  Many model providers offer OpenAI-compatible APIs (e.g., [Together AI](https://www.together.ai/), [vLLM](https://github.com/vllm-project/vllm)). You can use `initChatModel` with these providers by specifying the appropriate `base_url` parameter:
-
-  ```python
-  model = initChatModel(
-      "MODEL_NAME",
-      {
-          modelProvider: "openai",
-          baseUrl: "BASE_URL",
-          apiKey: "YOUR_API_KEY",
-      }
-  )
-  ```
-
-  <Note>
-    When using direct chat model class instantiation, the parameter name may vary by provider. Check the respective [reference](/oss/javascript/integrations/providers) for details.
-  </Note>
-</Accordion>
-
-### Log probabilities
-
-Certain models can be configured to return token-level log probabilities representing the likelihood of a given token by setting the `logprobs` parameter when initializing the model:
-
-```typescript
-const model = new ChatOpenAI({
-    model: "gpt-4o",
-    logprobs: true,
-});
-
-const responseMessage = await model.invoke("Why do parrots talk?");
-
-responseMessage.response_metadata.logprobs.content.slice(0, 5);
-```
-
-### Token usage
-
-A number of model providers return token usage information as part of the invocation response. When available, this information will be included on the `AIMessage` objects produced by the corresponding model. For more details, see the [messages](/oss/javascript/langchain/messages) guide.
-
-<Note>
-  Some provider APIs, notably OpenAI and Azure OpenAI chat completions, require users opt-in to receiving token usage data in streaming contexts. See the [streaming usage metadata](/oss/javascript/integrations/chat/openai#streaming-usage-metadata) section of the integration guide for details.
-</Note>
-
-### Invocation config
-
-When invoking a model, you can pass additional configuration through the `config` parameter using a [`RunnableConfig`](https://v03.api.js.langchain.com/interfaces/_langchain_core.runnables.RunnableConfig.html) object. This provides run-time control over execution behavior, callbacks, and metadata tracking.
-
-Common configuration options include:
-
-```typescript Invocation with config
-const response = await model.invoke(
-    "Tell me a joke",
-    {
-        runName: "joke_generation",      // Custom name for this run
-        tags: ["humor", "demo"],          // Tags for categorization
-        metadata: {"user_id": "123"},     // Custom metadata
-        callbacks: [my_callback_handler], // Callback handlers
-    }
-)
-```
-
-<Accordion title="Key configuration attributes">
-  <ParamField body="runName" type="string">
-    Identifies this specific invocation in logs and traces. Not inherited by sub-calls.
-  </ParamField>
-
-  <ParamField body="tags" type="string[]">
-    Labels inherited by all sub-calls for filtering and organization in debugging tools.
-  </ParamField>
-
-  <ParamField body="metadata" type="object">
-    Custom key-value pairs for tracking additional context, inherited by all sub-calls.
-  </ParamField>
-
-  <ParamField body="maxConcurrency" type="number">
-    Controls the maximum number of parallel calls when using `batch()`.
-  </ParamField>
-
-  <ParamField body="callbacks" type="CallbackHandler[]">
-    Handlers for monitoring and responding to events during execution.
-  </ParamField>
-
-  <ParamField body="recursion_limit" type="number">
-    Maximum recursion depth for chains to prevent infinite loops in complex pipelines.
-  </ParamField>
-</Accordion>
-
-These configuration values are particularly useful when:
-
-* Debugging with [LangSmith](https://docs.smith.langchain.com/) tracing
-* Implementing custom logging or monitoring
-* Controlling resource usage in production
-* Tracking invocations across complex pipelines
-
-For more information on all supported `RunnableConfig` attributes, see the [`RunnableConfig`](https://v03.api.js.langchain.com/interfaces/_langchain_core.runnables.RunnableConfig.html) reference.
+* Built-in features for [persisting and managing conversation histories](/oss/javascript/langchain/short-term-memory)
+* Strategies for managing context windows, including [trimming and summarizing messages](/oss/javascript/langchain/short-term-memory#common-patterns)

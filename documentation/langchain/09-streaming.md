@@ -31,7 +31,7 @@ For example, if you have an agent that calls a tool once, you should see the fol
 * **Tool node**: Tool message with execution result
 * **LLM node**: Final AI response
 
-```typescript
+```typescript  theme={null}
 import z from "zod";
 import { createAgent, tool } from "langchain";
 
@@ -113,7 +113,7 @@ for await (const chunk of await agent.stream(
 
 To stream tokens as they are produced by the LLM, use `streamMode: "messages"`:
 
-```typescript
+```typescript  theme={null}
 import z from "zod";
 import { createAgent, tool } from "langchain";
 
@@ -148,7 +148,7 @@ for await (const [token, metadata] of await agent.stream(
 
 To stream updates from tools as they are executed, you can use the `writer` parameter from the configuration.
 
-```typescript
+```typescript  theme={null}
 import z from "zod";
 import { tool, createAgent } from "langchain";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
@@ -183,7 +183,7 @@ for await (const chunk of await agent.stream(
 }
 ```
 
-```shell title="Output"
+```shell title="Output" theme={null}
 Looking up data for city: San Francisco
 Acquired data for city: San Francisco
 ```
@@ -196,7 +196,7 @@ Acquired data for city: San Francisco
 
 You can specify multiple streaming modes by passing streamMode as an array: `streamMode: ["updates", "messages", "custom"]`:
 
-```typescript
+```typescript  theme={null}
 import z from "zod";
 import { tool, createAgent } from "langchain";
 import { LangGraphRunnableConfig } from "@langchain/langgraph";
