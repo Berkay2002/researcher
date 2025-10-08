@@ -26,4 +26,4 @@ Copy `.env.example` to `.env.local` and fill provider keys without committing th
 
 ## Langgraph and Langchain documentation
 
-Read `documentation/langgraph` and `documentation/langchain` for official documentation. You must read internally instead of searching when it comes to langchain and langgraph related tasks and assignments.
+Read `documentation/langgraph` and `documentation/langchain` for official documentation. You must read internally instead of searching when it comes to langchain and langgraph related tasks and assignments. If you cannot find the answer in the documentations folder, read into `node_modules/langchain/dist` or `node_modules/@langchain/...` folder to find your answers. As a final resort, use web search!

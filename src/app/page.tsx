@@ -41,7 +41,7 @@ export default function Home() {
       </main>
 
       {/* Features Section */}
-      <section className="border-t bg-muted/30 px-8 py-16" id="features">
+      <section className="border-t bg-muted/30 px-8 py-8" id="features">
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-12 text-center font-bold text-3xl">Key Features</h2>
           <div className="grid gap-8 md:grid-cols-3">
@@ -88,11 +88,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="border-t px-8 py-6 text-center text-muted-foreground text-sm">
-        <p>Built with Next.js 15, LangGraph, and AI</p>
-      </footer>
     </div>
   );
 }

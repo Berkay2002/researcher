@@ -40,15 +40,16 @@ class TodoListStore {
 
   complete(input: CompleteTodoInput): TodoItem | null {
     const todos = this.list(input.sessionId);
-    const updated = todos.map((todo) => {
+    const updated = todos.map((todo): TodoItem => {
       if (todo.id !== input.todoId) {
         return todo;
       }
-      return {
+      const completedTodo: TodoItem = {
         ...todo,
         status: "completed",
         completedAt: new Date().toISOString(),
       };
+      return completedTodo;
     });
 
     const completed = updated.find((todo) => todo.id === input.todoId) ?? null;

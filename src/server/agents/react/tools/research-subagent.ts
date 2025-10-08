@@ -1,4 +1,4 @@
-import { ToolMessage } from "@langchain/core/messages";
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { Command, getCurrentTaskInput } from "@langchain/langgraph";
 import { tool } from "langchain";
 import { z } from "zod";
@@ -54,7 +54,7 @@ export function createResearchSubagentTool() {
       const args = ResearchInputSchema.parse(input);
       const startedAt = new Date().toISOString();
       const result = await researchAgent.invoke(
-        { messages: [{ role: "user", content: args.query }] },
+        { messages: [new HumanMessage(args.query)] },
         { context: config?.context }
       );
       const completedAt = new Date().toISOString();

@@ -38,11 +38,10 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
     contextSchema,
     extraTools,
   } = options;
-  const resolvedLLM = llm ?? createLLM("gemini-2.5-pro", DEFAULT_AGENT_TEMPERATURE);
+  const resolvedLLM =
+    llm ?? createLLM("gemini-2.5-pro", DEFAULT_AGENT_TEMPERATURE);
   const coreTools = buildReactAgentTools();
-  const tools = extraTools
-    ? [...coreTools, ...extraTools]
-    : coreTools;
+  const tools = extraTools ? [...coreTools, ...extraTools] : coreTools;
 
   const agentConfig = {
     llm: resolvedLLM,
