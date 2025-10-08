@@ -3,344 +3,528 @@
 <Warning>
   **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
+  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
 </Warning>
 
-This quickstart takes you from a simple setup to a fully functional AI agent in just a few minutes.
+This quickstart demonstrates how to build a calculator agent using the LangGraph Graph API or the Functional API.
 
-## Install
+* [Use the Graph API](#use-the-graph-api) if you prefer to define your agent as a graph of nodes and edges.
+* [Use the Functional API](#use-the-functional-api) if you prefer to define your agent as a single function.
 
-<CodeGroup>
-  ```bash npm
-  npm install langchain@next @langchain/anthropic@next
-  ```
+<Tip>
+  For conceptual information, see [Graph API overview](/oss/javascript/langgraph/graph-api) and [Functional API overview](/oss/javascript/langgraph/functional-api).
+</Tip>
 
-  ```bash pnpm
-  pnpm add langchain@next @langchain/anthropic@next
-  ```
+<Tabs>
+  <Tab title="Use the Graph API">
+    ## 1. Define tools and model
 
-  ```bash yarn
-  yarn add langchain@next @langchain/anthropic@next
-  ```
+    In this example, we'll use the Claude 3.7 Sonnet model and define tools for addition, multiplication, and division.
 
-  ```bash bun
-  bun add langchain@next @langchain/anthropic@next
-  ```
-</CodeGroup>
+    ```typescript  theme={null}
+    import { ChatAnthropic } from "@langchain/anthropic";
+    import { tool } from "@langchain/core/tools";
+    import * as z from "zod";
 
-## Build a basic agent
-
-Start by creating a simple agent that can answer questions and call tools.
-
-The agent will have the following components:
-
-* A language model (Claude 3.7 Sonnet)
-* A simple tool (weather function)
-* A basic prompt
-* The ability to invoke it with messages
-
-```ts
-import { createAgent, tool } from "langchain";
-
-const getWeather = tool(
-  (city) => `It's always sunny in ${city}!`,
-  {
-    name: "get_weather",
-    description: "Get the weather for a given city",
-    schema: z.string().describe("The city to get the weather for"),
-  }
-);
-
-const agent = createAgent({
-  model: "anthropic:claude-3-7-sonnet-latest",
-  tools: [getWeather],
-});
-
-console.log(
-  await agent.invoke({
-    messages: [{ role: "user", content: "What's the weather in Tokyo?" }],
-  })
-);
-```
-
-<Info>
-  For this example, you will need to set up an [Anthropic](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
-</Info>
-
-## Build a real-world agent
-
-Next, build a practical weather forecasting agent that demonstrates key production concepts:
-
-1. **Detailed system prompts** for better agent behavior
-2. **Create tools** that integrate with external data
-3. **Model configuration** for consistent responses
-4. **Structured output** for predictable results
-5. **Conversational memory** for chat-like interactions
-6. **Create and run the agent** create a fully functional agent
-
-Let's walk through each step:
-
-<Steps>
-  <Step title="Define the system prompt">
-    The system prompt defines your agent’s role and behavior. Keep it specific and actionable:
-
-    ```ts
-    const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
-
-    You have access to two tools:
-
-    - get_weather_for_location: use this to get the weather for a specific location
-    - get_user_location: use this to get the user's location
-
-    If a user asks you for the weather, make sure you know the location. If you can tell from the question that they mean wherever they are, use the get_user_location tool to find their location.`;
-    ```
-  </Step>
-
-  <Step title="Create tools">
-    [Tools](/oss/javascript/langchain/tools) are functions your agent can call. They should be well-documented. Oftentimes tools will want to connect to external systems, and will rely on runtime configuration to do so. Notice here how the `getUserLocation` tool does exactly that:
-
-    ```ts
-    import { type Runtime } from "@langchain/langgraph";
-    import { tool } from "langchain";
-    import { z } from "zod";
-
-    const getWeather = tool(
-      (input) => `It's always sunny in ${input.city}!`,
-      {
-        name: "get_weather_for_location",
-        description: "Get the weather for a given city",
-        schema: z.object({
-          city: z.string().describe("The city to get the weather for"),
-        }),
-      }
-    );
-
-    const getUserLocation = tool(
-      (_, config: Runtime<{ user_id: string }>) => {
-        const { user_id } = config.context;
-        return user_id === "1" ? "Florida" : "SF";
-      },
-      {
-        name: "get_user_location",
-        description: "Retrieve user information based on user ID",
-        schema: z.object({}),
-      }
-    );
-    ```
-
-    <Note>
-      [Zod](https://zod.dev/) is a library for validating and parsing pre-defined schemas. You can use it to define the input schema for your tools to make sure the agent only calls the tool with the correct arguments.
-
-      Alternatively, you can define the `schema` property as a JSON schema object. Keep in mind that JSON schemas *won't* be validated at runtime.
-
-      <Accordion title="Example: Using JSON schema for tool input">
-        ```ts
-        const getWeather = tool(
-          ({ city }) => `It's always sunny in ${city}!`,
-          {
-            name: "get_weather_for_location",
-            description: "Get the weather for a given city",
-            schema: {
-              type: "object",
-              properties: {
-                city: {
-                  type: "string",
-                  description: "The city to get the weather for"
-                }
-              },
-              required: ["city"]
-            },
-          }
-        );
-        ```
-      </Accordion>
-    </Note>
-  </Step>
-
-  <Step title="Configure your model">
-    Set up your [language model](/oss/javascript/langchain/models) with the right parameters for your use case:
-
-    ```ts
-    import { initChatModel } from "langchain";
-
-    const model = await initChatModel(
-      "anthropic:claude-3-7-sonnet-latest",
-      { temperature: 0 }
-    );
-    ```
-  </Step>
-
-  <Step title="Define response format">
-    Optionally, define a structured response format if you need the agent responses to match
-    a specific schema.
-
-    ```ts
-    const responseFormat = z.object({
-      punny_response: z.string(),
-      weather_conditions: z.string().optional(),
-    });
-    ```
-  </Step>
-
-  <Step title="Add memory">
-    Add [memory](/oss/javascript/langchain/short-term-memory) to your agent to maintain state across interactions. This allows
-    the agent to remember previous conversations and context.
-
-    ```ts
-    import { MemorySaver } from "@langchain/langgraph";
-
-    const checkpointer = new MemorySaver();
-    ```
-
-    <Info>
-      In production, use a persistent checkpointer that saves to a database.
-      See [add and manage memory](/oss/javascript/python/langgraph/add-memory) for more details.
-    </Info>
-  </Step>
-
-  <Step title="Create and run the agent">
-    Now assemble your agent with all the components and run it!
-
-    ```ts
-    import { createAgent } from "langchain";
-
-    const agent = createAgent({
-      model: "anthropic:claude-3-7-sonnet-latest",
-      prompt: systemPrompt,
-      tools: [getUserLocation, getWeather],
-      responseFormat,
-      checkpointer,
+    const llm = new ChatAnthropic({
+      model: "claude-3-7-sonnet-latest",
+      temperature: 0,
     });
 
-    // `thread_id` is a unique identifier for a given conversation.
-    const config = {
-      configurable: { thread_id: "1" },
-      context: { user_id: "1" },
-    };
-
-    const response = await agent.invoke(
-      { messages: [{ role: "user", content: "what is the weather outside?" }] },
-      config
-    );
-    console.log(response.structuredResponse);
-    // {
-    //   punny_response: "Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
-    //   weather_conditions: "It's always sunny in Florida!"
-    // }
-
-    // Note that we can continue the conversation using the same `thread_id`.
-    const thankYouResponse = await agent.invoke(
-      { messages: [{ role: "user", content: "thank you!" }] },
-      config
-    );
-    console.log(thankYouResponse.structuredResponse);
-    // {
-    //   punny_response: "You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
-    //   weather_conditions: undefined
-    // }
-    ```
-  </Step>
-</Steps>
-
-<Expandable title="Full example code">
-  ```ts
-  import { createAgent, tool } from "langchain";
-  import { initChatModel } from "langchain/chat_models";
-  import { MemorySaver, type Runtime } from "@langchain/langgraph";
-  import { z } from "zod";
-
-  // Define system prompt
-  const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
-
-  You have access to two tools:
-
-  - get_weather_for_location: use this to get the weather for a specific location
-  - get_user_location: use this to get the user's location
-
-  If a user asks you for the weather, make sure you know the location. If you can tell from the question that they mean wherever they are, use the get_user_location tool to find their location.`;
-
-  // Define tools
-  const getWeather = tool(
-    ({ city }) => `It's always sunny in ${city}!`,
-    {
-      name: "get_weather_for_location",
-      description: "Get the weather for a given city",
+    // Define tools
+    const add = tool(({ a, b }) => a + b, {
+      name: "add",
+      description: "Add two numbers",
       schema: z.object({
-        city: z.string(),
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
       }),
+    });
+
+    const multiply = tool(({ a, b }) => a * b, {
+      name: "multiply",
+      description: "Multiply two numbers",
+      schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
+      }),
+    });
+
+    const divide = tool(({ a, b }) => a / b, {
+      name: "divide",
+      description: "Divide two numbers",
+      schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
+      }),
+    });
+
+    // Augment the LLM with tools
+    const toolsByName = {
+      [add.name]: add,
+      [multiply.name]: multiply,
+      [divide.name]: divide,
+    };
+    const tools = Object.values(toolsByName);
+    const llmWithTools = llm.bindTools(tools);
+    ```
+
+    ## 2. Define state
+
+    The graph's state is used to store the messages and the number of LLM calls.
+
+    ```typescript  theme={null}
+    import { StateGraph, START, END } from "@langchain/langgraph";
+    import { MessagesZodMeta } from "@langchain/langgraph";
+    import { registry } from "@langchain/langgraph/zod";
+    import { type BaseMessage } from "@langchain/core/messages";
+
+    const MessagesState = z.object({
+      messages: z
+        .array(z.custom<BaseMessage>())
+        .register(registry, MessagesZodMeta),
+      llmCalls: z.number().optional(),
+    });
+
+    ```
+
+    ## 3. Define model node
+
+    The model node is used to call the LLM and decide whether to call a tool or not.
+
+    ```typescript  theme={null}
+    import { SystemMessage } from "@langchain/core/messages";
+    async function llmCall(state: z.infer<typeof MessagesState>) {
+      return {
+        messages: await llmWithTools.invoke([
+          new SystemMessage(
+            "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+          ),
+          ...state.messages,
+        ]),
+        llmCalls: (state.llmCalls ?? 0) + 1,
+      };
     }
-  );
+    ```
 
-  const getUserLocation = tool(
-    (_, config: Runtime<{ user_id: string}>) => {
-      const { user_id } = config.context;
-      return user_id === "1" ? "Florida" : "SF";
-    },
-    {
-      name: "get_user_location",
-      description: "Retrieve user information based on user ID",
-      schema: z.object({}),
+    ## 4. Define tool node
+
+    The tool node is used to call the tools and return the results.
+
+    ```typescript  theme={null}
+    import { isAIMessage, ToolMessage } from "@langchain/core/messages";
+    async function toolNode(state: z.infer<typeof MessagesState>) {
+      const lastMessage = state.messages.at(-1);
+
+      if (lastMessage == null || !isAIMessage(lastMessage)) {
+        return { messages: [] };
+      }
+
+      const result: ToolMessage[] = [];
+      for (const toolCall of lastMessage.tool_calls ?? []) {
+        const tool = toolsByName[toolCall.name];
+        const observation = await tool.invoke(toolCall);
+        result.push(observation);
+      }
+
+      return { messages: result };
     }
-  );
+    ```
 
-  // Configure model
-  const model = await initChatModel(
-    "anthropic:claude-3-7-sonnet-latest",
-    { temperature: 0 }
-  );
+    ## 5. Define end logic
 
-  // Define response format
-  const responseFormat = z.object({
-    punny_response: z.string(),
-    weather_conditions: z.string().optional(),
-  });
+    The conditional edge function is used to route to the tool node or end based upon whether the LLM made a tool call.
 
-  // Set up memory
-  const checkpointer = new MemorySaver();
+    ```typescript  theme={null}
+    async function shouldContinue(state: z.infer<typeof MessagesState>) {
+      const lastMessage = state.messages.at(-1);
+      if (lastMessage == null || !isAIMessage(lastMessage)) return END;
 
-  // Create agent
-  const agent = createAgent({
-    model: "anthropic:claude-3-7-sonnet-latest",
-    prompt: systemPrompt,
-    tools: [getUserLocation, getWeather],
-    responseFormat,
-    checkpointer,
-  });
+      // If the LLM makes a tool call, then perform an action
+      if (lastMessage.tool_calls?.length) {
+        return "toolNode";
+      }
 
-  // Run agent
-  // `thread_id` is a unique identifier for a given conversation.
-  const config = {
-    configurable: { thread_id: "1" },
-    context: { user_id: "1" },
-  };
+      // Otherwise, we stop (reply to the user)
+      return END;
+    }
+    ```
 
-  const response = await agent.invoke(
-    { messages: [{ role: "user", content: "what is the weather outside?" }] },
-    config
-  );
-  console.log(response.structuredResponse);
-  // {
-  //   punny_response: "Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
-  //   weather_conditions: "It's always sunny in Florida!"
-  // }
+    ## 6. Build and compile the agent
 
-  // Note that we can continue the conversation using the same `thread_id`.
-  const thankYouResponse = await agent.invoke(
-    { messages: [{ role: "user", content: "thank you!" }] },
-    config
-  );
-  console.log(thankYouResponse.structuredResponse);
-  // {
-  //   punny_response: "You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
-  //   weather_conditions: undefined
-  // }
-  ```
-</Expandable>
+    The agent is built using the `StateGraph` class and compiled using the `compile` method.
 
-Congratulations! You now have an AI agent that can:
+    ```typescript  theme={null}
+    const agent = new StateGraph(MessagesState)
+      .addNode("llmCall", llmCall)
+      .addNode("toolNode", toolNode)
+      .addEdge(START, "llmCall")
+      .addConditionalEdges("llmCall", shouldContinue, ["toolNode", END])
+      .addEdge("toolNode", "llmCall")
+      .compile();
 
-* **Understand context** and remember conversations
-* **Use multiple tools** intelligently
-* **Provide structured responses** in a consistent format
-* **Handle user-specific information** through context
-* **Maintain conversation state** across interactions
+    // Invoke
+    import { HumanMessage } from "@langchain/core/messages";
+    const result = await agent.invoke({
+      messages: [new HumanMessage("Add 3 and 4.")],
+    });
+
+    for (const message of result.messages) {
+      console.log(`[${message.getType()}]: ${message.text}`);
+    }
+    ```
+
+    Congratulations! You've built your first agent using the LangGraph Graph API.
+
+    <Accordion title="Full code example">
+      ```typescript  theme={null}
+      // Step 1: define tools and model
+      import { ChatAnthropic } from "@langchain/anthropic";
+      import { tool } from "@langchain/core/tools";
+      import * as z from "zod";
+
+      const llm = new ChatAnthropic({
+        model: "claude-3-7-sonnet-latest",
+        temperature: 0,
+      });
+
+      // Define tools
+      const add = tool(({ a, b }) => a + b, {
+        name: "add",
+        description: "Add two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      const multiply = tool(({ a, b }) => a * b, {
+        name: "multiply",
+        description: "Multiply two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      const divide = tool(({ a, b }) => a / b, {
+        name: "divide",
+        description: "Divide two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      // Augment the LLM with tools
+      const toolsByName = {
+        [add.name]: add,
+        [multiply.name]: multiply,
+        [divide.name]: divide,
+      };
+      const tools = Object.values(toolsByName);
+      const llmWithTools = llm.bindTools(tools);
+
+      // Step 2: Define state
+      import { StateGraph, START, END } from "@langchain/langgraph";
+      import { MessagesZodMeta } from "@langchain/langgraph";
+      import { registry } from "@langchain/langgraph/zod";
+      import { type BaseMessage } from "@langchain/core/messages";
+
+      const MessagesState = z.object({
+        messages: z
+          .array(z.custom<BaseMessage>())
+          .register(registry, MessagesZodMeta),
+        llmCalls: z.number().optional(),
+      });
+
+      // Step 3: Define model node
+      import { SystemMessage } from "@langchain/core/messages";
+      async function llmCall(state: z.infer<typeof MessagesState>) {
+        return {
+          messages: await llmWithTools.invoke([
+            new SystemMessage(
+              "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+            ),
+            ...state.messages,
+          ]),
+          llmCalls: (state.llmCalls ?? 0) + 1,
+        };
+      }
+
+      // Step 4: Define tool node
+      import { isAIMessage, ToolMessage } from "@langchain/core/messages";
+      async function toolNode(state: z.infer<typeof MessagesState>) {
+        const lastMessage = state.messages.at(-1);
+
+        if (lastMessage == null || !isAIMessage(lastMessage)) {
+          return { messages: [] };
+        }
+
+        const result: ToolMessage[] = [];
+        for (const toolCall of lastMessage.tool_calls ?? []) {
+          const tool = toolsByName[toolCall.name];
+          const observation = await tool.invoke(toolCall);
+          result.push(observation);
+        }
+
+        return { messages: result };
+      }
+
+      // Step 5: Define logic to determine whether to end
+      async function shouldContinue(state: z.infer<typeof MessagesState>) {
+        const lastMessage = state.messages.at(-1);
+        if (lastMessage == null || !isAIMessage(lastMessage)) return END;
+
+        // If the LLM makes a tool call, then perform an action
+        if (lastMessage.tool_calls?.length) {
+          return "toolNode";
+        }
+
+        // Otherwise, we stop (reply to the user)
+        return END;
+      }
+
+      // Step 6: Build and compile the agent
+      const agent = new StateGraph(MessagesState)
+        .addNode("llmCall", llmCall)
+        .addNode("toolNode", toolNode)
+        .addEdge(START, "llmCall")
+        .addConditionalEdges("llmCall", shouldContinue, ["toolNode", END])
+        .addEdge("toolNode", "llmCall")
+        .compile();
+
+      // Invoke
+      import { HumanMessage } from "@langchain/core/messages";
+      const result = await agent.invoke({
+        messages: [new HumanMessage("Add 3 and 4.")],
+      });
+
+      for (const message of result.messages) {
+        console.log(`[${message.getType()}]: ${message.text}`);
+      }
+      ```
+    </Accordion>
+  </Tab>
+
+  <Tab title="Use the Functional API">
+    ## 1. Define tools and model
+
+    In this example, we'll use the Claude 3.7 Sonnet model and define tools for addition, multiplication, and division.
+
+    ```typescript  theme={null}
+    import { ChatAnthropic } from "@langchain/anthropic";
+    import { tool } from "@langchain/core/tools";
+    import * as z from "zod";
+
+    const llm = new ChatAnthropic({
+      model: "claude-3-7-sonnet-latest",
+      temperature: 0,
+    });
+
+    // Define tools
+    const add = tool(({ a, b }) => a + b, {
+      name: "add",
+      description: "Add two numbers",
+      schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
+      }),
+    });
+
+    const multiply = tool(({ a, b }) => a * b, {
+      name: "multiply",
+      description: "Multiply two numbers",
+      schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
+      }),
+    });
+
+    const divide = tool(({ a, b }) => a / b, {
+      name: "divide",
+      description: "Divide two numbers",
+      schema: z.object({
+        a: z.number().describe("First number"),
+        b: z.number().describe("Second number"),
+      }),
+    });
+
+    // Augment the LLM with tools
+    const toolsByName = {
+      [add.name]: add,
+      [multiply.name]: multiply,
+      [divide.name]: divide,
+    };
+    const tools = Object.values(toolsByName);
+    const llmWithTools = llm.bindTools(tools);
+
+    ```
+
+    ## 2. Define model node
+
+    The model node is used to call the LLM and decide whether to call a tool or not.
+
+    ```typescript  theme={null}
+    import { task, entrypoint } from "@langchain/langgraph";
+    import { SystemMessage } from "@langchain/core/messages";
+    const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+      return llmWithTools.invoke([
+        new SystemMessage(
+          "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+        ),
+        ...messages,
+      ]);
+    });
+    ```
+
+    ## 3. Define tool node
+
+    The tool node is used to call the tools and return the results.
+
+    ```typescript  theme={null}
+    import type { ToolCall } from "@langchain/core/messages/tool";
+    const callTool = task({ name: "callTool" }, async (toolCall: ToolCall) => {
+      const tool = toolsByName[toolCall.name];
+      return tool.invoke(toolCall);
+    });
+    ```
+
+    ## 4. Define agent
+
+    The agent is built using the `entrypoint` function.
+
+    ```typescript  theme={null}
+    import { addMessages } from "@langchain/langgraph";
+    import { type BaseMessage, isAIMessage } from "@langchain/core/messages";
+    const agent = entrypoint({ name: "agent" }, async (messages: BaseMessage[]) => {
+      let llmResponse = await callLlm(messages);
+
+      while (true) {
+        if (!llmResponse.tool_calls?.length) {
+          break;
+        }
+
+        // Execute tools
+        const toolResults = await Promise.all(
+          llmResponse.tool_calls.map((toolCall) => callTool(toolCall))
+        );
+        messages = addMessages(messages, [llmResponse, ...toolResults]);
+        llmResponse = await callLlm(messages);
+      }
+
+      return messages;
+    });
+
+    // Invoke
+    import { HumanMessage } from "@langchain/core/messages";
+    const result = await agent.invoke([new HumanMessage("Add 3 and 4.")]);
+
+    for (const message of result) {
+      console.log(`[${message.getType()}]: ${message.text}`);
+    }
+    ```
+
+    Congratulations! You've built your first agent using the LangGraph Functional API.
+
+    <Accordion title="Full code example" icon="code">
+      ```typescript  theme={null}
+      // Step 1: define tools and model
+      import { ChatAnthropic } from "@langchain/anthropic";
+      import { tool } from "@langchain/core/tools";
+      import * as z from "zod";
+
+      const llm = new ChatAnthropic({
+        model: "claude-3-7-sonnet-latest",
+        temperature: 0,
+      });
+
+      // Define tools
+      const add = tool(({ a, b }) => a + b, {
+        name: "add",
+        description: "Add two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      const multiply = tool(({ a, b }) => a * b, {
+        name: "multiply",
+        description: "Multiply two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      const divide = tool(({ a, b }) => a / b, {
+        name: "divide",
+        description: "Divide two numbers",
+        schema: z.object({
+          a: z.number().describe("First number"),
+          b: z.number().describe("Second number"),
+        }),
+      });
+
+      // Augment the LLM with tools
+      const toolsByName = {
+        [add.name]: add,
+        [multiply.name]: multiply,
+        [divide.name]: divide,
+      };
+      const tools = Object.values(toolsByName);
+      const llmWithTools = llm.bindTools(tools);
+
+      // Step 2: Define model node
+      import { task, entrypoint } from "@langchain/langgraph";
+      import { SystemMessage } from "@langchain/core/messages";
+      const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+        return llmWithTools.invoke([
+          new SystemMessage(
+            "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
+          ),
+          ...messages,
+        ]);
+      });
+
+      // Step 3: define tool node
+      import type { ToolCall } from "@langchain/core/messages/tool";
+      const callTool = task({ name: "callTool" }, async (toolCall: ToolCall) => {
+        const tool = toolsByName[toolCall.name];
+        return tool.invoke(toolCall);
+      });
+
+      // Step 4: define agent
+      import { addMessages } from "@langchain/langgraph";
+      import { type BaseMessage, isAIMessage } from "@langchain/core/messages";
+      const agent = entrypoint({ name: "agent" }, async (messages: BaseMessage[]) => {
+        let llmResponse = await callLlm(messages);
+
+        while (true) {
+          if (!llmResponse.tool_calls?.length) {
+            break;
+          }
+
+          // Execute tools
+          const toolResults = await Promise.all(
+            llmResponse.tool_calls.map((toolCall) => callTool(toolCall))
+          );
+          messages = addMessages(messages, [llmResponse, ...toolResults]);
+          llmResponse = await callLlm(messages);
+        }
+
+        return messages;
+      });
+
+      // Invoke
+      import { HumanMessage } from "@langchain/core/messages";
+      const result = await agent.invoke([new HumanMessage("Add 3 and 4.")]);
+
+      for (const message of result) {
+        console.log(`[${message.getType()}]: ${message.text}`);
+      }
+      ```
+    </Accordion>
+  </Tab>
+</Tabs>
