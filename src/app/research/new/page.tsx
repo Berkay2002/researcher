@@ -200,7 +200,7 @@ export default function NewResearchPage() {
       centerPanel={
         <div className="flex h-full flex-col overflow-hidden">
           {/* Empty space - messages will appear here */}
-          <div className="flex-1 overflow-y-auto" />
+          <div className="flex-1 overflow-y-hidden" />
 
           {/* Error Display */}
           {error && (

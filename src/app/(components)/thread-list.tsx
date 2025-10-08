@@ -99,7 +99,7 @@ export function ThreadList({
     return (
       <div className={cn("flex h-full flex-col", className)}>
         {/* Collapsed Header - matches expanded header height and icon position */}
-        <div className="flex h-12 items-center justify-end px-4">
+        <div className="flex h-15 items-center justify-end px-4">
           <Button
             aria-label="Open thread sidebar"
             onClick={() => onSidebarOpenChange?.(true)}
@@ -112,7 +112,7 @@ export function ThreadList({
         </div>
 
         {/* Spacing between collapse icon and search icon - matches expanded state */}
-        <div className="h-5" />
+        <div className="h-2" />
 
         {/* Collapsed Search Area - matches expanded search area and icon position */}
         <div className="flex h-12 items-center justify-start px-4">
@@ -191,7 +191,7 @@ export function ThreadList({
               type="button"
               variant="secondary"
             >
-              <PlusIcon className="mr-3 size-4" />
+              <PlusIcon className="size-4" />
               New Chat
             </Button>
           </Link>

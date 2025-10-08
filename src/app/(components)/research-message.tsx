@@ -1,14 +1,11 @@
 "use client";
 
-import {
-  Message,
-  MessageAvatar,
-  MessageContent,
-} from "@/components/ai-elements/message";
+import { Message, MessageContent } from "@/components/ai-elements/message";
 import { Response } from "@/components/ai-elements/response";
 import type { CitationData, MessageData, SourceCardData } from "@/types/ui";
 import { InlineCitationNumber } from "./inline-citation-number";
 import { ResearchReportCard } from "./research-report-card";
+import { cn } from "@/lib/utils";
 
 /**
  * Research Message Props
@@ -40,6 +37,7 @@ export function ResearchMessage({
 }: ResearchMessageProps) {
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
+  const isSystem = message.role === "system";
 
   // Check if this is a final report (heuristic: has citations, content > 1000 chars)
   const isReport =
@@ -54,15 +52,15 @@ export function ResearchMessage({
       // No-op when handler is not provided
     });
 
-  return (
-    <Message className={className} from={message.role}>
-      <MessageContent variant="flat">
-        {/* User message (simple) */}
-        {isUser && <p className="text-sm">{message.content}</p>}
-
-        {/* Assistant message - render as report card or regular message */}
-        {isAssistant &&
-          (isReport ? (
+  if (isAssistant || isSystem) {
+    return (
+      <div className={cn("flex w-full justify-center py-4", className)}>
+        <div className="flex w-full max-w-3xl flex-col gap-3">
+          {isSystem ? (
+            <p className="text-muted-foreground text-xs italic">
+              {message.content}
+            </p>
+          ) : isReport ? (
             <ResearchReportCard
               content={message.content}
               isSourcesPanelVisible={Boolean(isSourcesPanelVisible)}
@@ -71,7 +69,7 @@ export function ResearchMessage({
               sources={sources || []}
             />
           ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none">
+            <div className="prose prose-sm max-w-none dark:prose-invert">
               {message.citations && message.citations.length > 0 ? (
                 <MessageWithCitations
                   citations={message.citations}
@@ -81,29 +79,24 @@ export function ResearchMessage({
                 <Response>{message.content}</Response>
               )}
             </div>
-          ))}
+          )}
 
-        {/* System message (if any) */}
-        {message.role === "system" && (
-          <p className="text-muted-foreground text-xs italic">
-            {message.content}
-          </p>
-        )}
+          {isAssistant && message.metadata?.streaming && (
+            <div className="flex items-center gap-1">
+              <div className="size-2 animate-pulse rounded-full bg-primary" />
+              <span className="text-muted-foreground text-xs">Streaming...</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
-        {/* Metadata (optional) */}
-        {message.metadata?.streaming && (
-          <div className="mt-2 flex items-center gap-1">
-            <div className="size-2 animate-pulse rounded-full bg-primary" />
-            <span className="text-muted-foreground text-xs">Streaming...</span>
-          </div>
-        )}
+  return (
+    <Message className={className} from={message.role}>
+      <MessageContent variant="flat">
+        {isUser && <p className="text-sm">{message.content}</p>}
       </MessageContent>
-
-      {/* Avatar */}
-      <MessageAvatar
-        name={isUser ? "You" : "AI"}
-        src={isUser ? "/user-avatar.png" : "/assistant-avatar.png"}
-      />
     </Message>
   );
 }
