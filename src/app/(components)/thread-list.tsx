@@ -95,7 +95,9 @@ export function ThreadList({
   }, []);
 
   const filteredThreads = useMemo(() => {
-    if (!searchQuery.trim()) return threads;
+    if (!searchQuery.trim()) {
+      return threads;
+    }
     const query = searchQuery.toLowerCase();
     return threads.filter(
       (thread) =>
