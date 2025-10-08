@@ -113,7 +113,7 @@ export function SearchModal({
             heading="Quick actions"
           >
             <CommandItem
-              className="flex items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 data-[selected=true]:bg-foreground/8 data-[selected=true]:text-foreground data-[selected=true]:ring-2 data-[selected=true]:ring-ring/40"
+              className="flex items-center gap-3 rounded-xl border-0 px-3 py-2 text-left transition hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 aria-selected:bg-foreground/8 aria-selected:text-foreground aria-selected:ring-0 aria-selected:ring-transparent"
               onSelect={() => {
                 onOpenChange(false);
                 onCreateThread();
@@ -137,15 +137,19 @@ export function SearchModal({
             {section.threads.map((thread) => {
               const label = thread.title || thread.goal || "Untitled thread";
               const secondary = thread.goal && thread.goal !== thread.title;
+              const keywords = [label, thread.goal].filter(
+                (keyword): keyword is string => Boolean(keyword)
+              );
               return (
                 <CommandItem
-                  className="flex items-center gap-3 rounded-xl px-3 py-2 text-left transition hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 data-[selected=true]:bg-foreground/8 data-[selected=true]:text-foreground data-[selected=true]:ring-2 data-[selected=true]:ring-ring/40"
+                  className="flex items-center gap-3 rounded-xl border-0 px-3 py-2 text-left transition hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 aria-selected:bg-foreground/8 aria-selected:text-foreground aria-selected:ring-0 aria-selected:ring-transparent"
                   key={thread.threadId}
+                  keywords={keywords}
                   onSelect={() => {
                     onOpenChange(false);
                     onSelectThread?.(thread);
                   }}
-                  value={`${label} ${thread.goal ?? ""}`}
+                  value={thread.threadId}
                 >
                   <MessageCircleIcon className="size-4" />
                   <div className="flex min-w-0 flex-1 flex-col">
