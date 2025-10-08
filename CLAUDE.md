@@ -197,8 +197,8 @@ return new Response(body, {
 
 Use `@/*` for imports from src:
 ```typescript
-import { getGraph } from "@/server/graph";
-import { ParentState } from "@/server/graph/state";
+import { getGraph } from "@/server/workflows/researcher/graph";
+import { ParentState } from "@/server/workflows/researcher/graph/state";
 ```
 
 ### Naming Conventions

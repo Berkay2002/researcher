@@ -1,4 +1,4 @@
-import type { Chunk } from "../graph/state";
+import type { Chunk } from "@/server/workflows/researcher/graph/state";
 
 /**
  * Text chunking options

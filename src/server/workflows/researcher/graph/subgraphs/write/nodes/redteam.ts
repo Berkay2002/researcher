@@ -4,7 +4,7 @@
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getLLM } from "../../../../configs/llm";
+import { getLLM } from "@/server/shared/configs/llm";
 import type { Draft, Evidence, ParentState } from "../../../state";
 
 // Constants for quality gate thresholds (more lenient)

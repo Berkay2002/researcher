@@ -1,5 +1,5 @@
 /** biome-ignore-all lint/suspicious/noConsole: <> */
-import type { UnifiedSearchDoc } from "../graph/state";
+import type { UnifiedSearchDoc } from "@/server/workflows/researcher/graph/state";
 import { getExaClient } from "../tools/exa";
 import { getTavilyClient } from "../tools/tavily";
 import { shortHash } from "../utils/hashing";

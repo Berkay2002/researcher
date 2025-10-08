@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { getGraph } from "@/server/graph";
+import { getGraph } from "@/server/workflows/researcher/graph";
 
 const ModeSchema = z.object({
   mode: z.enum(["auto", "plan"]),

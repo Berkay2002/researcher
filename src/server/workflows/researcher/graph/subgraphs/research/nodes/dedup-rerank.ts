@@ -1,8 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 
-import { hashContent } from "../../../../utils/hashing";
-import { chunkText } from "../../../../utils/text";
+import { hashContent } from "@/server/shared/utils/hashing";
+import { chunkText } from "@/server/shared/utils/text";
 import type { Evidence, ParentState, UnifiedSearchDoc } from "../../../state";
 
 // Constants for deduplication and reranking

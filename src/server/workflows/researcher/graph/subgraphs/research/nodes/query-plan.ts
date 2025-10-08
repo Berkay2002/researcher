@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { getLLM } from "../../../../configs/llm";
+import { getLLM } from "@/server/shared/configs/llm";
 import type { ParentState } from "../../../state";
 
 // Constants for query planning
