@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreVerticalIcon } from "lucide-react";
+import { MoreVerticalIcon, Star as StarIcon } from "lucide-react";
 import Link from "next/link";
 import {
   type MouseEvent,
@@ -23,6 +23,8 @@ export type ThreadCardProps = {
   onDelete?: (threadId: string) => void;
   isActive?: boolean;
   className?: string;
+  isFavorite?: boolean;
+  onToggleFavorite?: (threadId: string) => void;
 };
 
 export function ThreadCard({
@@ -30,6 +32,8 @@ export function ThreadCard({
   onDelete,
   isActive = false,
   className,
+  isFavorite = false,
+  onToggleFavorite,
 }: ThreadCardProps) {
   const titleRef = useRef<HTMLSpanElement | null>(null);
   const [isTitleTruncated, setIsTitleTruncated] = useState(false);
@@ -91,6 +95,26 @@ export function ThreadCard({
         >
           {thread.title}
         </span>
+        {onToggleFavorite && (
+          <button
+            aria-label={isFavorite ? "Unfavorite" : "Favorite"}
+            className={cn(
+              "flex h-8 w-8 items-center justify-center",
+              "rounded-lg text-muted-foreground transition-colors border border-transparent",
+              "hover:bg-muted/50 hover:text-foreground"
+            )}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onToggleFavorite?.(thread.threadId);
+            }}
+            type="button"
+          >
+            <StarIcon
+              className={cn("size-4", isFavorite && "fill-yellow-400 text-yellow-400")}
+            />
+          </button>
+        )}
         {onDelete && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

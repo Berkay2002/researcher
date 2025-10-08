@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  FolderPlus,
   PanelLeftCloseIcon,
   PanelLeftOpenIcon,
   PlusIcon,
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 import { PanelContent, PanelFooter, PanelHeader } from "./app-shell";
+import ProjectModal, { type Project } from "./project-modal";
 import { KbdInputGroup } from "./search-kbd";
 import { SearchModal } from "./search-modal";
 import { ThreadCard } from "./thread-card";
@@ -37,7 +39,20 @@ export function ThreadList({
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const router = useRouter();
+
+  useEffect(() => {
+    const raw = localStorage.getItem("favoriteThreadIds");
+    if (raw) {
+      try {
+        setFavorites(new Set(JSON.parse(raw) as string[]));
+      } catch (error) {
+        console.error("Failed to parse favoriteThreadIds", error);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -74,6 +89,23 @@ export function ThreadList({
     handleStartNewChat();
     router.push("/research/new");
   }, [handleStartNewChat, router]);
+
+  const handleCreateProject = useCallback(
+    (project: Project) => {
+      try {
+        const existing = JSON.parse(
+          localStorage.getItem("projects") ?? "[]"
+        ) as Project[];
+        localStorage.setItem(
+          "projects",
+          JSON.stringify([...existing, project])
+        );
+      } catch (error) {
+        console.error("Failed to persist project", error);
+      }
+    },
+    []
+  );
 
   const handleSelectThreadFromModal = useCallback(
     (thread: ThreadMetadata) => {
@@ -114,6 +146,29 @@ export function ThreadList({
           new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
       ),
     [filteredThreads]
+  );
+
+  const toggleFavorite = useCallback((id: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      localStorage.setItem("favoriteThreadIds", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const favoriteThreads = useMemo(
+    () => sortedThreads.filter((thread) => favorites.has(thread.threadId)),
+    [sortedThreads, favorites]
+  );
+
+  const otherThreads = useMemo(
+    () => sortedThreads.filter((thread) => !favorites.has(thread.threadId)),
+    [sortedThreads, favorites]
   );
 
   const searchModal = (
@@ -228,15 +283,26 @@ export function ThreadList({
         <div className="mt-3">
           <Button
             asChild
-            className="h-9 w-full justify-start rounded-md px-3 shadow-xs transition hover:shadow-sm"
+            className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
             onClick={handleStartNewChat}
             type="button"
-            variant="secondary"
+            variant="ghost"
           >
             <Link href="/research/new">
               <PlusIcon className="size-4" />
               New Chat
             </Link>
+          </Button>
+        </div>
+        <div className="mt-2">
+          <Button
+            className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
+            onClick={() => setIsProjectModalOpen(true)}
+            type="button"
+            variant="ghost"
+          >
+            <FolderPlus className="size-4" />
+            Projects
           </Button>
         </div>
       </div>
@@ -260,14 +326,44 @@ export function ThreadList({
             )}
           </div>
         ) : (
-          sortedThreads.map((thread) => (
-            <ThreadCard
-              isActive={thread.threadId === activeThreadId}
-              key={thread.threadId}
-              onDelete={onDeleteThread}
-              thread={thread}
-            />
-          ))
+          <>
+            {favoriteThreads.length > 0 && (
+              <div className="space-y-1">
+                <div className="px-2 pt-2 text-muted-foreground text-xs uppercase tracking-wide">
+                  Favorites
+                </div>
+                {favoriteThreads.map((thread) => (
+                  <ThreadCard
+                    isActive={thread.threadId === activeThreadId}
+                    isFavorite
+                    key={thread.threadId}
+                    onDelete={onDeleteThread}
+                    onToggleFavorite={toggleFavorite}
+                    thread={thread}
+                  />
+                ))}
+                <div className="h-2" />
+              </div>
+            )}
+
+            <div className="space-y-1">
+              {favoriteThreads.length > 0 && (
+                <div className="px-2 pt-2 text-muted-foreground text-xs uppercase tracking-wide">
+                  All threads
+                </div>
+              )}
+              {otherThreads.map((thread) => (
+                <ThreadCard
+                  isActive={thread.threadId === activeThreadId}
+                  isFavorite={favorites.has(thread.threadId)}
+                  key={thread.threadId}
+                  onDelete={onDeleteThread}
+                  onToggleFavorite={toggleFavorite}
+                  thread={thread}
+                />
+              ))}
+            </div>
+          </>
         )}
       </PanelContent>
 
@@ -277,6 +373,11 @@ export function ThreadList({
           {sortedThreads.length} thread{sortedThreads.length !== 1 ? "s" : ""}
         </p>
       </PanelFooter>
+      <ProjectModal
+        onCreate={handleCreateProject}
+        onOpenChange={setIsProjectModalOpen}
+        open={isProjectModalOpen}
+      />
       {searchModal}
     </div>
   );
