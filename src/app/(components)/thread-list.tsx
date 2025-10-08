@@ -13,9 +13,9 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 import { PanelContent, PanelFooter, PanelHeader } from "./app-shell";
-import { ThreadCard } from "./thread-card";
 import { KbdInputGroup } from "./search-kbd";
 import { SearchModal } from "./search-modal";
+import { ThreadCard } from "./thread-card";
 
 /**
  * Thread List Props
