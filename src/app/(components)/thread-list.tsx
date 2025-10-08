@@ -7,13 +7,15 @@ import {
   SearchIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { ThreadMetadata } from "@/types/ui";
 import { PanelContent, PanelFooter, PanelHeader } from "./app-shell";
 import { ThreadCard } from "./thread-card";
+import { KbdInputGroup } from "./search-kbd";
+import { SearchModal } from "./search-modal";
 
 /**
  * Thread List Props
@@ -43,6 +45,22 @@ export function ThreadList({
 }: ThreadListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setIsSearchModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const handleToggleSidebar = useCallback(() => {
     onSidebarOpenChange?.(!isSidebarOpen);
@@ -64,6 +82,31 @@ export function ThreadList({
       onSidebarOpenChange?.(true);
     }
   }, [isSidebarOpen, onSidebarOpenChange]);
+
+  const handleCreateThread = useCallback(() => {
+    handleStartNewChat();
+    router.push("/research/new");
+  }, [handleStartNewChat, router]);
+
+  const handleSelectThreadFromModal = useCallback(
+    (thread: ThreadMetadata) => {
+      if (!isSidebarOpen) {
+        onSidebarOpenChange?.(true);
+      }
+      setSearchQuery("");
+      setIsSearchModalOpen(false);
+      router.push(`/research/${thread.threadId}`);
+    },
+    [isSidebarOpen, onSidebarOpenChange, router]
+  );
+
+  const handleOpenSearchModal = useCallback(() => {
+    setIsSearchModalOpen(true);
+  }, []);
+
+  const handleSearchModalOpenChange = useCallback((open: boolean) => {
+    setIsSearchModalOpen(open);
+  }, []);
 
   /**
    * Filter threads by search query
@@ -95,6 +138,16 @@ export function ThreadList({
     [filteredThreads]
   );
 
+  const searchModal = (
+    <SearchModal
+      onCreateThread={handleCreateThread}
+      onOpenChange={handleSearchModalOpenChange}
+      onSelectThread={handleSelectThreadFromModal}
+      open={isSearchModalOpen}
+      threads={threads}
+    />
+  );
+
   if (!isSidebarOpen) {
     return (
       <div className={cn("flex h-full flex-col", className)}>
@@ -118,7 +171,10 @@ export function ThreadList({
         <div className="flex h-12 items-center justify-start px-4">
           <Button
             aria-label="Search threads"
-            onClick={handleFocusSearch}
+            onClick={() => {
+              handleFocusSearch();
+              handleOpenSearchModal();
+            }}
             size="icon"
             type="button"
             variant="ghost"
@@ -143,6 +199,7 @@ export function ThreadList({
             </Link>
           </Button>
         </div>
+        {searchModal}
       </div>
     );
   }
@@ -171,18 +228,21 @@ export function ThreadList({
 
       {/* Search */}
       <div className="border-b px-4 py-3">
-        <div className="relative">
-          <SearchIcon className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground" />
-          <Input
-            className="h-9 pl-9"
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search threads..."
-            ref={searchInputRef}
-            type="search"
-            value={searchQuery}
-          />
-        </div>
-
+        <KbdInputGroup
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onKeyDown={(event) => {
+            if (
+              (event.metaKey || event.ctrlKey) &&
+              event.key.toLowerCase() === "k"
+            ) {
+              event.preventDefault();
+              handleOpenSearchModal();
+            }
+          }}
+          placeholder="Search..."
+          ref={searchInputRef}
+          value={searchQuery}
+        />
         <div className="mt-3">
           <Link href="/research/new">
             <Button
@@ -231,6 +291,7 @@ export function ThreadList({
           {sortedThreads.length} thread{sortedThreads.length !== 1 ? "s" : ""}
         </p>
       </PanelFooter>
+      {searchModal}
     </div>
   );
 }
