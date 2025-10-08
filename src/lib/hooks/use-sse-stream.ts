@@ -6,11 +6,18 @@ import type {
   DraftEvent,
   EvidenceEvent,
   MessageData,
+  MessagesEvent,
   NodeEvent,
   RunLogEntry,
+  SearchRunMetadata,
+  SearchRunsEvent,
   SourceCardData,
   SSEEvent,
   SSEEventType,
+  TodoItem,
+  TodosEvent,
+  ToolCallMetadata,
+  ToolCallsEvent,
 } from "@/types/ui";
 import {
   // biome-ignore lint/correctness/noUnusedImports: <>
@@ -32,6 +39,10 @@ export type StreamState = {
   sources: SourceCardData[];
   runLog: RunLogEntry[];
   queries: string[];
+  agentMessages: unknown[];
+  todos: TodoItem[];
+  toolCalls: ToolCallMetadata[];
+  searchRuns: SearchRunMetadata[];
 
   // Current draft (streaming)
   currentDraft: string | null;
@@ -86,6 +97,10 @@ export function useSSEStream({
       sources: [],
       runLog: [],
       queries: [],
+      agentMessages: [],
+      todos: [],
+      toolCalls: [],
+      searchRuns: [],
       currentDraft: null,
       currentDraftCitations: [],
       activeNode: null,
@@ -217,6 +232,42 @@ export function useSSEStream({
           setState((prev) => ({
             ...prev,
             queries: queriesEvent.data.queries,
+          }));
+          break;
+        }
+
+        case "messages": {
+          const messagesEvent = event as MessagesEvent;
+          setState((prev) => ({
+            ...prev,
+            agentMessages: messagesEvent.data.messages ?? [],
+          }));
+          break;
+        }
+
+        case "todos": {
+          const todosEvent = event as TodosEvent;
+          setState((prev) => ({
+            ...prev,
+            todos: todosEvent.data.todos,
+          }));
+          break;
+        }
+
+        case "tool_calls": {
+          const toolCallsEvent = event as ToolCallsEvent;
+          setState((prev) => ({
+            ...prev,
+            toolCalls: toolCallsEvent.data.toolCalls,
+          }));
+          break;
+        }
+
+        case "search_runs": {
+          const searchRunsEvent = event as SearchRunsEvent;
+          setState((prev) => ({
+            ...prev,
+            searchRuns: searchRunsEvent.data.searchRuns,
           }));
           break;
         }
@@ -374,6 +425,10 @@ export function useSSEStream({
       "queries",
       "citations",
       "issues",
+      "messages",
+      "todos",
+      "tool_calls",
+      "search_runs",
       "llm_token",
       "custom",
       "error",

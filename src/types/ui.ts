@@ -5,6 +5,19 @@
  * Maps server-side types to client-friendly formats.
  */
 
+import type { ReactAgentState } from "@/server/agents/react/state";
+import type {
+  SearchRunMetadata,
+  TodoItem,
+  ToolCallMetadata,
+} from "@/server/types/react-agent";
+
+export type {
+  SearchRunMetadata,
+  TodoItem,
+  ToolCallMetadata,
+} from "@/server/types/react-agent";
+
 import type {
   Citation,
   Draft,
@@ -27,6 +40,10 @@ export type SSEEventType =
   | "queries"
   | "citations"
   | "issues"
+  | "messages"
+  | "todos"
+  | "tool_calls"
+  | "search_runs"
   | "llm_token"
   | "custom"
   | "error"
@@ -123,6 +140,34 @@ export type DoneEvent = SSEEvent<{
  * Keep-alive ping event
  */
 export type KeepAliveEvent = SSEEvent<null>;
+
+/**
+ * ReAct agent message batch event
+ */
+export type MessagesEvent = SSEEvent<{
+  messages: unknown[];
+}>;
+
+/**
+ * ReAct agent todo list event
+ */
+export type TodosEvent = SSEEvent<{
+  todos: TodoItem[];
+}>;
+
+/**
+ * ReAct agent tool call metadata event
+ */
+export type ToolCallsEvent = SSEEvent<{
+  toolCalls: ToolCallMetadata[];
+}>;
+
+/**
+ * ReAct agent search run metadata event
+ */
+export type SearchRunsEvent = SSEEvent<{
+  searchRuns: SearchRunMetadata[];
+}>;
 
 // ============================================================================
 // UI Data Types
@@ -252,35 +297,74 @@ export type SourcesFilter = {
 };
 
 /**
+ * Supported agent types rendered by the dashboard.
+ */
+export type ThreadAgentType = "workflow" | "react";
+
+/**
+ * Workflow (two-pass research pipeline) state exposed to the UI.
+ */
+export type WorkflowThreadValues = {
+  userInputs?: {
+    goal: string;
+    modeOverride?: "auto" | "plan";
+    modeFinal?: "auto" | "plan";
+  };
+  plan?: {
+    goal: string;
+    deliverable: string;
+    dag?: string[];
+    constraints?: Record<string, unknown>;
+  };
+  queries?: string[];
+  research?: ResearchState | null;
+  evidence?: Evidence[];
+  draft?: Draft;
+  issues?: string[];
+};
+
+/**
+ * React agent runtime context shared with tools.
+ */
+export type ReactAgentContext = {
+  sessionId?: string;
+  userId?: string;
+  locale?: string;
+};
+
+/**
+ * ReAct agent state projected for the dashboard.
+ */
+export type ReactAgentThreadValues = Omit<
+  Partial<ReactAgentState>,
+  "context"
+> & {
+  context?: ReactAgentContext | null;
+  reactMetadata?: Record<string, unknown>;
+};
+
+/**
+ * Combined thread state values supporting both workflows and agents.
+ */
+export type ThreadStateValues = WorkflowThreadValues &
+  ReactAgentThreadValues & {
+    agentType?: ThreadAgentType;
+    [key: string]: unknown;
+  };
+
+/**
  * Thread state snapshot
  */
 export type ThreadStateSnapshot = {
   threadId: string;
-  values: {
-    userInputs: {
-      goal: string;
-      modeOverride?: "auto" | "plan";
-      modeFinal?: "auto" | "plan";
-    };
-    plan?: {
-      goal: string;
-      deliverable: string;
-      dag?: string[];
-      constraints?: Record<string, unknown>;
-    };
-    queries?: string[];
-    research?: ResearchState | null;
-    evidence?: Evidence[];
-    draft?: Draft;
-    issues?: string[];
-  };
+  values: ThreadStateValues;
   next: string[];
   interrupt?: unknown; // Interrupt payload from LangGraph
-  checkpointId: string;
+  checkpointId: string | null;
   metadata?: {
     createdAt: string;
     updatedAt: string;
-  };
+  } | null;
 };
 
 // ============================================================================
@@ -307,6 +391,67 @@ export function isEventType<T extends SSEEventType>(
   type: T
 ): event is SSEEvent<Extract<SSEEvent, { type: T }>["data"]> {
   return event.type === type;
+}
+
+/**
+ * Determine if a snapshot belongs to the legacy research workflow.
+ */
+export function isWorkflowThreadStateSnapshot(
+  snapshot: ThreadStateSnapshot | null | undefined
+): snapshot is ThreadStateSnapshot & { values: WorkflowThreadValues } {
+  const values = snapshot?.values;
+  if (!values) {
+    return false;
+  }
+  if (values.agentType === "workflow") {
+    return true;
+  }
+  const userInputs = values.userInputs;
+  return (
+    typeof userInputs?.goal === "string" && userInputs.goal.trim().length > 0
+  );
+}
+
+/**
+ * Determine if a snapshot belongs to the ReAct agent implementation.
+ */
+export function isReactAgentThreadStateSnapshot(
+  snapshot: ThreadStateSnapshot | null | undefined
+): snapshot is ThreadStateSnapshot & { values: ReactAgentThreadValues } {
+  const values = snapshot?.values;
+  if (!values) {
+    return false;
+  }
+  if (values.agentType === "react") {
+    return true;
+  }
+  return (
+    Array.isArray(values.messages) ||
+    Array.isArray(values.todos) ||
+    Array.isArray(values.recentToolCalls) ||
+    Array.isArray(values.searchRuns)
+  );
+}
+
+/**
+ * Infer the thread's agent type using explicit metadata or structural hints.
+ */
+export function inferThreadAgentType(
+  snapshot: ThreadStateSnapshot | null | undefined
+): ThreadAgentType | null {
+  if (!snapshot?.values) {
+    return null;
+  }
+  if (snapshot.values.agentType) {
+    return snapshot.values.agentType;
+  }
+  if (isReactAgentThreadStateSnapshot(snapshot)) {
+    return "react";
+  }
+  if (isWorkflowThreadStateSnapshot(snapshot)) {
+    return "workflow";
+  }
+  return null;
 }
 
 // ============================================================================
@@ -546,6 +691,115 @@ function normalizeIssuesPayload(data: unknown): IssuesEvent["data"] {
   return { issues };
 }
 
+function isTodoItem(value: unknown): value is TodoItem {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  const status = record.status;
+  return (
+    typeof record.id === "string" &&
+    typeof record.title === "string" &&
+    (status === "pending" || status === "completed")
+  );
+}
+
+function isToolCallMetadata(value: unknown): value is ToolCallMetadata {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.toolName === "string" && typeof record.invokedAt === "string"
+  );
+}
+
+function isSearchRunMetadata(value: unknown): value is SearchRunMetadata {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const record = value as Record<string, unknown>;
+  const provider = record.provider;
+  return (
+    typeof record.query === "string" &&
+    (provider === "tavily" || provider === "exa") &&
+    typeof record.startedAt === "string"
+  );
+}
+
+function normalizeMessagesPayload(data: unknown): MessagesEvent["data"] {
+  if (Array.isArray(data)) {
+    return { messages: data };
+  }
+  if (typeof data === "object" && data !== null) {
+    const record = data as Record<string, unknown>;
+    if (Array.isArray(record.messages)) {
+      return { messages: record.messages };
+    }
+  }
+  return { messages: [] };
+}
+
+function normalizeTodosPayload(data: unknown): TodosEvent["data"] {
+  const candidate: unknown[] = (() => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (typeof data === "object" && data !== null) {
+      const record = data as Record<string, unknown>;
+      if (Array.isArray(record.todos)) {
+        return record.todos;
+      }
+      if (Array.isArray(record.todoItems)) {
+        return record.todoItems;
+      }
+    }
+    return [] as unknown[];
+  })();
+  const todos = candidate.filter(isTodoItem);
+  return { todos };
+}
+
+function normalizeToolCallsPayload(data: unknown): ToolCallsEvent["data"] {
+  const candidate: unknown[] = (() => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (typeof data === "object" && data !== null) {
+      const record = data as Record<string, unknown>;
+      if (Array.isArray(record.toolCalls)) {
+        return record.toolCalls;
+      }
+      if (Array.isArray(record.tool_calls)) {
+        return record.tool_calls;
+      }
+    }
+    return [] as unknown[];
+  })();
+  const toolCalls = candidate.filter(isToolCallMetadata);
+  return { toolCalls };
+}
+
+function normalizeSearchRunsPayload(data: unknown): SearchRunsEvent["data"] {
+  const candidate: unknown[] = (() => {
+    if (Array.isArray(data)) {
+      return data;
+    }
+    if (typeof data === "object" && data !== null) {
+      const record = data as Record<string, unknown>;
+      if (Array.isArray(record.searchRuns)) {
+        return record.searchRuns;
+      }
+      if (Array.isArray(record.search_runs)) {
+        return record.search_runs;
+      }
+    }
+    return [] as unknown[];
+  })();
+  const searchRuns = candidate.filter(isSearchRunMetadata);
+  return { searchRuns };
+}
+
 function normalizeNodePayload(data: unknown): NodeEvent["data"] {
   const record =
     typeof data === "object" && data !== null
@@ -683,6 +937,14 @@ function normalizeEventData(
       return normalizeCitationsPayload(data);
     case "issues":
       return normalizeIssuesPayload(data);
+    case "messages":
+      return normalizeMessagesPayload(data);
+    case "todos":
+      return normalizeTodosPayload(data);
+    case "tool_calls":
+      return normalizeToolCallsPayload(data);
+    case "search_runs":
+      return normalizeSearchRunsPayload(data);
     case "node":
       return normalizeNodePayload(data);
     case "error":
