@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 
-import { searchAll } from "../../../../services/search-gateway";
+import { searchAll } from "@/server/shared/services/search-gateway";
 import type { ParentState, UnifiedSearchDoc } from "../../../state";
 
 // Regex for URL normalization

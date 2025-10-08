@@ -3,7 +3,7 @@
 import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
-import { createLLM } from "../../../../configs/llm";
+import { createLLM } from "@/server/shared/configs/llm";
 import type { Plan, Question, QuestionAnswer } from "../../../state";
 import type { PromptAnalysis } from "../state";
 
@@ -17,7 +17,14 @@ const LOG_PREVIEW_LENGTH = 500; // Characters to show in log previews
 const LOG_ERROR_PREVIEW_LENGTH = 200; // Characters to show in error previews
 
 // System prompt paths
-const PROMPTS_DIR = join(process.cwd(), "src", "server", "configs", "prompts");
+const PROMPTS_DIR = join(
+  process.cwd(),
+  "src",
+  "server",
+  "shared",
+  "configs",
+  "prompts"
+);
 
 /**
  * Load system prompt from file

@@ -1,6 +1,6 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
-import { searchAll } from "../../../../services/search-gateway";
+import { searchAll } from "@/server/shared/services/search-gateway";
 import type { ParentState } from "../../../state";
 
 // Constants for rate limiting

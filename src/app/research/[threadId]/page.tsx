@@ -35,7 +35,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSSEStream } from "@/lib/hooks/use-sse-stream";
 import { useThreadState } from "@/lib/hooks/use-thread-state";
-import type { InterruptPayload } from "@/server/graph/subgraphs/planner/state";
+import type { InterruptPayload } from "@/server/workflows/researcher/graph/subgraphs/planner/state";
 import {
   draftToMessage,
   type MessageData,

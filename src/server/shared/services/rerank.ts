@@ -1,4 +1,4 @@
-import type { Evidence } from "../graph/state";
+import type { Evidence } from "@/server/workflows/researcher/graph/state";
 import { normalizeUrl } from "../utils/url";
 
 // Constants for reranking configuration

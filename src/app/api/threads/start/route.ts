@@ -2,8 +2,8 @@
 /** biome-ignore-all lint/suspicious/noExplicitAny: <> */
 import { type NextRequest, NextResponse } from "next/server";
 import { v4 as uuid } from "uuid";
-import { getGraph } from "@/server/graph";
-import { UserInputsSchema } from "@/server/graph/state";
+import { getGraph } from "@/server/workflows/researcher/graph";
+import { UserInputsSchema } from "@/server/workflows/researcher/graph/state";
 
 /**
  * Create a thread history entry

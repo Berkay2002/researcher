@@ -1,5 +1,8 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
-import type { Citation, Evidence } from "../graph/state";
+import type {
+  Citation,
+  Evidence,
+} from "@/server/workflows/researcher/graph/state";
 
 // Constants for provenance validation
 const EXCERPT_SUBSTRING_LENGTH = 100;
