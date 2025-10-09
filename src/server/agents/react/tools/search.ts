@@ -11,8 +11,8 @@ const tavilyClient = new TavilyClient(TAVILY_API_KEY);
 const exaClient = new ExaClient(EXA_API_KEY);
 
 const MIN_SEARCH_RESULTS = 1;
-const MAX_SEARCH_RESULTS = 20;
-const DEFAULT_SEARCH_RESULTS = 5;
+const MAX_SEARCH_RESULTS = 50;
+const DEFAULT_SEARCH_RESULTS = 12;
 
 const TavilySearchInputSchema = z.object({
   query: z.string().describe("Web search query to run"),

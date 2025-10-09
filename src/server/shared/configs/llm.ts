@@ -1,11 +1,14 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { OPENAI_API_KEY } from "./env";
+import { LANGCHAIN_TRACING_V2, OPENAI_API_KEY } from "./env";
 
 // Constants for LLM configuration
 const GEMINI_BASE_URL =
   "https://generativelanguage.googleapis.com/v1beta/openai/";
 const DEFAULT_TEMPERATURE = 0.3;
 const QUALITY_TEMPERATURE = 0.1;
+
+// LangSmith tracing configuration
+const TRACING_ENABLED = LANGCHAIN_TRACING_V2 === "true";
 
 /**
  * Create a ChatOpenAI instance configured for Gemini OpenAI compatibility
@@ -37,6 +40,10 @@ export function createLLM(
     },
     // Disable stream_options to avoid token metadata conflicts
     streamUsage: false,
+    // Add metadata for better tracing visibility
+    tags: TRACING_ENABLED
+      ? [`model:${model}`, `temperature:${temperature}`]
+      : undefined,
     ...options,
   });
 }
