@@ -2,7 +2,7 @@
 
 **Date**: October 9, 2025  
 **LangGraph Version**: 1.0.0-alpha.5  
-**Status**: ✅ Implemented and Verified
+**Status**:  Implemented and Verified
 
 ## Overview
 
@@ -25,7 +25,7 @@ export const StateAnnotation = Annotation.Root({
 });
 ```
 
-**✅ Correct Approach:**
+** Correct Approach:**
 ```typescript
 import { MessagesAnnotation } from "@langchain/langgraph";
 
@@ -46,14 +46,14 @@ export const StateAnnotation = Annotation.Root({
 
 ### 2. Nodes Must Return AIMessage Objects
 
-**❌ Wrong:**
+** Wrong:**
 ```typescript
 return { 
   draft: { text: "My response" }  // Plain text/object
 };
 ```
 
-**✅ Correct:**
+** Correct:**
 ```typescript
 import { AIMessage } from "@langchain/core/messages";
 
@@ -318,4 +318,4 @@ if (needsMoreResearch) {
 
 **Last Updated**: October 9, 2025  
 **Maintained By**: Research Team  
-**Status**: Production Ready ✅
+**Status**: Production Ready 

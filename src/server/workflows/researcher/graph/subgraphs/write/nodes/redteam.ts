@@ -5,7 +5,12 @@
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getLLM } from "@/server/shared/configs/llm";
-import type { Draft, Evidence, ParentState, QualityIssue } from "../../../state";
+import type {
+  Draft,
+  Evidence,
+  ParentState,
+  QualityIssue,
+} from "../../../state";
 
 // Iteration limits for termination guarantees
 const MAX_TOTAL_ITERATIONS = 3;
@@ -78,7 +83,9 @@ export async function redteam(
   const { draft, evidence, userInputs, totalIterations, forceApproved } = state;
   const currentIteration = totalIterations || 0;
 
-  console.log(`[redteam] Iteration ${currentIteration + 1}/${MAX_TOTAL_ITERATIONS}`);
+  console.log(
+    `[redteam] Iteration ${currentIteration + 1}/${MAX_TOTAL_ITERATIONS}`
+  );
 
   // Get progressive thresholds for this iteration
   const thresholds = getProgressiveThresholds(currentIteration);
@@ -129,7 +136,7 @@ export async function redteam(
     }
 
     // Convert all issues to warnings and set force approval
-    const warnings = allIssues.map(issue => ({
+    const warnings = allIssues.map((issue) => ({
       ...issue,
       severity: "warning" as const,
     }));
@@ -137,7 +144,6 @@ export async function redteam(
     return {
       issues: warnings,
       forceApproved: true,
-      totalIterations: currentIteration + 1,
     };
   }
 
@@ -172,7 +178,6 @@ export async function redteam(
 
   return {
     issues,
-    totalIterations: currentIteration + 1,
   };
 }
 
@@ -353,9 +358,9 @@ Please evaluate this draft and provide quality assessment.`;
     // Classify as needs_revision by default (LLM issues are usually about writing quality)
     for (const issueText of assessment.issues) {
       // Heuristic: if issue mentions "evidence", "sources", "citations", "data" → needs_research
-      const needsResearch = /\b(evidence|source|citation|data|reference)\b/i.test(
-        issueText
-      );
+      const needsResearch =
+        // biome-ignore lint/performance/useTopLevelRegex: <Ignore>
+        /\b(evidence|source|citation|data|reference)\b/i.test(issueText);
 
       issues.push({
         type: needsResearch ? "needs_research" : "needs_revision",

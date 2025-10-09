@@ -87,7 +87,7 @@ export async function GET() {
 
 ### Common Pitfalls to Avoid
 
-❌ Don't mix naming conventions:
+ Don't mix naming conventions:
 
 ```
 components/
@@ -96,7 +96,7 @@ components/
 └── NavigationBar.tsx # Inconsistent
 ```
 
-✅ Do maintain consistency:
+ Do maintain consistency:
 
 ```
 components/
@@ -110,12 +110,12 @@ components/
 **File Names**
 
 ```
-# ✅ Good
+#  Good
 data-table.tsx
 user-profile.tsx
 auth-provider.tsx
 
-# ❌ Avoid
+#  Avoid
 DataTable.tsx
 userProfile.tsx
 auth_provider.tsx
@@ -124,12 +124,12 @@ auth_provider.tsx
 **Component Names**
 
 ```typescript
-// ✅ Good
+//  Good
 export default function DataTable() {
   // ...
 }
 
-// ❌ Avoid
+//  Avoid
 export default function dataTable() {
   // ...
 }

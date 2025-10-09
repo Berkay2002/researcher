@@ -319,9 +319,9 @@ export const ParentStateAnnotation = Annotation.Root({
   }),
 
   // Issues and errors with type classification
-  // Accumulates issues from validation and quality gates
+  // Replaces issues (not accumulates) to enable clean evaluation each iteration
   issues: Annotation<QualityIssue[]>({
-    reducer: (prev, next) => [...(prev ?? []), ...next],
+    reducer: (_, next) => next,
     default: () => [],
   }),
 

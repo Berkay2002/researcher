@@ -23,7 +23,7 @@ async function testOrchestratorWorkflow() {
     // Get the compiled graph
     const graph = getGraph();
 
-    console.log("✅ Graph compiled successfully");
+    console.log(" Graph compiled successfully");
     console.log("📊 Graph structure:");
     console.log("   - Nodes:", Object.keys(graph.nodes || {}).join(", "));
     console.log("\n");
@@ -54,7 +54,7 @@ async function testOrchestratorWorkflow() {
       }
     );
 
-    console.log("\n✅ Workflow completed successfully!\n");
+    console.log("\n Workflow completed successfully!\n");
 
     // Display results
     console.log("📊 Results Summary:");
@@ -103,7 +103,7 @@ async function testOrchestratorWorkflow() {
       "   3. You should see the Orchestrator-Worker pattern with parallel workers\n"
     );
   } catch (error) {
-    console.error("\n❌ Test failed:", error);
+    console.error("\n Test failed:", error);
 
     if (error instanceof Error) {
       console.error("Error message:", error.message);

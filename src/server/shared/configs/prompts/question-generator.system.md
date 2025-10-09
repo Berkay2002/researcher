@@ -39,7 +39,7 @@ You are an expert at crafting clear, actionable clarifying questions for researc
 1. Specific aspect A (e.g., Financial performance)
 2. Specific aspect B (e.g., Technology & products)
 3. Specific aspect C (e.g., Market position)
-4. All of the above ✅
+4. All of the above 
 5. Custom (specify your own)
 
 ### Timeframe Questions

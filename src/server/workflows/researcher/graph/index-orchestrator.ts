@@ -129,6 +129,8 @@ function buildParentGraph() {
    * - Maximum revision iterations: 2
    * - Force approval on final iteration
    */
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore
   function routeRedteam(state: ParentState): string {
     const {
       issues,
@@ -180,7 +182,10 @@ function buildParentGraph() {
     );
 
     // Research loop (LIMITED to 1 iteration)
-    if (researchIssues.length > 0 && currentResearch < MAX_RESEARCH_ITERATIONS) {
+    if (
+      researchIssues.length > 0 &&
+      currentResearch < MAX_RESEARCH_ITERATIONS
+    ) {
       console.log(
         `[router] Needs supplemental research - routing to orchestrator (research iteration ${currentResearch + 1}/${MAX_RESEARCH_ITERATIONS})`
       );
@@ -188,7 +193,10 @@ function buildParentGraph() {
     }
 
     // Revision loop (LIMITED to 2 iterations)
-    if (revisionIssues.length > 0 && currentRevision < MAX_REVISION_ITERATIONS) {
+    if (
+      revisionIssues.length > 0 &&
+      currentRevision < MAX_REVISION_ITERATIONS
+    ) {
       console.log(
         `[router] Needs text revision - routing to synthesizer (revision iteration ${currentRevision + 1}/${MAX_REVISION_ITERATIONS})`
       );

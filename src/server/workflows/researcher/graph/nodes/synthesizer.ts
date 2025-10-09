@@ -8,7 +8,13 @@ import {
 } from "@langchain/core/messages";
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
-import type { Citation, Draft, ParentState, UnifiedSearchDoc } from "../state";
+import type {
+  Citation,
+  Draft,
+  ParentState,
+  QualityIssue,
+  UnifiedSearchDoc,
+} from "../state";
 
 // Constants for synthesis
 const MAX_SOURCES_FOR_SYNTHESIS = 20;
@@ -54,6 +60,8 @@ export async function synthesizer(
     plan,
     issues,
     draft: previousDraft,
+    revisionIterations,
+    totalIterations,
   } = state;
 
   if (!userInputs?.goal) {
@@ -63,9 +71,12 @@ export async function synthesizer(
   // Check if this is a revision iteration (redteam found issues)
   const isRevision = issues && issues.length > 0 && previousDraft;
 
+  const currentRevision = revisionIterations || 0;
+  const currentTotal = totalIterations || 0;
+
   if (isRevision) {
     console.log(
-      `[synthesizer] REVISION MODE: Addressing ${issues.length} issues from redteam`
+      `[synthesizer] REVISION MODE: Addressing ${issues.length} issues from redteam (iteration ${currentTotal + 1})`
     );
     console.log("[synthesizer] Issues to address:", issues);
   } else {
@@ -155,8 +166,9 @@ export async function synthesizer(
   return {
     draft,
     messages: [aiMessage],
-    issues: [], // Clear issues after generating new draft
-    revisionCount: (state.revisionCount || 0) + (isRevision ? 1 : 0),
+    // Note: issues are cleared automatically by replacement reducer when redteam returns new issues
+    revisionIterations: currentRevision + (isRevision ? 1 : 0),
+    totalIterations: currentTotal + 1,
   };
 } /**
  * Deduplicate documents by URL and content hash
@@ -254,7 +266,7 @@ async function generateSynthesis(params: {
   deliverable: string;
   evidenceContext: string;
   workerResults: ParentState["workerResults"];
-  revisionContext?: { previousDraft: Draft; issues: string[] };
+  revisionContext?: { previousDraft: Draft; issues: QualityIssue[] };
 }): Promise<string> {
   const { goal, deliverable, evidenceContext, workerResults, revisionContext } =
     params;
@@ -277,7 +289,7 @@ Previous Draft:
 ${revisionContext?.previousDraft.text}
 
 Issues Found by Quality Review:
-${revisionContext?.issues.map((issue, i) => `${i + 1}. ${issue}`).join("\n")}
+${revisionContext?.issues.map((issue, i) => `${i + 1}. [${issue.type}] ${issue.description}`).join("\n")}
 
 Please address ALL of these issues in your revised report while maintaining the overall structure and quality.`
     : "";

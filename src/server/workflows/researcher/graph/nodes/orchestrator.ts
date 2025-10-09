@@ -40,7 +40,8 @@ export async function orchestrator(
     "[orchestrator] Analyzing research goal and decomposing tasks..."
   );
 
-  const { userInputs, plan } = state;
+  const { userInputs, plan, researchIterations, totalIterations, issues } =
+    state;
 
   if (!userInputs?.goal) {
     throw new Error("No goal provided in userInputs");
@@ -49,27 +50,60 @@ export async function orchestrator(
   const goal = userInputs.goal;
   const constraints = plan?.constraints || {};
 
+  // Detect supplemental research mode
+  const currentResearch = researchIterations || 0;
+  const currentTotal = totalIterations || 0;
+  const isSupplementalResearch = currentResearch > 0;
+
+  if (isSupplementalResearch) {
+    console.log(
+      `[orchestrator] SUPPLEMENTAL RESEARCH MODE (research iteration ${currentResearch + 1}, total iteration ${currentTotal + 1})`
+    );
+  } else {
+    console.log("[orchestrator] INITIAL RESEARCH MODE");
+  }
+
   console.log("[orchestrator] Goal:", goal);
   console.log("[orchestrator] Constraints:", constraints);
 
-  // Step 1: Analyze the research goal
-  const analysis = await analyzeResearchGoal(goal, constraints);
-  console.log(
-    `[orchestrator] Analysis: ${analysis.complexity} complexity, ${analysis.estimatedWorkers} workers needed`
-  );
-  console.log("[orchestrator] Domains:", analysis.domains);
-  console.log("[orchestrator] Aspects:", analysis.aspects);
+  let taskDecomposition: TaskDecomposition;
 
-  // Step 2: Decompose into parallel tasks
-  const taskDecomposition = await decomposeIntoTasks(
-    goal,
-    analysis,
-    constraints
-  );
-  console.log(
-    `[orchestrator] Created ${taskDecomposition.tasks.length} parallel tasks`
-  );
-  console.log("[orchestrator] Strategy:", taskDecomposition.reasoning);
+  // Handle supplemental research mode
+  if (isSupplementalResearch) {
+    // Generate focused tasks from research issues only
+    const researchIssues = (issues || []).filter(
+      (i) => i.type === "needs_research"
+    );
+
+    console.log(
+      `[orchestrator] Generating ${MIN_WORKERS} focused tasks for ${researchIssues.length} research issues`
+    );
+
+    taskDecomposition = await generateSupplementalTasks(
+      goal,
+      researchIssues,
+      constraints
+    );
+
+    console.log(
+      `[orchestrator] Created ${taskDecomposition.tasks.length} supplemental tasks`
+    );
+  } else {
+    // Step 1: Analyze the research goal
+    const analysis = await analyzeResearchGoal(goal, constraints);
+    console.log(
+      `[orchestrator] Analysis: ${analysis.complexity} complexity, ${analysis.estimatedWorkers} workers needed`
+    );
+    console.log("[orchestrator] Domains:", analysis.domains);
+    console.log("[orchestrator] Aspects:", analysis.aspects);
+
+    // Step 2: Decompose into parallel tasks
+    taskDecomposition = await decomposeIntoTasks(goal, analysis, constraints);
+    console.log(
+      `[orchestrator] Created ${taskDecomposition.tasks.length} parallel tasks`
+    );
+    console.log("[orchestrator] Strategy:", taskDecomposition.reasoning);
+  }
 
   // Step 3: Store tasks in research state for worker distribution
   const tasks = taskDecomposition.tasks;
@@ -93,6 +127,10 @@ export async function orchestrator(
       // biome-ignore lint/suspicious/noExplicitAny: Tasks temporarily stored in planning cache
       tasks: tasks as any,
     },
+    // Increment iteration counters
+    // Note: issues are cleared automatically by replacement reducer when redteam returns new issues
+    researchIterations: currentResearch + (isSupplementalResearch ? 1 : 0),
+    totalIterations: currentTotal + 1,
   };
 }
 
@@ -148,6 +186,91 @@ Please analyze this research goal and provide your assessment.`;
       aspects: [goal, `${goal} analysis`, `${goal} trends`],
       estimatedWorkers: MIN_WORKERS,
       strategy: "Execute comprehensive research across all relevant domains",
+    };
+  }
+}
+
+/**
+ * Generate focused supplemental tasks based on research issues
+ */
+async function generateSupplementalTasks(
+  goal: string,
+  researchIssues: Array<{ description: string }>,
+  constraints: Record<string, unknown>
+): Promise<TaskDecomposition> {
+  console.log(
+    "[orchestrator] Generating supplemental tasks for research issues..."
+  );
+
+  const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
+
+  const issuesText = researchIssues
+    .map((issue, i) => `${i + 1}. ${issue.description}`)
+    .join("\n");
+
+  const systemPrompt = `You are a research task planner focused on addressing specific research gaps.
+
+Generate 1-2 highly focused supplemental research tasks to address the identified issues.
+
+Each task should:
+1. Directly address one or more research issues
+2. Have 2-3 targeted search queries
+3. Be independently executable
+4. Have a priority score (0-1)
+
+Keep tasks minimal and focused - this is supplemental research, not comprehensive analysis.`;
+
+  const constraintsText =
+    Object.keys(constraints).length > 0
+      ? `\n\nConstraints: ${JSON.stringify(constraints, null, 2)}`
+      : "";
+
+  const humanPrompt = `Original research goal: ${goal}
+
+Research Issues to Address:
+${issuesText}${constraintsText}
+
+Please create 1-2 focused supplemental research tasks with targeted queries to address these specific issues.`;
+
+  try {
+    const llmWithStructuredOutput = llm.withStructuredOutput(
+      TaskDecompositionSchema
+    );
+
+    const decomposition = await llmWithStructuredOutput.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage(humanPrompt),
+    ]);
+
+    // Limit to 2 tasks maximum for supplemental research
+    const MAX_SUPPLEMENTAL_TASKS = 2;
+    if (decomposition.tasks.length > MAX_SUPPLEMENTAL_TASKS) {
+      console.warn(
+        `[orchestrator] Limiting supplemental tasks from ${decomposition.tasks.length} to ${MAX_SUPPLEMENTAL_TASKS}`
+      );
+      decomposition.tasks = decomposition.tasks
+        .sort((a: ResearchTask, b: ResearchTask) => b.priority - a.priority)
+        .slice(0, MAX_SUPPLEMENTAL_TASKS);
+    }
+
+    return decomposition;
+  } catch (error) {
+    console.error("[orchestrator] Error generating supplemental tasks:", error);
+
+    // Fallback: create simple task from first issue
+    const fallbackTask: ResearchTask = {
+      id: "supplemental-1",
+      aspect: researchIssues[0]?.description || "Additional research",
+      queries: [
+        `${goal} ${researchIssues[0]?.description || ""}`,
+        `${goal} additional evidence`,
+      ],
+      priority: 1,
+    };
+
+    return {
+      tasks: [fallbackTask],
+      reasoning: "Fallback supplemental task for research gap",
     };
   }
 }

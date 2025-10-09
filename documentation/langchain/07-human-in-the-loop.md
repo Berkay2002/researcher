@@ -19,9 +19,9 @@ The middleware defines three built-in ways a human can respond to an interrupt:
 
 | Response Type | Description                                                               | Example Use Case                                    |
 | ------------- | ------------------------------------------------------------------------- | --------------------------------------------------- |
-| ✅ `accept`    | The action is approved as-is and executed without changes.                | Send an email draft exactly as written              |
+|  `accept`    | The action is approved as-is and executed without changes.                | Send an email draft exactly as written              |
 | ✏️ `edit`     | The tool call is executed with modifications.                             | Change the recipient before sending an email        |
-| ❌ `respond`   | The tool call is rejected, with an explanation added to the conversation. | Reject an email draft and explain how to rewrite it |
+|  `respond`   | The tool call is rejected, with an explanation added to the conversation. | Reject an email draft and explain how to rewrite it |
 
 The available response types for each tool depend on the policy you configure in `interrupt_on`.
 When multiple tool calls are paused at the same time, each action requires a separate response.
@@ -124,7 +124,7 @@ await agent.invoke(
 ### Response types
 
 <Tabs>
-  <Tab title="✅ accept">
+  <Tab title=" accept">
     Use `accept` to approve the tool call as-is and execute it without changes.
 
     ```typescript  theme={null}
@@ -174,7 +174,7 @@ await agent.invoke(
     </Tip>
   </Tab>
 
-  <Tab title="❌ respond">
+  <Tab title=" respond">
     Use `respond` to reject the tool call and provide feedback instead of execution.
 
     ```typescript  theme={null}

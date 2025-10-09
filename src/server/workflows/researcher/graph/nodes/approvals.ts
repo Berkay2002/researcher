@@ -253,7 +253,14 @@ Do you approve this research operation?`;
 
     // On error, add a cancellation issue to stop execution safely
     return {
-      issues: [...(state.issues || []), "approval_gate_error"],
+      issues: [
+        ...(state.issues || []),
+        {
+          type: "needs_revision",
+          description: "Approval gate error occurred during processing",
+          severity: "error",
+        },
+      ],
     };
   }
 }

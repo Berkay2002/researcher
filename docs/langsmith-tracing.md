@@ -127,8 +127,8 @@ All LLM calls are tagged with:
 Filter in LangSmith using these tags to focus on specific model calls.
 
 ### By Status
-- ✅ Success: Completed without errors
-- ❌ Error: Failed with exception
+-  Success: Completed without errors
+-  Error: Failed with exception
 - ⏱️ Timeout: Exceeded time limit
 
 ### By Duration

@@ -155,23 +155,23 @@ Bibliography
 
 ### Red Flags (Quality Issues)
 
-❌ **Insufficient Research**
+ **Insufficient Research**
 - Fewer than 5 search queries executed
 - Fewer than 15 sources gathered
 - Only 1-2 perspectives covered
 
-❌ **Poor Synthesis**
+ **Poor Synthesis**
 - Report shorter than 1,500 words (for comprehensive topics)
 - Bullet points instead of paragraphs
 - Source-by-source listing instead of integration
 
-❌ **Citation Problems**
+ **Citation Problems**
 - Fewer than 10 citations
 - No URLs provided for sources
 - Vague references ("studies show...")
 - Missing [Source X] format
 
-❌ **Structure Issues**
+ **Structure Issues**
 - No executive summary
 - No clear sections/headings
 - Missing key dimensions

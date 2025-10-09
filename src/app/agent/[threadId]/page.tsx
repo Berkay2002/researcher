@@ -85,7 +85,9 @@ export default function AgentThreadViewPage() {
   const allMessages = useMemo(() => {
     // MessagesZodState.shape.messages is typed as unknown but is BaseMessage[] at runtime
     const stateMessagesRaw = state?.values?.messages;
-    const stateMessages = Array.isArray(stateMessagesRaw) ? stateMessagesRaw : [];
+    const stateMessages = Array.isArray(stateMessagesRaw)
+      ? stateMessagesRaw
+      : [];
     const combinedMessages = [...stateMessages, ...streamMessages];
 
     // Deduplicate by content
@@ -148,7 +150,9 @@ export default function AgentThreadViewPage() {
         id: `search-${searchRun.startedAt}`,
         timestamp: searchRun.startedAt,
         node: `search_${searchRun.provider}`,
-        status: searchRun.completedAt ? ("completed" as const) : ("started" as const),
+        status: searchRun.completedAt
+          ? ("completed" as const)
+          : ("started" as const),
         duration,
         details: formatSearchRunForLog(searchRun),
       });
@@ -349,7 +353,7 @@ export default function AgentThreadViewPage() {
                 {allTodos.map((todo) => (
                   <li className="flex items-center gap-2 text-sm" key={todo.id}>
                     <span className="text-lg">
-                      {todo.status === "completed" ? "✅" : "⏳"}
+                      {todo.status === "completed" ? "" : "⏳"}
                     </span>
                     <span
                       className={

@@ -214,9 +214,9 @@ export async function publishGate(
     const reviewMessage = `Publication review required:
 
 Quality Check Results:
-- ${passed ? "✅ All checks passed" : "❌ Issues found"}
+- ${passed ? " All checks passed" : " Issues found"}
 - Citations: ${summary.citationsCount} (minimum: ${MIN_CITATIONS_REQUIRED})
-- Source recency: ${summary.recencyOk ? "✅ Recent" : "❌ Contains old sources"}
+- Source recency: ${summary.recencyOk ? " Recent" : " Contains old sources"}
 - Draft length: ${state.draft?.text.length || 0} characters
 
 Issues found:
@@ -276,7 +276,14 @@ Do you approve publishing this research?`;
           },
         },
       },
-      issues: [...(state.issues || []), "publish_gate_error"],
+      issues: [
+        ...(state.issues || []),
+        {
+          type: "needs_revision",
+          description: "Publish gate error occurred during processing",
+          severity: "error",
+        },
+      ],
     };
   }
 }
