@@ -57,5 +57,10 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
     (agentConfig as { model?: typeof model }).model = model;
   }
 
-  return createAgent(agentConfig as unknown as AgentParams);
+  const agent = createAgent(agentConfig as unknown as AgentParams);
+
+  // Return the underlying compiled graph for LangGraph CLI compatibility
+  // The ReactAgent class wraps a CompiledStateGraph, but the CLI expects
+  // the graph itself (which has methods like getGraphAsync)
+  return agent.graph;
 }

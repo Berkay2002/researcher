@@ -35,6 +35,8 @@ export function createLLM(
         "X-Title": "Research Assistant",
       },
     },
+    // Disable stream_options to avoid token metadata conflicts
+    streamUsage: false,
     ...options,
   });
 }
