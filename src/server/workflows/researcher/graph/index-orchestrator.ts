@@ -113,18 +113,29 @@ function buildParentGraph() {
    *
    * If redteam finds issues, loop back to synthesizer for revision.
    * Otherwise, proceed to END.
+   * 
+   * Includes safeguard to prevent infinite revision loops (max 3 revisions).
    */
   function routeRedteam(state: ParentState): string {
+    const MAX_REVISIONS = 3;
     const hasIssues = state.issues && state.issues.length > 0;
+    const revisionCount = state.revisionCount || 0;
 
-    if (hasIssues) {
+    if (hasIssues && revisionCount < MAX_REVISIONS) {
       console.log(
-        `[router] Redteam found ${state.issues.length} issues, looping back to synthesizer`
+        `[router] Redteam found ${state.issues.length} issues, looping back to synthesizer (revision ${revisionCount + 1}/${MAX_REVISIONS})`
       );
       return "synthesizer";
     }
 
-    console.log("[router] Redteam passed, proceeding to END");
+    if (hasIssues && revisionCount >= MAX_REVISIONS) {
+      console.warn(
+        `[router] Maximum revisions (${MAX_REVISIONS}) reached. Proceeding to END despite ${state.issues.length} remaining issues.`
+      );
+    } else {
+      console.log("[router] Redteam passed, proceeding to END");
+    }
+
     return END;
   }
 

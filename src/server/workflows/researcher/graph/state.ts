@@ -314,6 +314,13 @@ export const ParentStateAnnotation = Annotation.Root({
     reducer: (prev, next) => [...(prev ?? []), ...next],
     default: () => [],
   }),
+
+  // Revision counter to prevent infinite loops
+  // Increments each time synthesizer revises based on redteam feedback
+  revisionCount: Annotation<number>({
+    reducer: (_, next) => next,
+    default: () => 0,
+  }),
 });
 
 /**

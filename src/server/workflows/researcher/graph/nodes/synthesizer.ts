@@ -109,14 +109,15 @@ export async function synthesizer(
   // Step 3: Prepare evidence context
   const evidenceContext = prepareEvidenceContext(selectedDocs);
 
-  // Step 4: Generate synthesis using LLM
+  // Step 4: Generate synthesis using LLM (with revision feedback if applicable)
   console.log("[synthesizer] Generating comprehensive report...");
-  const synthesizedText = await generateSynthesis(
-    userInputs.goal,
-    plan?.deliverable || "comprehensive research report",
+  const synthesizedText = await generateSynthesis({
+    goal: userInputs.goal,
+    deliverable: plan?.deliverable || "comprehensive research report",
     evidenceContext,
-    workerResults
-  );
+    workerResults,
+    revisionContext: isRevision ? { previousDraft, issues } : undefined,
+  });
 
   // Step 5: Extract citations
   const citations = extractCitations(synthesizedText, selectedDocs);
@@ -146,16 +147,18 @@ export async function synthesizer(
         title: c.title,
       })),
       confidence,
+      isRevision,
+      issuesAddressed: isRevision ? issues : undefined,
     },
   });
 
   return {
     draft,
     messages: [aiMessage],
+    issues: [], // Clear issues after generating new draft
+    revisionCount: (state.revisionCount || 0) + (isRevision ? 1 : 0),
   };
-}
-
-/**
+} /**
  * Deduplicate documents by URL and content hash
  */
 function deduplicateDocuments(docs: UnifiedSearchDoc[]): UnifiedSearchDoc[] {
@@ -246,12 +249,14 @@ Content Preview: ${preview}
 /**
  * Generate synthesis using LLM
  */
-async function generateSynthesis(
-  goal: string,
-  deliverable: string,
-  evidenceContext: string,
-  workerResults: ParentState["workerResults"]
-): Promise<string> {
+async function generateSynthesis(params: {
+  goal: string;
+  deliverable: string;
+  evidenceContext: string;
+  workerResults: ParentState["workerResults"];
+  revisionContext?: { previousDraft: Draft; issues: string[] };
+}): Promise<string> {
+  const { goal, deliverable, evidenceContext, workerResults, revisionContext } = params;
   const llm = getLLM("generation"); // Use Gemini 2.5 Flash for synthesis
 
   // Prepare worker summaries
@@ -262,7 +267,21 @@ async function generateSynthesis(
     )
     .join("\n");
 
-  const systemPrompt = `You are a research synthesis expert. Your task is to write a ${deliverable} based on the research findings from multiple parallel research workers.
+  // Prepare revision instructions if this is a revision
+  const isRevision = Boolean(revisionContext);
+  const revisionInstructions = isRevision
+    ? `\n\nIMPORTANT: This is a REVISION of a previous draft that had quality issues.
+
+Previous Draft:
+${revisionContext?.previousDraft.text}
+
+Issues Found by Quality Review:
+${revisionContext?.issues.map((issue, i) => `${i + 1}. ${issue}`).join("\n")}
+
+Please address ALL of these issues in your revised report while maintaining the overall structure and quality.`
+    : "";
+
+  const systemPrompt = `You are a research synthesis expert. Your task is to ${isRevision ? "revise" : "write"} a ${deliverable} based on the research findings from multiple parallel research workers.
 
 Your report should:
 1. Synthesize insights from all research aspects
@@ -270,7 +289,7 @@ Your report should:
 3. Use inline citations [1], [2], etc. to reference sources
 4. Be comprehensive yet concise
 5. Highlight key findings and insights
-6. Address different perspectives when relevant
+6. Address different perspectives when relevant${isRevision ? "\n7. ADDRESS ALL QUALITY ISSUES from the review feedback" : ""}
 
 Use markdown formatting for structure and readability.`;
 
@@ -280,9 +299,9 @@ Worker Summaries:
 ${workerSummaries}
 
 Sources:
-${evidenceContext}
+${evidenceContext}${revisionInstructions}
 
-Please write a comprehensive ${deliverable} that synthesizes these research findings. Use inline citations [1], [2], etc. to reference the sources above.`;
+Please ${isRevision ? "revise the draft to address all issues and" : ""} write a comprehensive ${deliverable} that synthesizes these research findings. Use inline citations [1], [2], etc. to reference the sources above.`;
 
   try {
     const response = await llm.invoke([
