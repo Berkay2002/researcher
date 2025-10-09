@@ -5,6 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getLangGraphClient } from "@/lib/langgraph-client";
 import type { ReactAgentState } from "@/server/agents/react/state";
 
+// Helper type to properly type the messages field from stream events
+// MessagesZodState.shape.messages is typed as unknown in Zod, but at runtime it's BaseMessage[]
+type StreamState = Omit<ReactAgentState, "messages"> & {
+  messages: BaseMessage[];
+};
+
 const REACT_AGENT_ASSISTANT_ID = "react-agent";
 
 export type UseAgentStreamOptions = {
@@ -68,29 +74,59 @@ export function useAgentStream({
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Helper to handle full state updates
-  const handleValuesUpdate = useCallback((state: ReactAgentState) => {
-    setMessages(state.messages || []);
-    setTodos(state.todos || []);
-    setRecentToolCalls(state.recentToolCalls || []);
-    setSearchRuns(state.searchRuns || []);
+  // Helper to handle full state updates from "values" events
+  // Values events provide the complete state directly in chunk.data
+  const handleValuesUpdate = useCallback((state: StreamState) => {
+    // Messages come from MessagesZodState which types as unknown but is BaseMessage[] at runtime
+    setMessages(state.messages);
+    setTodos(state.todos);
+    setRecentToolCalls(state.recentToolCalls);
+    setSearchRuns(state.searchRuns);
   }, []);
 
-  // Helper to handle delta updates
-  const handleDeltaUpdate = useCallback((update: Partial<ReactAgentState>) => {
-    if (update.messages) {
-      setMessages((prev) => [...prev, ...update.messages]);
-    }
-    if (update.todos) {
-      setTodos(update.todos);
-    }
-    if (update.recentToolCalls) {
-      setRecentToolCalls((prev) => [...prev, ...update.recentToolCalls]);
-    }
-    if (update.searchRuns) {
-      setSearchRuns((prev) => [...prev, ...update.searchRuns]);
-    }
-  }, []);
+  // Helper to handle delta updates from "updates" events
+  // Updates events provide { [nodeName]: stateUpdate } structure
+  // We merge updates from all nodes into current state
+  const handleDeltaUpdate = useCallback(
+    // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Delta update processing requires checking multiple optional arrays
+    (updatesByNode: Record<string, Partial<StreamState>>) => {
+      // Combine updates from all nodes in this event
+      for (const nodeUpdate of Object.values(updatesByNode)) {
+        // Append new messages if present
+        const newMessages = nodeUpdate.messages;
+        if (
+          newMessages &&
+          Array.isArray(newMessages) &&
+          newMessages.length > 0
+        ) {
+          setMessages((prev) => [...prev, ...newMessages]);
+        }
+
+        // Replace todos array if present (not append - todos are replaced)
+        const updatedTodos = nodeUpdate.todos;
+        if (updatedTodos && Array.isArray(updatedTodos)) {
+          setTodos(updatedTodos);
+        }
+
+        // Append new tool calls if present
+        const toolCalls = nodeUpdate.recentToolCalls;
+        if (toolCalls && Array.isArray(toolCalls) && toolCalls.length > 0) {
+          setRecentToolCalls((prev) => [...prev, ...toolCalls]);
+        }
+
+        // Append new search runs if present
+        const newSearchRuns = nodeUpdate.searchRuns;
+        if (
+          newSearchRuns &&
+          Array.isArray(newSearchRuns) &&
+          newSearchRuns.length > 0
+        ) {
+          setSearchRuns((prev) => [...prev, ...newSearchRuns]);
+        }
+      }
+    },
+    []
+  );
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Streaming function requires multiple state checks and updates
   const connect = useCallback(async () => {
@@ -116,9 +152,11 @@ export function useAgentStream({
         }
 
         if (chunk.event === "values") {
-          handleValuesUpdate(chunk.data as ReactAgentState);
+          // Values event provides complete state directly
+          handleValuesUpdate(chunk.data as StreamState);
         } else if (chunk.event === "updates") {
-          handleDeltaUpdate(chunk.data as Partial<ReactAgentState>);
+          // Updates event provides { [nodeName]: stateUpdate } map
+          handleDeltaUpdate(chunk.data as Record<string, Partial<StreamState>>);
         }
       }
 

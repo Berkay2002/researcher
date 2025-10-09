@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/suspicious/noConsole: Development logging for agent thread state transitions and debugging */
 "use client";
 
 import { AlertCircleIcon, Loader2Icon } from "lucide-react";
@@ -29,7 +30,7 @@ import {
   isAgentCompleted,
   isAgentExecuting,
 } from "@/lib/utils/agent-transforms";
-import type { ThreadMetadata } from "@/types/ui";
+import type { RunLogEntry, ThreadMetadata } from "@/types/ui";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -44,6 +45,8 @@ const isDev = process.env.NODE_ENV !== "production";
  * - Center: Agent conversation
  * - Right: (Optional) Execution log / metadata
  */
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex component managing agent state, streaming, UI state, and lifecycle hooks - requires multiple state checks and effect handlers
 export default function AgentThreadViewPage() {
   const params = useParams();
   const threadId = params?.threadId as string | undefined;
@@ -58,7 +61,6 @@ export default function AgentThreadViewPage() {
     state,
     isLoading,
     error: stateError,
-    refetch,
   } = useAgentThread({
     threadId: threadId || null,
     autoFetch: true,
@@ -81,7 +83,9 @@ export default function AgentThreadViewPage() {
 
   // Combine messages from state and stream
   const allMessages = useMemo(() => {
-    const stateMessages = state?.values?.messages || [];
+    // MessagesZodState.shape.messages is typed as unknown but is BaseMessage[] at runtime
+    const stateMessagesRaw = state?.values?.messages;
+    const stateMessages = Array.isArray(stateMessagesRaw) ? stateMessagesRaw : [];
     const combinedMessages = [...stateMessages, ...streamMessages];
 
     // Deduplicate by content
@@ -119,23 +123,34 @@ export default function AgentThreadViewPage() {
 
   // Build run log from tool calls and search runs
   const runLog = useMemo(() => {
-    const entries = [];
+    const entries: RunLogEntry[] = [];
 
+    // Convert tool calls to RunLogEntry format
     for (const toolCall of recentToolCalls) {
       entries.push({
         id: `tool-${toolCall.invokedAt}`,
-        type: "info" as const,
-        message: formatToolCallForLog(toolCall),
         timestamp: toolCall.invokedAt,
+        node: toolCall.toolName,
+        status: "completed" as const,
+        details: formatToolCallForLog(toolCall),
       });
     }
 
+    // Convert search runs to RunLogEntry format
     for (const searchRun of searchRuns) {
+      const startTime = new Date(searchRun.startedAt).getTime();
+      const endTime = searchRun.completedAt
+        ? new Date(searchRun.completedAt).getTime()
+        : Date.now();
+      const duration = endTime - startTime;
+
       entries.push({
         id: `search-${searchRun.startedAt}`,
-        type: "info" as const,
-        message: formatSearchRunForLog(searchRun),
         timestamp: searchRun.startedAt,
+        node: `search_${searchRun.provider}`,
+        status: searchRun.completedAt ? ("completed" as const) : ("started" as const),
+        duration,
+        details: formatSearchRunForLog(searchRun),
       });
     }
 
@@ -304,11 +319,9 @@ export default function AgentThreadViewPage() {
                   title={getEmptyStateTitle()}
                 />
               ) : (
-                <>
-                  {displayMessages.map((message) => (
-                    <ResearchMessage key={message.id} message={message} />
-                  ))}
-                </>
+                displayMessages.map((message) => (
+                  <ResearchMessage key={message.id} message={message} />
+                ))
               )}
             </ConversationContent>
           </Conversation>
