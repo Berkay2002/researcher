@@ -11,6 +11,11 @@ import { buildPlannerSubgraph } from "./subgraphs/planner";
 import { redteam } from "./subgraphs/write/nodes/redteam";
 import type { ResearchTask } from "./worker-state";
 
+// Iteration limits for termination guarantees
+const MAX_TOTAL_ITERATIONS = 3;
+const MAX_RESEARCH_ITERATIONS = 1;
+const MAX_REVISION_ITERATIONS = 2;
+
 /**
  * Compiled parent graph (singleton)
  * Cached after first call to avoid recompilation
@@ -109,32 +114,94 @@ function buildParentGraph() {
   }
 
   /**
-   * Router function to handle redteam feedback
+   * Smart router function to handle redteam feedback with multi-layer safeguards
    *
-   * If redteam finds issues, loop back to synthesizer for revision.
-   * Otherwise, proceed to END.
+   * Decision tree:
+   * 1. Check HARD LIMITS first (guaranteed termination)
+   * 2. If no issues or force-approved → END
+   * 3. Classify issues: needs_research vs needs_revision
+   * 4. Route based on issue type and remaining iteration budget
+   * 5. If budget exhausted → Force END
    *
-   * Includes safeguard to prevent infinite revision loops (max 3 revisions).
+   * Guarantees:
+   * - Maximum total iterations: 3
+   * - Maximum research iterations: 1
+   * - Maximum revision iterations: 2
+   * - Force approval on final iteration
    */
   function routeRedteam(state: ParentState): string {
-    const MAX_REVISIONS = 3;
-    const hasIssues = state.issues && state.issues.length > 0;
-    const revisionCount = state.revisionCount || 0;
+    const {
+      issues,
+      totalIterations,
+      researchIterations,
+      revisionIterations,
+      forceApproved,
+    } = state;
 
-    if (hasIssues && revisionCount < MAX_REVISIONS) {
+    const currentTotal = totalIterations || 0;
+    const currentResearch = researchIterations || 0;
+    const currentRevision = revisionIterations || 0;
+
+    console.log(
+      `[router] Evaluating redteam results (iteration ${currentTotal}/${MAX_TOTAL_ITERATIONS})`
+    );
+    console.log(
+      `[router] Research: ${currentResearch}/${MAX_RESEARCH_ITERATIONS}, Revision: ${currentRevision}/${MAX_REVISION_ITERATIONS}`
+    );
+
+    // HARD LIMIT: Force termination (should never reach here due to force approval, but safety check)
+    if (currentTotal >= MAX_TOTAL_ITERATIONS) {
+      console.warn(
+        "[router] MAX_TOTAL_ITERATIONS reached - terminating with current draft"
+      );
+      return END;
+    }
+
+    // No issues or force approved → SUCCESS
+    if (!issues || issues.length === 0 || forceApproved) {
+      if (forceApproved) {
+        console.warn(
+          "[router] Draft force-approved on final iteration - proceeding to END"
+        );
+      } else {
+        console.log(
+          "[router] Draft passed all quality checks - proceeding to END"
+        );
+      }
+      return END;
+    }
+
+    // Classify issues by type
+    const researchIssues = issues.filter((i) => i.type === "needs_research");
+    const revisionIssues = issues.filter((i) => i.type === "needs_revision");
+
+    console.log(
+      `[router] Found ${researchIssues.length} research issues, ${revisionIssues.length} revision issues`
+    );
+
+    // Research loop (LIMITED to 1 iteration)
+    if (researchIssues.length > 0 && currentResearch < MAX_RESEARCH_ITERATIONS) {
       console.log(
-        `[router] Redteam found ${state.issues.length} issues, looping back to synthesizer (revision ${revisionCount + 1}/${MAX_REVISIONS})`
+        `[router] Needs supplemental research - routing to orchestrator (research iteration ${currentResearch + 1}/${MAX_RESEARCH_ITERATIONS})`
+      );
+      return "orchestrator";
+    }
+
+    // Revision loop (LIMITED to 2 iterations)
+    if (revisionIssues.length > 0 && currentRevision < MAX_REVISION_ITERATIONS) {
+      console.log(
+        `[router] Needs text revision - routing to synthesizer (revision iteration ${currentRevision + 1}/${MAX_REVISION_ITERATIONS})`
       );
       return "synthesizer";
     }
 
-    if (hasIssues && revisionCount >= MAX_REVISIONS) {
-      console.warn(
-        `[router] Maximum revisions (${MAX_REVISIONS}) reached. Proceeding to END despite ${state.issues.length} remaining issues.`
-      );
-    } else {
-      console.log("[router] Redteam passed, proceeding to END");
-    }
+    // Budget exhausted but issues remain → Force termination
+    console.warn(
+      `[router] Iteration budgets exhausted (research: ${currentResearch}/${MAX_RESEARCH_ITERATIONS}, revision: ${currentRevision}/${MAX_REVISION_ITERATIONS})`
+    );
+    console.warn(
+      `[router] Terminating with ${issues.length} remaining issues (${researchIssues.length} research, ${revisionIssues.length} revision)`
+    );
 
     return END;
   }
@@ -163,9 +230,10 @@ function buildParentGraph() {
     // Synthesizer → redteam quality gate
     .addEdge("synthesizer", "redteam")
 
-    // Conditional edge: redteam → synthesizer (if issues) or END (if passed)
+    // Conditional edge: redteam → synthesizer (revision) or orchestrator (research) or END
     .addConditionalEdges("redteam", routeRedteam, {
       synthesizer: "synthesizer",
+      orchestrator: "orchestrator",
       [END]: END,
     });
 

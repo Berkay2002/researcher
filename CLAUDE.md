@@ -36,653 +36,191 @@ npm run build           # Build for production (NEVER run with localhost:3000 ac
 npm run start           # Start production server
 ```
 
-## Architecture Overview
+You are an elite LangGraph and LangChain expert with deep knowledge of the LangChain 1.0-alpha (@next) ecosystem. Your expertise comes from two authoritative sources:
+
+1. **Primary Source**: The `documentation/` folder in the codebase, which contains curated LangGraph documentation specifically aligned with the 1.0-alpha packages used in this project
+2. **Secondary Source**: The `node_modules/@langchain/` and `node_modules/langchain/` directories, which contain the actual source code, type definitions, and inline documentation
+
+## Core Principles
+
+**Certainty Over Speed**: You NEVER guess or speculate. If you're uncertain about any detail:
+1. First, search the `documentation/` folder for relevant guides and examples
+2. If still uncertain, examine the actual source code in `node_modules/@langchain/` or `node_modules/langchain/`
+3. If you cannot find definitive information in these sources, explicitly state what you don't know and what you've checked
+
+**No Internet Access**: You do NOT search the internet, reference external documentation, or use knowledge that isn't verifiable in the codebase. Legacy LangChain documentation online is often incompatible with 1.0-alpha.
+
+**Source Attribution**: Always cite your sources:
+- "According to documentation/langgraph/06-short-term-memory.md..."
+- "Based on the type definitions in node_modules/@langchain/langgraph/dist/graph/state.d.ts..."
+- "The source code in node_modules/@langchain/core/dist/runnables/base.js shows..."
+
+## Your Expertise Areas
+
+### 1. State Management & Memory
+- Annotation-based state with Zod schemas
+- Reducer functions for state merging
+- Checkpointing with MemorySaver and thread-level persistence
+- State snapshots and time-travel debugging
+- Parent-child state inheritance in subgraphs
+
+### 2. Graph Architecture
+- Parent graph orchestration patterns
+- Subgraph composition (graphs-as-nodes)
+- Conditional routing and edge logic
+- Node implementation patterns
+- Graph compilation and execution
+
+### 3. Human-in-the-Loop (HITL)
+- `interrupt()` and `Command(resume)` semantics
+- Multi-step approval flows
+- Dynamic question generation
+- State persistence across interrupts
+- Resume payload validation
+
+### 4. LangChain 1.0-alpha (@next)
+- Package structure: `@langchain/langgraph@next`, `@langchain/core@next`, `langchain@next`
+- Breaking changes from legacy versions
+- Type safety with TypeScript
+- Tool integration patterns
+- Model provider compatibility (OpenAI SDK for Gemini)
+
+### 5. Streaming & Execution
+- `.stream()` vs `.invoke()` patterns
+- Server-Sent Events (SSE) integration
+- Progress tracking and event emission
+- Error handling and graceful degradation
+
+## Workflow for Answering Questions
+
+### Step 1: Understand the Question
+- Identify the specific LangGraph/LangChain concept being asked about
+- Determine if this is about architecture, implementation, debugging, or migration
+- Note any code snippets or error messages provided
+
+### Step 2: Consult Documentation First
+Search `documentation/` folder for relevant files:
+- `documentation/langgraph/01-*.md` through `11-*.md` for conceptual guides
+- Look for examples matching the user's use case
+- Check for patterns used in the project (e.g., state management in `src/server/graph/state.ts`)
+
+### Step 3: Verify with Source Code (if needed)
+If documentation is insufficient:
+- Check type definitions in `node_modules/@langchain/*/dist/**/*.d.ts`
+- Examine implementation in `node_modules/@langchain/*/dist/**/*.js`
+- Look for JSDoc comments and inline documentation
+- Verify API signatures and return types
+
+### Step 4: Cross-Reference with Project Code
+Validate your answer against actual usage in the codebase:
+- `src/server/graph/` - Parent graph and state management
+- `src/server/graph/subgraphs/` - Subgraph implementations
+- `src/server/graph/nodes/` - Node implementations
+- `src/app/api/` - API integration patterns
+
+### Step 5: Provide Comprehensive Answer
+Your response should include:
+1. **Direct Answer**: Clear, actionable guidance
+2. **Source Attribution**: Cite specific files you referenced
+3. **Code Examples**: Show concrete implementation patterns from the project or documentation
+4. **Context**: Explain why this pattern is used and what alternatives exist
+5. **Caveats**: Note any version-specific behavior or edge cases
+6. **Related Concepts**: Point to related documentation for deeper understanding
+
+## Response Format
 
-### LangGraph Multi-Agent System
-
-The core architecture uses LangGraph's stateful orchestration with checkpointing for memory, HITL (human-in-the-loop), and fault tolerance:
-
-**Parent Graph** ([src/server/graph/index.ts](src/server/graph/index.ts)):
-- Singleton pattern with MemorySaver checkpointer (see [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md))
-- Flow: START → plan-gate → planner → approvals → research → factcheck → writer → publish-gate → END
-- All invocations require a `thread_id` for thread-level memory
-- Subgraphs inherit the parent checkpointer automatically
-- **Orchestration Gates** for control flow and quality assurance:
-  - **plan-gate** - Decides Auto vs Plan mode based on UI override and cheap signals
-  - **approvals** - Pre-action HITL gate for expensive/risky operations
-  - **publish-gate** - Pre-publish quality gate with deterministic checks and optional HITL
-
-**Subgraphs** (graphs-as-nodes under [src/server/graph/subgraphs/](src/server/graph/subgraphs/)):
-1. **Planner** - Auto path (no HITL) or Plan path (with interrupts)
-   - Conditional routing based on `userInputs.modeOverride` and plan-gate evaluation
-   - **Auto path**: Selects default plan without user interaction
-   - **Plan path**: Uses `interrupt()` for dynamic multi-question HITL flow (see [07-human-in-the-loop.md](documentation/langgraph/07-human-in-the-loop.md))
-   - Analyzes prompt completeness, generates 1-4 contextual questions with LLM-generated options
-   - Each question has 4 contextual options + "Custom" (5 total), with "All of the above" where appropriate
-   - Iterative interrupt/resume cycles until all questions are answered
-   - Final plan constructed from collected answers
-   - Plan templates and state defined in [planner/state.ts](src/server/graph/subgraphs/planner/state.ts)
-2. **Research** - QueryPlan → MetaSearch → Harvest/Normalize → Dedup
-3. **Factcheck** - Deterministic claim verification
-4. **Writer** - Synthesize → Red-team quality gates
-
-**State Management** ([src/server/graph/state.ts](src/server/graph/state.ts)):
-- Shared state keys: `threadId`, `userInputs`, `plan`, `queries`, `searchResults`, `evidence`, `draft`, `issues`
-- Gate state extensions: `userInputs.gate`, `userInputs.modeFinal`, `userInputs.approvals[]`, `userInputs.publish`
-- Zod schemas for runtime validation with inferred TypeScript types
-- Annotation-based reducers for state merging (see [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md))
-- Subgraphs can have their own state files (e.g., [planner/state.ts](src/server/graph/subgraphs/planner/state.ts))
-
-### Next.js App Router Structure
-
-**API Routes** ([src/app/api/](src/app/api/)):
-- `POST /api/threads/start` - Start new thread, handle interrupts
-- `GET /api/stream/:threadId` - SSE streaming for progress/drafts
-- `GET /api/threads/:threadId/state` - Get checkpoint snapshots
-- `POST /api/threads/:threadId/resume` - Resume HITL flows with Command
-- `PATCH /api/threads/:threadId/mode` - Toggle auto/plan mode
-
-**Pages** ([src/app/](src/app/)):
-- `/` - Landing/dashboard
-- `/research/new` - New research session
-- `/research/:threadId` - Active research thread view
-
-**Client Components** ([src/app/(components)/](src/app/(components)/)):
-- ModeSwitch - Toggle between Auto/Plan modes
-- InterruptPrompt - Display HITL options and collect responses
-- SourcesPanel - Citations and source metadata
-- ArtifactsPane - Tables/matrices work surface
-- CheckpointTimeline - Time-travel UI
-- RunLog - Step-by-step execution log
-
-**UI Components** ([src/components/ui/](src/components/ui/)):
-- Radix UI-based components (Accordion, Alert, Avatar, Button, Card, etc.)
-- Shadcn/ui pattern with Tailwind CSS styling
-- **Note**: `src/components/ui` is excluded from Biome linting (see biome.json)
-
-### Server-Side Structure
-
-**Services** ([src/server/services/](src/server/services/)):
-- Search gateway (Tavily + Exa fusion)
-- Document harvesting and normalization
-- Result deduplication and reranking
-
-**Tools** ([src/server/tools/](src/server/tools/)):
-- Tavily search API integration
-- Exa semantic search integration
-
-**Utilities** ([src/server/utils/](src/server/utils/)):
-- Content hashing
-- URL normalization
-- Robots.txt compliance
-
-## Key Patterns
-
-### Thread-Based Memory & HITL
-
-All operations use `thread_id` for persistence:
-```typescript
-// Starting a thread
-const result = await graph.invoke(initial, {
-  configurable: { thread_id: threadId }
-});
-
-// Resuming after interrupt
-const out = await graph.invoke(
-  new Command({ resume: body.resume }),
-  { configurable: { thread_id: threadId } }
-);
-
-// Getting state snapshots
-const snap = await graph.getState({
-  configurable: { thread_id: threadId }
-});
-```
-
-### Mode Override (Auto vs Plan)
-
-The planner behavior is controlled by multiple factors:
-- **UI Override**: The `userInputs.modeOverride` field is respected first if set
-- **Plan-gate Evaluation**: When no UI override, evaluates cheap signals to decide:
-  - Clarity scoring (IR-style heuristic) for prompt quality
-  - Preview coherence check using single Tavily + Exa search
-  - Cost guard with coarse token/time estimates → USD conversion
-  - Threshold policy: Auto if clarity ≥ τ₁ AND coherence ≥ τ₂ AND cost ≤ budget; else Plan
-  - Defaults to Plan-mode on errors for safety
-- **Auto Mode**: Planner runs in auto path (no interrupts), selects default plan
-- **Plan Mode**: Planner runs HITL via `interrupt()`, generates 1-4 dynamic clarifying questions
-
-The UI ModeSwitch component writes to `/api/threads/:id/mode` endpoint which uses `updateState()` to modify the thread.
-
-### Orchestration Gates
-
-The system includes three parent-graph nodes for control flow and quality assurance:
-
-**Plan-gate** ([src/server/graph/nodes/plan-gate.ts](src/server/graph/nodes/plan-gate.ts)):
-- Decides Auto vs Plan mode based on UI override and cheap signals
-- Evaluates prompt clarity, preview coherence, and cost estimates
-- Writes decision metrics to `userInputs.gate` and final mode to `userInputs.modeFinal`
-- Defaults to Plan-mode on errors for safety
-
-**Approvals Gate** ([src/server/graph/nodes/approvals.ts](src/server/graph/nodes/approvals.ts)):
-- Pre-action HITL gate before expensive/risky operations
-- Triggers on cost/latency thresholds, new domains, sensitive topics
-- Uses `interrupt()` with comprehensive summary payload
-- Resume options: approve, edit (constraints), or cancel
-- Persists decision records with timestamps and policy snapshots
-
-**Publish-gate** ([src/server/graph/nodes/publish-gate.ts](src/server/graph/nodes/publish-gate.ts)):
-- Pre-publish quality gate after red-team checks
-- Runs deterministic checks first: citations, recency, completeness
-- Conditional HITL only if checks fail or policy requires manual review
-- Resume options: approve, fix_auto, edit_then_retry, or reject
-- Full audit trail with checkpoint history for compliance
-
-All gates use the `interrupt()` + `Command(resume)` pattern with thread-level checkpointing for fault tolerance.
-
-### Server-Sent Events (SSE)
-
-Streaming responses use SSE with proper headers:
-```typescript
-return new Response(body, {
-  headers: {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache, no-transform",
-    Connection: "keep-alive"
-  }
-});
-```
-
-### Path Aliases
-
-Use `@/*` for imports from src:
-```typescript
-import { getGraph } from "@/server/workflows/researcher/graph";
-import { ParentState } from "@/server/workflows/researcher/graph/state";
-```
-
-### Naming Conventions
-
-Follow kebab-case for file names as documented in [naming-conventions.md](naming-conventions.md):
-
-**Files:**
-```
-✅ Good: user-profile.tsx, data-table.tsx, auth-provider.tsx
-❌ Bad: UserProfile.tsx, userProfile.tsx, auth_provider.tsx
-```
-
-**Components:**
-```typescript
-// ✅ Good
-export default function UserProfile() { }
-
-// ❌ Bad
-export default function userProfile() { }
-```
-
-**Project Structure:**
-- Files: lowercase kebab-case
-- Components: PascalCase
-- Hooks: camelCase with "use" prefix (use-auth.ts)
-- Utilities: kebab-case (api-helpers.ts)
-
-## Code Quality Standards
-
-This project uses **Ultracite** which enforces Biome rules. Configuration is in [biome.json](biome.json). Full rules are documented in [.claude/CLAUDE.md](.claude/CLAUDE.md).
-
-### Be Proactive: Fix Issues When You See Them
-
-**Agents should be reactive and proactive** - when you encounter code quality issues while working on a task, fix them immediately rather than leaving them for later:
-
-**Common issues to fix immediately:**
-- **Naming convention violations** - Rename files/components that don't follow kebab-case/PascalCase
-- **Magic numbers** - Extract hardcoded numbers to named constants
-- **Lint errors** - Fix any Biome violations you encounter
-- **Type safety issues** - Replace `any` types with proper TypeScript types
-- **Next.js violations** - Replace `<img>` with `<Image>`, `<head>` with Metadata API
-- **Accessibility issues** - Add missing `type` attributes to buttons, add keyboard handlers
-- **Performance issues** - Replace `forEach` with `for...of`, move regex to top level
-- **Import organization** - Clean up unused imports and organize them properly
-
-**Example proactive fixes:**
-```typescript
-// If you see this while working on a feature:
-if (results.length > 10) { // Magic number!
-  // ... existing code
-}
-
-// Fix it immediately by extracting the constant:
-const MAX_RESULTS_THRESHOLD = 10; // Add at top of file
-if (results.length > MAX_RESULTS_THRESHOLD) {
-  // ... existing code
-}
-```
-
-```typescript
-// If you encounter a misnamed component:
-export default function userProfile() { } // Wrong casing
-
-// Fix it immediately:
-export default function UserProfile() { } // Proper PascalCase
-// And rename the file from user-profile.tsx to UserProfile.tsx
-```
-
-**Why this matters:**
-- Prevents technical debt accumulation
-- Maintains code quality standards across the entire codebase
-- Reduces the need for dedicated "cleanup" tasks
-- Ensures consistent code quality regardless of who works on the code
-- Makes code reviews more focused on logic rather than style issues
-
-**Biome Configuration Highlights:**
-- Extends: `ultracite`
-- Ignored paths: `node_modules`, `.next`, `dist`, `build`, `src/components/ui`
-- VCS: Git integration enabled
-- Formatter: 2-space indentation
-- Linter: Recommended rules + Next.js/React domains
-- Auto-organize imports enabled
-
-**Key Requirements:**
-
-**Accessibility:**
-- Always include `type` attribute on buttons
-- No `aria-hidden="true"` on focusable elements
-- Pair `onClick` with keyboard handlers
-
-**React/Next.js:**
-- Don't use `<img>` elements (use Next.js Image)
-- Don't use `<head>` elements (use Next.js Metadata)
-- All React hooks must be at component top level
-- Include `key` props in iterators
-
-**TypeScript:**
-- No `any` types (use `Record<string, unknown>` or `z.record(z.unknown())` for flexible data)
-- Use `export type` for types
-- Use `import type` for type imports
-- No TypeScript enums (use string unions or objects)
-- Follow LangGraph patterns from [documentation/langgraph/](documentation/langgraph/) for type safety
-  - See [06-short-term-memory.md](documentation/langgraph/06-short-term-memory.md) for state management patterns
-  - See [07-human-in-the-loop.md](documentation/langgraph/07-human-in-the-loop.md) for interrupt/resume patterns
-  - See [11-multi-agent-systems.md](documentation/langgraph/11-multi-agent-systems.md) for subgraph orchestration
-
-**Style:**
-- Use `===` and `!==` (not `==` or `!=`)
-- Use arrow functions over function expressions
-- Use template literals over string concatenation
-- No unused variables or imports
-- No `console` statements (use biome-ignore if needed for development)
-- **No magic numbers** - Extract all numeric literals to named constants with meaningful names
-- **Use `for...of` instead of `forEach`** - Required by Biome for performance
-- **Use `Number.isNaN()` instead of `isNaN()`** - `isNaN` is unsafe due to type coercion
-- **Move regex literals to top level** - Define regex patterns as constants for performance
-- **Avoid `any` types** - Always use proper TypeScript types from state schemas
-
-**Biome Ignore Comments:**
-When you need to bypass Biome rules temporarily (e.g., for development console.logs), use:
-```typescript
-/** biome-ignore-all lint/suspicious/noConsole: <For development> */
-console.log("Debug output");
-
-// Or for single line:
-// biome-ignore lint/suspicious/noConsole: debugging
-console.log("Debug");
-```
-
-### Targeted Linting with Ultracite
-
-For efficient development, it's recommended to run Ultracite checks on specific files or directories rather than the entire codebase:
-
-```bash
-# Check a specific file
-npx ultracite check src/app/(components)/thread-history-panel.tsx
-
-# Fix issues in a specific file
-npx ultracite fix src/app/(components)/thread-history-panel.tsx
-
-# Check an entire directory
-npx ultracite check src
-
-# Check multiple specific files
-npx ultracite check src/app/(components)/thread-history-panel.tsx src/app/(components)/thread-list.tsx
-```
-
-**Benefits of targeted linting:**
-- Faster feedback loop when working on specific components
-- Reduced cognitive load by focusing on relevant files
-- Easier to fix issues incrementally
-- Better integration with iterative development workflows
-
-**Best practices:**
-- Run `npx ultracite check <file>` before committing changes to a specific file
-- Use `npx ultracite fix <file>` to automatically fix issues in the file you're working on
-- Run full project checks (`npx ultracite check`) before creating pull requests
-
-## Common Linting Issues and Solutions
-
-### 1. Magic Numbers
-**Issue**: Hard-coded numeric literals in code
-**Solution**: Extract to meaningful constants
-
-```typescript
-// ❌ Bad
-if (draft.citations.length < 3) {
-  issues.push(`Low confidence score: ${draft.confidence < 0.5}`);
-}
-const density = (count / words) * 1000;
-
-// ✅ Good
-const MIN_CITATIONS_REQUIRED = 3;
-const MIN_CONFIDENCE_THRESHOLD = 0.5;
-const WORDS_PER_THOUSAND = 1000;
-
-if (draft.citations.length < MIN_CITATIONS_REQUIRED) {
-  issues.push(`Low confidence score: ${draft.confidence < MIN_CONFIDENCE_THRESHOLD}`);
-}
-const density = (count / words) * WORDS_PER_THOUSAND;
-```
-
-### 2. forEach Loops
-**Issue**: Using `forEach` instead of `for...of`
-**Solution**: Use `for...of` loops
-
-```typescript
-// ❌ Bad
-items.forEach((item) => {
-  console.log(item);
-});
-
-// ✅ Good
-for (const item of items) {
-  console.log(item);
-}
-```
-
-### 3. Regex Performance
-**Issue**: Inline regex literals in functions
-**Solution**: Move to top-level constants
-
-```typescript
-// ❌ Bad
-function processText(text: string) {
-  const words = text.split(/\s+/);
-  const hasPlaceholder = /todo|placeholder/gi.test(text);
-}
-
-// ✅ Good
-const WORD_SPLIT_REGEX = /\s+/;
-const PLACEHOLDER_REGEX = /todo|placeholder/gi;
-
-function processText(text: string) {
-  const words = text.split(WORD_SPLIT_REGEX);
-  const hasPlaceholder = PLACEHOLDER_REGEX.test(text);
-}
-```
-
-### 4. Type Safety (any types)
-**Issue**: Using `any` instead of proper types
-**Solution**: Import and use defined types from state schemas or use LangGraph patterns
-
-```typescript
-// ❌ Bad
-function processData(draft: { text: string; citations: any[] }, evidence: any[]) {
-  // ...
-}
-
-// ✅ Good - Use defined types from state schemas
-import type { Draft, Evidence } from "../../../state";
-
-function processData(draft: Draft, evidence: Evidence[]) {
-  // ...
-}
-
-// ✅ Good - Use LangGraph patterns for flexible data
-function handleUnknownData(data: Record<string, unknown>): void {
-  // Process flexible data structures
-}
-
-// ✅ Good - Use Zod schemas for validation
-import { z } from "zod";
-
-const flexibleSchema = z.record(z.unknown());
-type FlexibleData = z.infer<typeof flexibleSchema>;
-
-function processFlexibleData(data: FlexibleData): void {
-  // Process validated flexible data
-}
-```
-
-**When `any` is Acceptable (with biome-ignore):**
-Only use `any` when absolutely necessary and always document why:
-
-```typescript
-// biome-ignore lint/suspicious/noAnyType: External API response with unknown structure
-async function fetchExternalData(): Promise<any> {
-  const response = await fetch('/api/external');
-  return response.json(); // Structure unknown at compile time
-}
-
-// biome-ignore lint/suspicious/noAnyType: Legacy integration with untyped library
-function legacyLibraryIntegration(data: any): void {
-  // Working with untyped third-party library
-}
-```
-
-### 5. isNaN vs Number.isNaN
-**Issue**: Using global `isNaN` which does type coercion
-**Solution**: Use `Number.isNaN()`
-
-```typescript
-// ❌ Bad
-if (!isNaN(score) && score >= 0) {
-  // ...
-}
-
-// ✅ Good
-if (!Number.isNaN(score) && score >= 0) {
-  // ...
-}
-```
-
-### 6. Excessive Cognitive Complexity
-**Issue**: Functions with high complexity (>15)
-**Solution**: Extract helper functions or use targeted biome-ignore
-
-```typescript
-// ❌ Bad - Complex function
-function complexFunction(data: any): any {
-  // 20+ lines of complex logic
-}
-
-// ✅ Good - Split into smaller functions
-function validateData(data: any): string[] {
-  // Validation logic
-}
-
-function processData(data: any): any {
-  // Processing logic
-}
-
-function complexFunction(data: any): any {
-  const issues = validateData(data);
-  const processed = processData(data);
-  return { issues, processed };
-}
-
-// Or if complexity is unavoidable:
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Complex validation logic required
-function complexValidation(data: any): any {
-  // Complex logic that can't be easily split
-}
-```
-
-## LangChain 1.0-alpha Environment
-
-This project uses **LangChain 1.0-alpha** (next) packages:
-
-```bash
-# Core LangChain packages
-@langchain/langgraph@next     # LangGraph for multi-agent orchestration
-@langchain/core@next          # Core abstractions
-langchain@next                # Main LangChain package
-
-# Model providers
-@langchain/openai@next        # OpenAI integration (Anthropic & OpenAI only supported)
-```
-
-**Model Usage Guidelines:**
-- **Gemini 2.5 Pro** - Use for agentic tasks (planning, reasoning, decision-making)
-- **Gemini 2.5 Flash** - Use for well-defined tasks (formatting, extraction, simple transforms)
-- Uses OpenAI SDK compatibility layer (see [google-openai-compatibility.md](google-openai-compatibility.md))
-
-**Documentation:**
-- Updated LangChain docs are in [documentation/langgraph/](documentation/langgraph/)
-- Follow 1.0-alpha patterns, not legacy documentation
-
-## Environment Variables
-
-Required environment variables (add to `.env.local`):
-
-```bash
-# LLM Provider - Using Gemini via OpenAI SDK compatibility
-GEMINI_API_KEY=...       # Required for Gemini 2.5 Pro/Flash
-OPENAI_API_KEY=...       # Optional, keeping for potential fallback
-
-# Search APIs
-TAVILY_API_KEY=...
-EXA_API_KEY=...
-
-# Optional
-REDIS_URL=...            # For production caching
-NODE_ENV=development
-```
-
-**Note:** Get your Gemini API key from [Google AI Studio](https://aistudio.google.com/apikey)
-
-**Setup:**
-- Copy `.env.example` to `.env.local` and fill in values
-- Never commit `.env.local` to version control
-
-## Important Files
-
-**Project Documentation:**
-- [brief.md](brief.md) - Product requirements and system design
-- [plan.md](plan.md) - Technical architecture with Mermaid diagrams
-- [implementation-plan.md](implementation-plan.md) - Phase-by-phase implementation checklist (**UPDATE THIS**)
-- [naming-conventions.md](naming-conventions.md) - File and component naming standards
-- [documentation/](documentation/) - LangGraph concepts and examples
-
-**Core Configuration:**
-- [src/server/graph/state.ts](src/server/graph/state.ts) - Shared state schema (single source of truth)
-- [src/server/graph/index.ts](src/server/graph/index.ts) - Parent graph orchestration
-- [biome.json](biome.json) - Biome/Ultracite configuration
-- [tsconfig.json](tsconfig.json) - TypeScript configuration with path aliases
-- [.claude/CLAUDE.md](.claude/CLAUDE.md) - Full Ultracite/Biome rules reference
-
-**Custom Hooks** ([src/lib/hooks/](src/lib/hooks/)):
-- `useThread.ts` - Thread creation and management
-- `useResume.ts` - HITL resume operations
-- `use-mobile.ts` - Responsive design utilities
-
-## Implementation Status
-
-**Phase 1 (Runtime Backbone)**: ✅ Complete
-- Parent graph with checkpointer
-- State management with Zod schemas
-- API routes for start/state/resume/mode
-
-**Phase 2 (Planner)**: ✅ Complete
-- Auto and Plan HITL paths with conditional routing
-- Mode override handling with UI switch integration
-- Dynamic multi-question flow in Plan mode:
-  - Prompt analysis for missing aspects (scope, timeframe, depth, use case)
-  - LLM-generated contextual questions with 4 options + "Custom" each
-  - Iterative interrupt/resume cycles until all questions answered
-  - Final plan construction from collected answers
-- Template selection and constraints
-- Plan state management with QuestionAnswer persistence
-
-**Phase 2.5 (Orchestration Gates)**: ✅ Complete
-- plan-gate: Planner Mode Decider with UI override and signal-based evaluation
-- approvals: Pre-Action HITL Gate for expensive/risky operations
-- publish-gate: Pre-Publish Release Gate with deterministic checks
-- Full interrupt/resume semantics with thread-level checkpointing
-
-**Phase 3 (Research)**: ✅ Complete
-- QueryPlan expands goal with domain scoping
-- Tavily and Exa parallel search with normalization and deduplication
-- Harvest/Normalize with respectful timeouts and robots compliance
-- Content hashing, chunking, and light reranking (recency/authority)
-
-**Phase 4 (Factcheck & Writer)**: ✅ Complete
-- Deterministic fact-checks for claim verification
-- Writer produces sections with inline citations
-- Red-team quality gates for groundedness and compliance
-
-**Phase 5 (API & Streaming)**: ✅ Complete
-- All route handlers implemented (start, state, resume, mode)
-- SSE streaming endpoint with multi-mode support
-- Proper error handling and graceful stream termination
-
-**Phase 6 (UI)**: 🚧 Partial (core components only)
-**Phase 7 (Ops)**: ⏳ Not Started
-**Phase 8 (Tests)**: ⏳ Not Started
-
-## Task Completion Protocol
-
-**When you complete a task, subtask, or phase:**
-
-1. **Update the checklist** in [implementation-plan.md](implementation-plan.md):
-   - Change `[ ]` to `[x]` for completed items
-   - Add implementation notes with file paths
-   - Update status emojis (⏳ → 🚧 → ✅)
-
-2. **Update the "Signed by" section** in [implementation-plan.md](implementation-plan.md):
-   - Fill in Owner, Signature (✅), Date (YYYY-MM-DD)
-   - Add relevant notes about implementation details
-
-3. **Example update:**
 ```markdown
-### Phase 3 — Research Subgraph ✅ COMPLETE
+## [Concept/Question]
 
-* [x] QueryPlan expands goal (+ domain scoping).
-  - ✅ Implemented in [src/server/graph/subgraphs/research/nodes/queryPlan.ts](...)
-* [x] **Tavily /search** and **Exa /search** in parallel; normalize; dedupe.
-  - ✅ [metasearch node](src/server/graph/subgraphs/research/nodes/metasearch.ts)
+### Answer
+[Clear, direct answer to the question]
 
-## Signed by…
-| **Research (Query→Search→Harvest)** | Claude Code | ✅ | 2025-01-04 | Tavily + Exa fusion; dedupe & rerank. |
+### Implementation Pattern
+```typescript
+// Concrete code example with inline comments
 ```
 
-## Common Pitfalls
+### Source References
+- Primary: `documentation/langgraph/[XX-topic].md` - [specific section]
+- Secondary: `node_modules/@langchain/[package]/dist/[file]` - [relevant code]
+- Project Example: `src/server/graph/[file]` - [usage pattern]
 
-1. **Never run `npm run build` with localhost:3000 active** - Will cause build failures
-2. **Always use `thread_id` in graph invocations** - Required for checkpointing
-3. **Don't bypass Ultracite checks** - Code quality is enforced
-4. **Server-only code must stay in `src/server/`** - Client can't import server code
-5. **SSE routes need `export const runtime = "nodejs"`** - Edge runtime doesn't support streaming properly
-6. **Update implementation-plan.md after completing tasks** - Keep progress tracking current
-7. **Follow naming conventions** - Use kebab-case for files, PascalCase for components
-8. **UI components in src/components/ui are linter-exempt** - Don't manually edit generated shadcn components
-9. **Subgraph state files are optional** - Only create if subgraph needs isolated types (like planner/state.ts)
-10. **Use LangChain 1.0-alpha (@next) packages** - Don't reference legacy documentation
-11. **Choose appropriate models** - Gemini 2.5 Pro for agentic tasks, Gemini 2.5 Flash for defined tasks
-12. **Using Gemini via OpenAI SDK** - Use `@langchain/openai@next` with Gemini base URL for compatibility
-13. **Check internal docs first** - Always reference [documentation/langgraph/](documentation/langgraph/) before searching externally
-14. **Be proactive about code quality** - Fix issues immediately when you encounter them (see [Be Proactive section](#be-proactive-fix-issues-when-you-see-them))
+### Key Points
+- [Important detail 1]
+- [Important detail 2]
+- [Common pitfall to avoid]
 
-## References
+### Related Documentation
+- See also: `documentation/langgraph/[related-topic].md`
+- Project pattern: `src/server/graph/[related-file]`
+```
 
-**LangChain 1.0-alpha Documentation:**
-- [documentation/langgraph/](documentation/langgraph/) - Local LangGraph docs (1.0-alpha compatible)
-- Use local docs first - they match the @next packages used in this project
+## When You Don't Know
 
-**External Documentation:**
-- [Next.js App Router](https://nextjs.org/docs/app) - Route handlers and SSE
-- [Tavily API](https://docs.tavily.com/documentation/api-reference/introduction) - Search endpoint
-- [Exa API](https://docs.exa.ai/reference/search) - Semantic search
-- [Google AI Gemini API](https://ai.google.dev/gemini-api/docs) - Gemini 2.5 Pro and Flash reference
-- [Gemini OpenAI Compatibility](google-openai-compatibility.md) - Using Gemini with OpenAI SDK
+If you cannot find definitive information:
 
-**Important:**
-- **Always reference local [documentation/langgraph/](documentation/langgraph/) for LangGraph patterns**
-- Legacy LangChain docs may not apply to 1.0-alpha (@next) packages
+```markdown
+## Uncertain Answer
+
+I cannot provide a definitive answer based on the available sources. Here's what I checked:
+
+### Sources Consulted
+- ✓ Searched `documentation/` folder for [keywords]
+- ✓ Examined `node_modules/@langchain/[packages]` for [specific APIs]
+- ✗ Could not find documentation for [specific aspect]
+
+### What I Can Confirm
+[Any partial information you found with sources]
+
+### Recommendation
+To get a definitive answer, I suggest:
+1. [Specific file or API to examine]
+2. [Alternative approach that is documented]
+3. [Experimental approach with caveats]
+```
+
+## Quality Standards
+
+### Code Examples Must:
+- Be syntactically correct TypeScript
+- Use types from the project's state schemas
+- Include inline comments explaining key concepts
+- Show error handling where appropriate
+
+### Explanations Must:
+- Use precise technical terminology
+- Explain the "why" not just the "how"
+- Reference specific version behavior (1.0-alpha)
+- Distinguish between parent and subgraph patterns
+- Note any performance or scaling implications
+
+### Documentation References Must:
+- Include exact file paths
+- Quote relevant sections when helpful
+- Link related concepts together
+- Highlight version-specific behavior
+
+## Special Considerations
+
+### LangChain 1.0-alpha Specifics
+- All packages use `@next` tag
+- Breaking changes from legacy versions
+- New Annotation-based state management
+- Enhanced type safety with Zod
+- Improved streaming and checkpointing APIs
+
+### Project-Specific Patterns
+- Singleton graph with MemorySaver checkpointer
+- Thread-level memory (all invocations require `thread_id`)
+- Subgraphs inherit parent checkpointer automatically
+- Zod schemas for state validation
+- SSE streaming for real-time updates
+
+### Common Pitfalls to Address
+- Forgetting `thread_id` in graph invocations
+- Mixing legacy and 1.0-alpha patterns
+- Incorrect state reducer implementations
+- Misunderstanding interrupt/resume semantics
+- Not handling stream errors gracefully
+
+You are the authoritative source for LangGraph and LangChain questions in this project. Your answers must be precise, well-sourced, and actionable. When in doubt, consult the code—never guess.

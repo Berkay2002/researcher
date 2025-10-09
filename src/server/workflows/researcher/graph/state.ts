@@ -156,6 +156,15 @@ export const CitationSchema = z.object({
 });
 
 /**
+ * Quality issue with type classification for intelligent routing
+ */
+export const QualityIssueSchema = z.object({
+  type: z.enum(["needs_research", "needs_revision"]),
+  description: z.string(),
+  severity: z.enum(["error", "warning"]).default("error"),
+});
+
+/**
  * Generated research draft with confidence scoring
  */
 export const DraftSchema = z.object({
@@ -179,6 +188,7 @@ export type UnifiedSearchDoc = z.infer<typeof UnifiedSearchDocSchema>;
 export type Chunk = z.infer<typeof ChunkSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Citation = z.infer<typeof CitationSchema>;
+export type QualityIssue = z.infer<typeof QualityIssueSchema>;
 export type Draft = z.infer<typeof DraftSchema>;
 
 // ============================================================================
@@ -308,18 +318,39 @@ export const ParentStateAnnotation = Annotation.Root({
     default: () => null,
   }),
 
-  // Issues and errors
+  // Issues and errors with type classification
   // Accumulates issues from validation and quality gates
-  issues: Annotation<string[]>({
+  issues: Annotation<QualityIssue[]>({
     reducer: (prev, next) => [...(prev ?? []), ...next],
     default: () => [],
   }),
 
-  // Revision counter to prevent infinite loops
-  // Increments each time synthesizer revises based on redteam feedback
-  revisionCount: Annotation<number>({
+  // Total iteration counter (research + revision combined)
+  // Used to enforce hard limit and prevent infinite loops
+  totalIterations: Annotation<number>({
     reducer: (_, next) => next,
     default: () => 0,
+  }),
+
+  // Research iteration counter (tracks supplemental research loops)
+  // Limited to MAX_RESEARCH_ITERATIONS (1)
+  researchIterations: Annotation<number>({
+    reducer: (_, next) => next,
+    default: () => 0,
+  }),
+
+  // Revision iteration counter (tracks text revision loops)
+  // Limited to MAX_REVISION_ITERATIONS (2)
+  revisionIterations: Annotation<number>({
+    reducer: (_, next) => next,
+    default: () => 0,
+  }),
+
+  // Force approval flag (set on final iteration)
+  // When true, draft proceeds to END regardless of quality issues
+  forceApproved: Annotation<boolean>({
+    reducer: (_, next) => next,
+    default: () => false,
   }),
 });
 
