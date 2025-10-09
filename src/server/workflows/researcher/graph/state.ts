@@ -1,4 +1,5 @@
-import { Annotation } from "@langchain/langgraph";
+import type { BaseMessage } from "@langchain/core/messages";
+import { Annotation, messagesStateReducer } from "@langchain/langgraph";
 import { z } from "zod";
 import type { PromptAnalysis } from "./subgraphs/planner/state";
 
@@ -233,6 +234,13 @@ export const ParentStateAnnotation = Annotation.Root({
   // This enables checkpointing and persistence across interrupts
   threadId: Annotation<string>({
     reducer: (_, next) => next,
+  }),
+
+  // Messages for LangSmith Chat interface support
+  // Uses built-in messagesStateReducer for proper message handling
+  messages: Annotation<BaseMessage[]>({
+    reducer: messagesStateReducer,
+    default: () => [],
   }),
 
   // User inputs and configuration

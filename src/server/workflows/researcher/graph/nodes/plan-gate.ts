@@ -175,8 +175,25 @@ async function calculateCoherence(goal: string): Promise<number> {
 export async function planGate(
   state: ParentState
 ): Promise<Partial<ParentState>> {
-  const { userInputs } = state;
-  const { goal, modeOverride } = userInputs;
+  let { userInputs } = state;
+  let { goal, modeOverride } = userInputs;
+
+  // Extract goal from messages if not provided in userInputs (LangSmith Chat support)
+  if (!goal && state.messages && state.messages.length > 0) {
+    // biome-ignore lint/style/useAtIndex: <Prefer traditional indexing>
+    const lastMessage = state.messages[state.messages.length - 1];
+    if (lastMessage && typeof lastMessage.content === "string") {
+      goal = lastMessage.content;
+      // Update userInputs with extracted goal
+      userInputs = {
+        ...userInputs,
+        goal,
+      };
+      console.log(
+        `[planGate] Extracted goal from messages: "${goal.substring(0, GOAL_PREVIEW_LENGTH)}${TRUNCATE_SUFFIX}"`
+      );
+    }
+  }
 
   console.log(
     `[planGate] Evaluating mode selection for goal: "${goal.substring(0, GOAL_PREVIEW_LENGTH)}${TRUNCATE_SUFFIX}"`
