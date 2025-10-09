@@ -3,7 +3,7 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getLLM } from "@/server/shared/configs/llm";
 import type {
   Citation,
@@ -125,7 +125,23 @@ export async function synthesize(
       confidence,
     };
 
-    return { draft };
+    // Append AI response to messages for LangSmith chat support
+    const aiMessage = new AIMessage({
+      content: normalizedText,
+      additional_kwargs: {
+        citations: citations.map((c) => ({
+          id: c.id,
+          url: c.url,
+          title: c.title,
+        })),
+        confidence,
+      },
+    });
+
+    return { 
+      draft,
+      messages: [aiMessage],
+    };
   } catch (error) {
     console.error("[synthesize] Error during synthesis:", error);
     throw new Error(

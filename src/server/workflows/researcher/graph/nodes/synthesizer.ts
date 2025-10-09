@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex synthesis logic> */
 
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
 import type { Citation, Draft, ParentState, UnifiedSearchDoc } from "../state";
@@ -113,7 +113,23 @@ export async function synthesizer(
     confidence,
   };
 
-  return { draft };
+  // Step 7: Append AI response to messages for LangSmith chat support
+  const aiMessage = new AIMessage({
+    content: synthesizedText,
+    additional_kwargs: {
+      citations: citations.map((c) => ({
+        id: c.id,
+        url: c.url,
+        title: c.title,
+      })),
+      confidence,
+    },
+  });
+
+  return { 
+    draft,
+    messages: [aiMessage],
+  };
 }
 
 /**
