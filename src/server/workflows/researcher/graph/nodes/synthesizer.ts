@@ -256,7 +256,8 @@ async function generateSynthesis(params: {
   workerResults: ParentState["workerResults"];
   revisionContext?: { previousDraft: Draft; issues: string[] };
 }): Promise<string> {
-  const { goal, deliverable, evidenceContext, workerResults, revisionContext } = params;
+  const { goal, deliverable, evidenceContext, workerResults, revisionContext } =
+    params;
   const llm = getLLM("generation"); // Use Gemini 2.5 Flash for synthesis
 
   // Prepare worker summaries

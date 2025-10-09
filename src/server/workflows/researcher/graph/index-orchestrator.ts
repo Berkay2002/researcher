@@ -113,7 +113,7 @@ function buildParentGraph() {
    *
    * If redteam finds issues, loop back to synthesizer for revision.
    * Otherwise, proceed to END.
-   * 
+   *
    * Includes safeguard to prevent infinite revision loops (max 3 revisions).
    */
   function routeRedteam(state: ParentState): string {
