@@ -41,8 +41,7 @@ export async function orchestrator(
     "[orchestrator] Analyzing research goal and decomposing tasks..."
   );
 
-  const { userInputs, plan, researchIterations, totalIterations, issues } =
-    state;
+  const { userInputs, plan } = state;
 
   if (!userInputs?.goal) {
     throw new Error("No goal provided in userInputs");
@@ -51,84 +50,23 @@ export async function orchestrator(
   const goal = userInputs.goal;
   const constraints = plan?.constraints || {};
 
-  // Detect supplemental research mode
-  const currentResearch = researchIterations || 0;
-  const currentTotal = totalIterations || 0;
-  const isSupplementalResearch = currentResearch > 0;
-
-  if (isSupplementalResearch) {
-    console.log(
-      `[orchestrator] SUPPLEMENTAL RESEARCH MODE (research iteration ${currentResearch + 1}, total iteration ${currentTotal + 1})`
-    );
-  } else {
-    console.log("[orchestrator] INITIAL RESEARCH MODE");
-  }
-
   console.log("[orchestrator] Goal:", goal);
   console.log("[orchestrator] Constraints:", constraints);
 
-  // Detect feedback mode (called from redteam)
-  const hasFeedbackIssues = issues && issues.length > 0;
-  const researchIssues = hasFeedbackIssues
-    ? issues.filter((i) => i.type === "needs_research")
-    : [];
-  const revisionIssues = hasFeedbackIssues
-    ? issues.filter((i) => i.type === "needs_revision")
-    : [];
+  // Step 1: Analyze the research goal
+  const analysis = await analyzeResearchGoal(goal, constraints);
+  console.log(
+    `[orchestrator] Analysis: ${analysis.complexity} complexity, ${analysis.estimatedWorkers} workers needed`
+  );
+  console.log("[orchestrator] Domains:", analysis.domains);
+  console.log("[orchestrator] Aspects:", analysis.aspects);
 
-  // Handle pure revision issues (no research spawning needed)
-  if (
-    hasFeedbackIssues &&
-    revisionIssues.length > 0 &&
-    researchIssues.length === 0
-  ) {
-    console.log(
-      `[orchestrator] Pure revision mode - ${revisionIssues.length} revision issues, routing directly to synthesizer`
-    );
-    return {
-      planning: {
-        ...state.planning,
-        tasks: [], // No workers to spawn
-        revisionInstructions: revisionIssues.map((i) => i.description),
-      },
-      totalIterations: currentTotal + 1,
-    };
-  }
-
-  let taskDecomposition: TaskDecomposition;
-
-  // Handle supplemental research mode
-  if (isSupplementalResearch) {
-    // Use researchIssues from above (already filtered)
-    console.log(
-      `[orchestrator] Generating ${MIN_WORKERS} focused tasks for ${researchIssues.length} research issues`
-    );
-
-    taskDecomposition = await generateSupplementalTasks(
-      goal,
-      researchIssues,
-      constraints
-    );
-
-    console.log(
-      `[orchestrator] Created ${taskDecomposition.tasks.length} supplemental tasks`
-    );
-  } else {
-    // Step 1: Analyze the research goal
-    const analysis = await analyzeResearchGoal(goal, constraints);
-    console.log(
-      `[orchestrator] Analysis: ${analysis.complexity} complexity, ${analysis.estimatedWorkers} workers needed`
-    );
-    console.log("[orchestrator] Domains:", analysis.domains);
-    console.log("[orchestrator] Aspects:", analysis.aspects);
-
-    // Step 2: Decompose into parallel tasks
-    taskDecomposition = await decomposeIntoTasks(goal, analysis, constraints);
-    console.log(
-      `[orchestrator] Created ${taskDecomposition.tasks.length} parallel tasks`
-    );
-    console.log("[orchestrator] Strategy:", taskDecomposition.reasoning);
-  }
+  // Step 2: Decompose into parallel tasks
+  const taskDecomposition = await decomposeIntoTasks(goal, analysis, constraints);
+  console.log(
+    `[orchestrator] Created ${taskDecomposition.tasks.length} parallel tasks`
+  );
+  console.log("[orchestrator] Strategy:", taskDecomposition.reasoning);
 
   // Step 3: Store tasks in research state for worker distribution
   const tasks = taskDecomposition.tasks;
@@ -152,10 +90,6 @@ export async function orchestrator(
       // biome-ignore lint/suspicious/noExplicitAny: Tasks temporarily stored in planning cache
       tasks: tasks as any,
     },
-    // Increment iteration counters
-    // Note: issues are cleared automatically by replacement reducer when redteam returns new issues
-    researchIterations: currentResearch + (isSupplementalResearch ? 1 : 0),
-    totalIterations: currentTotal + 1,
   };
 }
 
@@ -214,94 +148,6 @@ Please analyze this research goal and provide your assessment.`;
       aspects: [goal, `${goal} analysis`, `${goal} trends`],
       estimatedWorkers: MIN_WORKERS,
       strategy: "Execute comprehensive research across all relevant domains",
-    };
-  }
-}
-
-/**
- * Generate focused supplemental tasks based on research issues
- */
-async function generateSupplementalTasks(
-  goal: string,
-  researchIssues: Array<{ description: string }>,
-  constraints: Record<string, unknown>
-): Promise<TaskDecomposition> {
-  console.log(
-    "[orchestrator] Generating supplemental tasks for research issues..."
-  );
-
-  const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
-  const currentDate = getCurrentDateString();
-
-  const issuesText = researchIssues
-    .map((issue, i) => `${i + 1}. ${issue.description}`)
-    .join("\n");
-
-  const systemPrompt = `You are a research task planner focused on filling specific research gaps identified in a quality review.
-
-CURRENT DATE: ${currentDate}
-
-Generate 1-2 highly targeted supplemental research tasks to address ONLY the identified issues.
-
-Each task should:
-1. Directly address specific missing evidence or unsupported claims
-2. Have 2-3 precise search queries targeting the gaps
-3. Be minimal and focused - ONLY what's needed to fix the issues
-4. Have a priority score (0-1)
-
-IMPORTANT: This is supplemental research to fill gaps, not a comprehensive re-research. Only search for what's explicitly missing.`;
-
-  const constraintsText =
-    Object.keys(constraints).length > 0
-      ? `\n\nConstraints: ${JSON.stringify(constraints, null, 2)}`
-      : "";
-
-  const humanPrompt = `Original research goal: ${goal}
-
-Specific Research Gaps Identified:
-${issuesText}${constraintsText}
-
-Create 1-2 minimal supplemental research tasks with precise queries to fill ONLY these specific gaps. Do not re-research the entire topic.`;
-
-  try {
-    const llmWithStructuredOutput = llm.withStructuredOutput(
-      TaskDecompositionSchema
-    );
-
-    const decomposition = await llmWithStructuredOutput.invoke([
-      new SystemMessage(systemPrompt),
-      new HumanMessage(humanPrompt),
-    ]);
-
-    // Limit to 2 tasks maximum for supplemental research
-    const MAX_SUPPLEMENTAL_TASKS = 2;
-    if (decomposition.tasks.length > MAX_SUPPLEMENTAL_TASKS) {
-      console.warn(
-        `[orchestrator] Limiting supplemental tasks from ${decomposition.tasks.length} to ${MAX_SUPPLEMENTAL_TASKS}`
-      );
-      decomposition.tasks = decomposition.tasks
-        .sort((a: ResearchTask, b: ResearchTask) => b.priority - a.priority)
-        .slice(0, MAX_SUPPLEMENTAL_TASKS);
-    }
-
-    return decomposition;
-  } catch (error) {
-    console.error("[orchestrator] Error generating supplemental tasks:", error);
-
-    // Fallback: create simple task from first issue
-    const fallbackTask: ResearchTask = {
-      id: "supplemental-1",
-      aspect: researchIssues[0]?.description || "Additional research",
-      queries: [
-        `${goal} ${researchIssues[0]?.description || ""}`,
-        `${goal} additional evidence`,
-      ],
-      priority: 1,
-    };
-
-    return {
-      tasks: [fallbackTask],
-      reasoning: "Fallback supplemental task for research gap",
     };
   }
 }

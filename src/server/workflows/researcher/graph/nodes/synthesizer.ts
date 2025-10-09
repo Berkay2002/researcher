@@ -13,7 +13,6 @@ import type {
   Citation,
   Draft,
   ParentState,
-  QualityIssue,
   UnifiedSearchDoc,
 } from "../state";
 
@@ -55,33 +54,10 @@ export async function synthesizer(
 ): Promise<Partial<ParentState>> {
   console.log("[synthesizer] Aggregating results from all workers...");
 
-  const {
-    workerResults,
-    userInputs,
-    plan,
-    issues,
-    draft: previousDraft,
-    revisionIterations,
-    totalIterations,
-  } = state;
+  const { workerResults, userInputs, plan } = state;
 
   if (!userInputs?.goal) {
     throw new Error("No goal provided in userInputs");
-  }
-
-  // Check if this is a revision iteration (redteam found issues)
-  const isRevision = issues && issues.length > 0 && previousDraft;
-
-  const currentRevision = revisionIterations || 0;
-  const currentTotal = totalIterations || 0;
-
-  if (isRevision) {
-    console.log(
-      `[synthesizer] REVISION MODE: Addressing ${issues.length} issues from redteam (iteration ${currentTotal + 1})`
-    );
-    console.log("[synthesizer] Issues to address:", issues);
-  } else {
-    console.log("[synthesizer] INITIAL SYNTHESIS: Generating first draft");
   }
 
   if (!workerResults || workerResults.length === 0) {
@@ -92,7 +68,6 @@ export async function synthesizer(
         citations: [],
         confidence: 0,
       },
-      issues: [], // Clear issues
     };
   }
 
@@ -121,14 +96,13 @@ export async function synthesizer(
   // Step 3: Prepare evidence context
   const evidenceContext = prepareEvidenceContext(selectedDocs);
 
-  // Step 4: Generate synthesis using LLM (with revision feedback if applicable)
+  // Step 4: Generate synthesis using LLM
   console.log("[synthesizer] Generating comprehensive report...");
   const synthesizedText = await generateSynthesis({
     goal: userInputs.goal,
     deliverable: plan?.deliverable || "comprehensive research report",
     evidenceContext,
     workerResults,
-    revisionContext: isRevision ? { previousDraft, issues } : undefined,
   });
 
   // Step 5: Extract citations
@@ -159,17 +133,12 @@ export async function synthesizer(
         title: c.title,
       })),
       confidence,
-      isRevision,
-      issuesAddressed: isRevision ? issues : undefined,
     },
   });
 
   return {
     draft,
     messages: [aiMessage],
-    // Note: issues are cleared automatically by replacement reducer when redteam returns new issues
-    revisionIterations: currentRevision + (isRevision ? 1 : 0),
-    totalIterations: currentTotal + 1,
   };
 } /**
  * Deduplicate documents by URL and content hash
@@ -267,10 +236,8 @@ async function generateSynthesis(params: {
   deliverable: string;
   evidenceContext: string;
   workerResults: ParentState["workerResults"];
-  revisionContext?: { previousDraft: Draft; issues: QualityIssue[] };
 }): Promise<string> {
-  const { goal, deliverable, evidenceContext, workerResults, revisionContext } =
-    params;
+  const { goal, deliverable, evidenceContext, workerResults } = params;
   const llm = getLLM("generation"); // Use Gemini 2.5 Flash for synthesis
 
   // Prepare worker summaries
@@ -281,24 +248,10 @@ async function generateSynthesis(params: {
     )
     .join("\n");
 
-  // Prepare revision instructions if this is a revision
-  const isRevision = Boolean(revisionContext);
-  const revisionInstructions = isRevision
-    ? `\n\nIMPORTANT: This is a REVISION of a previous draft that had quality issues.
-
-Previous Draft:
-${revisionContext?.previousDraft.text}
-
-Issues Found by Quality Review:
-${revisionContext?.issues.map((issue, i) => `${i + 1}. [${issue.type}] ${issue.description}`).join("\n")}
-
-Please address ALL of these issues in your revised report while maintaining the overall structure and quality.`
-    : "";
-
   // Get current date for temporal context
   const currentDate = getCurrentDateString();
 
-  const systemPrompt = `You are a research synthesis expert. Your task is to ${isRevision ? "revise" : "write"} a ${deliverable} based on the research findings from multiple parallel research workers.
+  const systemPrompt = `You are a research synthesis expert. Your task is to write a ${deliverable} based on the research findings from multiple parallel research workers.
 
 CURRENT DATE: ${currentDate}
 
@@ -315,8 +268,8 @@ Your report should:
 3. Use inline citations [1], [2], etc. to reference sources
 4. Be comprehensive yet concise
 5. Highlight key findings and insights
-6. Address different perspectives when relevant${isRevision ? "\n7. ADDRESS ALL QUALITY ISSUES from the review feedback" : ""}
-8. Ensure temporal accuracy - no future-dated citations
+6. Address different perspectives when relevant
+7. Ensure temporal accuracy - no future-dated citations
 
 Use markdown formatting for structure and readability.`;
 
@@ -326,9 +279,9 @@ Worker Summaries:
 ${workerSummaries}
 
 Sources:
-${evidenceContext}${revisionInstructions}
+${evidenceContext}
 
-Please ${isRevision ? "revise the draft to address all issues and" : ""} write a comprehensive ${deliverable} that synthesizes these research findings. Use inline citations [1], [2], etc. to reference the sources above.`;
+Please write a comprehensive ${deliverable} that synthesizes these research findings. Use inline citations [1], [2], etc. to reference the sources above.`;
 
   try {
     const response = await llm.invoke([

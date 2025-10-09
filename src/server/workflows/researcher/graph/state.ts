@@ -226,7 +226,6 @@ export type PlanningSession = {
   answers?: QuestionAnswer[];
   // biome-ignore lint/suspicious/noExplicitAny: Tasks are dynamically added by orchestrator
   tasks?: any[];
-  revisionInstructions?: string[]; // Explicit revision guidance from redteam
 };
 
 // ============================================================================
@@ -319,39 +318,11 @@ export const ParentStateAnnotation = Annotation.Root({
     default: () => null,
   }),
 
-  // Issues and errors with type classification
-  // Replaces issues (not accumulates) to enable clean evaluation each iteration
+  // Issues and errors with type classification (kept for backward compatibility with redteam file)
+  // Replaces issues (not accumulates) to enable clean evaluation
   issues: Annotation<QualityIssue[]>({
     reducer: (_, next) => next,
     default: () => [],
-  }),
-
-  // Total iteration counter (research + revision combined)
-  // Used to enforce hard limit and prevent infinite loops
-  totalIterations: Annotation<number>({
-    reducer: (_, next) => next,
-    default: () => 0,
-  }),
-
-  // Research iteration counter (tracks supplemental research loops)
-  // Limited to MAX_RESEARCH_ITERATIONS (1)
-  researchIterations: Annotation<number>({
-    reducer: (_, next) => next,
-    default: () => 0,
-  }),
-
-  // Revision iteration counter (tracks text revision loops)
-  // Limited to MAX_REVISION_ITERATIONS (2)
-  revisionIterations: Annotation<number>({
-    reducer: (_, next) => next,
-    default: () => 0,
-  }),
-
-  // Force approval flag (set on final iteration)
-  // When true, draft proceeds to END regardless of quality issues
-  forceApproved: Annotation<boolean>({
-    reducer: (_, next) => next,
-    default: () => false,
   }),
 });
 
@@ -480,11 +451,6 @@ export const isReadyForNextStep = (
   state: ParentState,
   currentStep: string
 ): boolean => {
-  // Check for blocking issues
-  if (state.issues.length > 0) {
-    return false;
-  }
-
   // Step-specific readiness checks
   switch (currentStep) {
     case "plan":

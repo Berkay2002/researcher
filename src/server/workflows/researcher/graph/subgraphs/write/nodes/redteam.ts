@@ -14,9 +14,6 @@ import type {
   QualityIssue,
 } from "../../../state";
 
-// Iteration limits for termination guarantees
-const MAX_TOTAL_ITERATIONS = 9;
-
 // Base quality thresholds (iteration 0 - more lenient to reduce cycles)
 const BASE_MIN_CONFIDENCE_THRESHOLD = 0.4; // Lowered from 0.6
 const BASE_MIN_CITATION_DENSITY = 1.0; // Lowered from 2.0
@@ -106,24 +103,10 @@ export async function redteam(
 ): Promise<Partial<ParentState>> {
   console.log("[redteam] Starting quality gate checks...");
 
-  const { draft, evidence, userInputs, totalIterations, forceApproved } = state;
-  const currentIteration = totalIterations || 0;
+  const { draft, evidence, userInputs } = state;
 
-  console.log(
-    `[redteam] Iteration ${currentIteration + 1}/${MAX_TOTAL_ITERATIONS}`
-  );
-
-  // Early exit if already force-approved (defensive check)
-  // This prevents redundant evaluation if the graph somehow reaches this node again
-  if (forceApproved) {
-    console.log(
-      "[redteam] Draft already force-approved, skipping quality checks"
-    );
-    return { issues: [], forceApproved: true };
-  }
-
-  // Get progressive thresholds for this iteration
-  const thresholds = getProgressiveThresholds(currentIteration);
+  // Use default thresholds (iteration 0)
+  const thresholds = getProgressiveThresholds(0);
   console.log("[redteam] Quality thresholds:", thresholds);
 
   if (!draft) {
@@ -141,46 +124,6 @@ export async function redteam(
   );
   console.log(`[redteam] Draft has ${draft.citations.length} citations`);
   console.log(`[redteam] Using ${evidence?.length || 0} evidence sources`);
-
-  // FORCE APPROVAL on final iteration to guarantee termination
-  if (currentIteration >= MAX_TOTAL_ITERATIONS - 1) {
-    console.warn(
-      "[redteam] FINAL ITERATION - forcing approval with quality warnings"
-    );
-
-    // Still run checks to log warnings, but convert to warning severity
-    const deterministicIssues = performDeterministicChecks(
-      draft,
-      evidence || [],
-      thresholds
-    );
-    const llmIssues = await performLLMQualityCheck(
-      draft,
-      userInputs?.goal || "",
-      thresholds
-    );
-
-    const allIssues = [...deterministicIssues, ...llmIssues];
-
-    // Log warnings but don't block
-    if (allIssues.length > 0) {
-      console.warn("[redteam] Quality warnings (not blocking):");
-      for (const issue of allIssues) {
-        console.warn(`[redteam]   - ${issue.description}`);
-      }
-    }
-
-    // Convert all issues to warnings and set force approval
-    const warnings = allIssues.map((issue) => ({
-      ...issue,
-      severity: "warning" as const,
-    }));
-
-    return {
-      issues: warnings,
-      forceApproved: true,
-    };
-  }
 
   const issues: QualityIssue[] = [];
 

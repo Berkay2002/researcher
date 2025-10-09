@@ -8,13 +8,7 @@ import { researchWorker } from "./nodes/research-worker";
 import { synthesizer } from "./nodes/synthesizer";
 import { type ParentState, ParentStateAnnotation } from "./state";
 import { buildPlannerSubgraph } from "./subgraphs/planner";
-import { redteam } from "./subgraphs/write/nodes/redteam";
 import type { ResearchTask } from "./worker-state";
-
-// Iteration limits for termination guarantees
-const MAX_TOTAL_ITERATIONS = 9;
-const MAX_RESEARCH_ITERATIONS = 4;
-const MAX_REVISION_ITERATIONS = 5;
 
 /**
  * Compiled parent graph (singleton)
@@ -31,7 +25,7 @@ let checkpointerSingleton: PostgresSaver | null = null;
 /**
  * Build the parent orchestration graph with Orchestrator-Worker pattern
  *
- * Flow: START → planGate → planner → orchestrator → (parallel workers via Send) → synthesizer → redteam → END
+ * Flow: START → planGate → planner → orchestrator → (parallel workers via Send) → synthesizer → END
  *
  * Orchestrator-Worker Pattern:
  * 1. Orchestrator analyzes goal and decomposes into parallel tasks
@@ -77,7 +71,6 @@ function buildParentGraph() {
   assertNoNameClash("orchestrator");
   assertNoNameClash("researchWorker");
   assertNoNameClash("synthesizer");
-  assertNoNameClash("redteam");
 
   /**
    * Router function to spawn parallel workers via Send API
@@ -113,116 +106,6 @@ function buildParentGraph() {
     });
   }
 
-  /**
-   * Smart router function to handle redteam feedback with multi-layer safeguards
-   *
-   * Decision tree:
-   * 1. Check HARD LIMITS first (guaranteed termination)
-   * 2. If no issues or force-approved → END
-   * 3. Classify issues: needs_research vs needs_revision
-   * 4. Route based on issue type and remaining iteration budget
-   * 5. If budget exhausted → Force END
-   *
-   * Guarantees:
-   * - Maximum total iterations: 5
-   * - Maximum research iterations: 2
-   * - Maximum revision iterations: 3
-   * - Force approval on final iteration
-   */
-
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: ignore
-  function routeRedteam(state: ParentState): string {
-    const {
-      issues,
-      totalIterations,
-      researchIterations,
-      revisionIterations,
-      forceApproved,
-    } = state;
-
-    const currentTotal = totalIterations || 0;
-    const currentResearch = researchIterations || 0;
-    const currentRevision = revisionIterations || 0;
-
-    console.log(
-      `[router] Evaluating redteam results (iteration ${currentTotal}/${MAX_TOTAL_ITERATIONS})`
-    );
-    console.log(
-      `[router] Research: ${currentResearch}/${MAX_RESEARCH_ITERATIONS}, Revision: ${currentRevision}/${MAX_REVISION_ITERATIONS}`
-    );
-
-    // HARD LIMIT: Force termination (should never reach here due to force approval, but safety check)
-    if (currentTotal >= MAX_TOTAL_ITERATIONS) {
-      console.warn(
-        "[router] MAX_TOTAL_ITERATIONS reached - terminating with current draft"
-      );
-      return END;
-    }
-
-    // No issues or force approved → SUCCESS
-    if (!issues || issues.length === 0 || forceApproved) {
-      if (forceApproved) {
-        console.warn(
-          "[router] Draft force-approved on final iteration - proceeding to END"
-        );
-      } else {
-        console.log(
-          "[router] Draft passed all quality checks - proceeding to END"
-        );
-      }
-      return END;
-    }
-
-    // Classify issues by type
-    const researchIssues = issues.filter((i) => i.type === "needs_research");
-    const revisionIssues = issues.filter((i) => i.type === "needs_revision");
-
-    console.log(
-      `[router] Found ${researchIssues.length} research issues, ${revisionIssues.length} revision issues`
-    );
-
-    // Handle mixed issues - route to orchestrator for triage
-    if (researchIssues.length > 0 && revisionIssues.length > 0) {
-      console.warn(
-        `[router] MIXED ISSUES: ${researchIssues.length} research + ${revisionIssues.length} revision`
-      );
-      console.log("[router] Routing to orchestrator for triage");
-      return "orchestrator";
-    }
-
-    // Research loop (LIMITED to 1 iteration)
-    if (
-      researchIssues.length > 0 &&
-      currentResearch < MAX_RESEARCH_ITERATIONS
-    ) {
-      console.log(
-        `[router] Needs supplemental research - routing to orchestrator (research iteration ${currentResearch + 1}/${MAX_RESEARCH_ITERATIONS})`
-      );
-      return "orchestrator";
-    }
-
-    // Revision loop (LIMITED to 2 iterations)
-    if (
-      revisionIssues.length > 0 &&
-      currentRevision < MAX_REVISION_ITERATIONS
-    ) {
-      console.log(
-        `[router] Needs text revision - routing to synthesizer (revision iteration ${currentRevision + 1}/${MAX_REVISION_ITERATIONS})`
-      );
-      return "synthesizer";
-    }
-
-    // Budget exhausted but issues remain → Force termination
-    console.warn(
-      `[router] Iteration budgets exhausted (research: ${currentResearch}/${MAX_RESEARCH_ITERATIONS}, revision: ${currentRevision}/${MAX_REVISION_ITERATIONS})`
-    );
-    console.warn(
-      `[router] Terminating with ${issues.length} remaining issues (${researchIssues.length} research, ${revisionIssues.length} revision)`
-    );
-
-    return END;
-  }
-
   const builder = new StateGraph(ParentStateAnnotation)
     // Add nodes
     .addNode("planGate", planGate)
@@ -230,7 +113,6 @@ function buildParentGraph() {
     .addNode("orchestrator", orchestrator)
     .addNode("researchWorker", researchWorker)
     .addNode("synthesizer", synthesizer)
-    .addNode("redteam", redteam)
 
     // Linear flow
     .addEdge(START, "planGate")
@@ -244,15 +126,8 @@ function buildParentGraph() {
     // Workers complete → synthesizer aggregates results
     .addEdge("researchWorker", "synthesizer")
 
-    // Synthesizer → redteam quality gate
-    .addEdge("synthesizer", "redteam")
-
-    // Conditional edge: redteam → synthesizer (revision) or orchestrator (research) or END
-    .addConditionalEdges("redteam", routeRedteam, {
-      synthesizer: "synthesizer",
-      orchestrator: "orchestrator",
-      [END]: END,
-    });
+    // Synthesizer produces final report
+    .addEdge("synthesizer", END);
 
   // Compile with Postgres checkpointer for persistent thread-level memory
   return builder.compile({ checkpointer: checkpointerSingleton });
@@ -281,7 +156,6 @@ export function getGraph() {
  * 3. Orchestrator decomposes goal into parallel tasks
  * 4. Workers execute tasks in parallel (via Send API)
  * 5. Synthesizer aggregates results into final report
- * 6. Redteam performs quality checks
  *
  * @returns Compiled graph for LangGraph CLI
  */

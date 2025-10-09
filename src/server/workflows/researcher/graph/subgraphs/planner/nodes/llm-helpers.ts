@@ -41,7 +41,7 @@ async function loadSystemPrompt(filename: string): Promise<string> {
 async function loadSystemPromptWithDate(filename: string): Promise<string> {
   const basePrompt = await loadSystemPrompt(filename);
   const currentDate = getCurrentDateString();
-  
+
   // Prepend date context to the prompt
   return `**CURRENT DATE: ${currentDate}**
 
@@ -62,7 +62,9 @@ export async function analyzePromptCompleteness(
 ): Promise<PromptAnalysis> {
   console.log("[analyzePromptCompleteness] Analyzing prompt:", goal);
 
-  const systemPrompt = await loadSystemPromptWithDate("prompt-analyzer.system.md");
+  const systemPrompt = await loadSystemPromptWithDate(
+    "prompt-analyzer.system.md"
+  );
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -133,7 +135,9 @@ export async function generateDynamicQuestions(
     `[generateDynamicQuestions] Generating questions for ${analysis.missingAspects.length} missing aspects`
   );
 
-  const systemPrompt = await loadSystemPromptWithDate("question-generator.system.md");
+  const systemPrompt = await loadSystemPromptWithDate(
+    "question-generator.system.md"
+  );
 
   const llm = createLLM(GENERATION_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -233,7 +237,9 @@ Respond with a JSON object containing a "questions" array following the schema i
 export async function constructPlanFromPrompt(goal: string): Promise<Plan> {
   console.log("[constructPlanFromPrompt] Building plan from complete prompt");
 
-  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate(
+    "plan-constructor.system.md"
+  );
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -281,7 +287,9 @@ export async function constructPlanFromAnswers(
     `[constructPlanFromAnswers] Building plan from ${answers.length} answers`
   );
 
-  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate(
+    "plan-constructor.system.md"
+  );
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -345,7 +353,9 @@ Respond with JSON following the schema in the system prompt.`
 export async function constructDefaultPlan(goal: string): Promise<Plan> {
   console.log("[constructDefaultPlan] Building plan with default assumptions");
 
-  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate(
+    "plan-constructor.system.md"
+  );
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
