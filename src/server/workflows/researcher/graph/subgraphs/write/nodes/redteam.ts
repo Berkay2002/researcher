@@ -420,5 +420,3 @@ Evaluate this draft and identify any critical quality issues.`;
     ];
   }
 }
-
-
