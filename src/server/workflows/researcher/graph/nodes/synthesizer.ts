@@ -9,12 +9,7 @@ import {
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
 import { getCurrentDateString } from "@/server/shared/utils/current-date";
-import type {
-  Citation,
-  Draft,
-  ParentState,
-  UnifiedSearchDoc,
-} from "../state";
+import type { Citation, Draft, ParentState, UnifiedSearchDoc } from "../state";
 
 // Constants for synthesis
 const MAX_SOURCES_FOR_SYNTHESIS = 20;

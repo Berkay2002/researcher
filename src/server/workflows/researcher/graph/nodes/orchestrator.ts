@@ -62,7 +62,11 @@ export async function orchestrator(
   console.log("[orchestrator] Aspects:", analysis.aspects);
 
   // Step 2: Decompose into parallel tasks
-  const taskDecomposition = await decomposeIntoTasks(goal, analysis, constraints);
+  const taskDecomposition = await decomposeIntoTasks(
+    goal,
+    analysis,
+    constraints
+  );
   console.log(
     `[orchestrator] Created ${taskDecomposition.tasks.length} parallel tasks`
   );
