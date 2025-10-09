@@ -181,6 +181,15 @@ function buildParentGraph() {
       `[router] Found ${researchIssues.length} research issues, ${revisionIssues.length} revision issues`
     );
 
+    // Handle mixed issues - route to orchestrator for triage
+    if (researchIssues.length > 0 && revisionIssues.length > 0) {
+      console.warn(
+        `[router] MIXED ISSUES: ${researchIssues.length} research + ${revisionIssues.length} revision`
+      );
+      console.log("[router] Routing to orchestrator for triage");
+      return "orchestrator";
+    }
+
     // Research loop (LIMITED to 1 iteration)
     if (
       researchIssues.length > 0 &&

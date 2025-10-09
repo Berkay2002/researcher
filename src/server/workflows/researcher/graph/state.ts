@@ -226,6 +226,7 @@ export type PlanningSession = {
   answers?: QuestionAnswer[];
   // biome-ignore lint/suspicious/noExplicitAny: Tasks are dynamically added by orchestrator
   tasks?: any[];
+  revisionInstructions?: string[]; // Explicit revision guidance from redteam
 };
 
 // ============================================================================

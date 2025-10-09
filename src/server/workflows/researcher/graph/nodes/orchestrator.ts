@@ -66,15 +66,39 @@ export async function orchestrator(
   console.log("[orchestrator] Goal:", goal);
   console.log("[orchestrator] Constraints:", constraints);
 
+  // Detect feedback mode (called from redteam)
+  const hasFeedbackIssues = issues && issues.length > 0;
+  const researchIssues = hasFeedbackIssues
+    ? issues.filter((i) => i.type === "needs_research")
+    : [];
+  const revisionIssues = hasFeedbackIssues
+    ? issues.filter((i) => i.type === "needs_revision")
+    : [];
+
+  // Handle pure revision issues (no research spawning needed)
+  if (
+    hasFeedbackIssues &&
+    revisionIssues.length > 0 &&
+    researchIssues.length === 0
+  ) {
+    console.log(
+      `[orchestrator] Pure revision mode - ${revisionIssues.length} revision issues, routing directly to synthesizer`
+    );
+    return {
+      planning: {
+        ...state.planning,
+        tasks: [], // No workers to spawn
+        revisionInstructions: revisionIssues.map((i) => i.description),
+      },
+      totalIterations: currentTotal + 1,
+    };
+  }
+
   let taskDecomposition: TaskDecomposition;
 
   // Handle supplemental research mode
   if (isSupplementalResearch) {
-    // Generate focused tasks from research issues only
-    const researchIssues = (issues || []).filter(
-      (i) => i.type === "needs_research"
-    );
-
+    // Use researchIssues from above (already filtered)
     console.log(
       `[orchestrator] Generating ${MIN_WORKERS} focused tasks for ${researchIssues.length} research issues`
     );
