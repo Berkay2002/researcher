@@ -195,7 +195,7 @@ export async function planGate(
       );
     }
   }
-  
+
   // Validation: ensure we have a goal
   if (!goal) {
     throw new Error("No goal provided in userInputs or messages");

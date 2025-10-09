@@ -116,12 +116,14 @@ function buildParentGraph() {
    */
   function routeRedteam(state: ParentState): string {
     const hasIssues = state.issues && state.issues.length > 0;
-    
+
     if (hasIssues) {
-      console.log(`[router] Redteam found ${state.issues.length} issues, looping back to synthesizer`);
+      console.log(
+        `[router] Redteam found ${state.issues.length} issues, looping back to synthesizer`
+      );
       return "synthesizer";
     }
-    
+
     console.log("[router] Redteam passed, proceeding to END");
     return END;
   }
@@ -149,7 +151,7 @@ function buildParentGraph() {
 
     // Synthesizer → redteam quality gate
     .addEdge("synthesizer", "redteam")
-    
+
     // Conditional edge: redteam → synthesizer (if issues) or END (if passed)
     .addConditionalEdges("redteam", routeRedteam, {
       synthesizer: "synthesizer",

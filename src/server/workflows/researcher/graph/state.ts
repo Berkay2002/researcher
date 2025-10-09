@@ -227,7 +227,7 @@ export type PlanningSession = {
  *
  * This state is shared across all subgraphs and nodes in the research pipeline.
  * Uses proper reducer patterns for state merging and supports Command-based updates.
- * 
+ *
  * Extends MessagesAnnotation to provide proper LangSmith Chat support.
  */
 export const ParentStateAnnotation = Annotation.Root({
