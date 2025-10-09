@@ -46,3 +46,6 @@ next-env.d.ts
 
 #.mcp.json
 node_modules
+
+# LangGraph API
+.langgraph_api
