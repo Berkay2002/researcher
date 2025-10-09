@@ -148,3 +148,22 @@ export function getGraph() {
   }
   return compiled;
 }
+
+/**
+ * Create the Orchestrator-Worker research workflow
+ * 
+ * This is the main export function for LangGraph CLI compatibility.
+ * It creates a workflow that follows the Orchestrator-Worker pattern:
+ * 
+ * 1. User provides research goal
+ * 2. Planner creates research plan (with optional HITL)
+ * 3. Orchestrator decomposes goal into parallel tasks
+ * 4. Workers execute tasks in parallel (via Send API)
+ * 5. Synthesizer aggregates results into final report
+ * 6. Redteam performs quality checks
+ * 
+ * @returns Compiled graph for LangGraph CLI
+ */
+export function createResearcherWorkflow() {
+  return getGraph();
+}
