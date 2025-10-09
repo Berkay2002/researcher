@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "react-agent": "./src/server/agents/react/agent.ts:createReactAgent"
+  },
+  "env": ".env.local"
+}

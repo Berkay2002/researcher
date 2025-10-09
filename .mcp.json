@@ -7,16 +7,6 @@
         "DEFAULT_MINIMUM_TOKENS": ""
       }
     },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@playwright/mcp@0.0.38",
-        "--browser=",
-        "--headless=",
-        "--viewport-size="
-      ]
-    },
     "shadcn": {
       "command": "npx",
       "args": ["shadcn@latest", "mcp"]
