@@ -87,6 +87,15 @@ export async function redteam(
     `[redteam] Iteration ${currentIteration + 1}/${MAX_TOTAL_ITERATIONS}`
   );
 
+  // Early exit if already force-approved (defensive check)
+  // This prevents redundant evaluation if the graph somehow reaches this node again
+  if (forceApproved) {
+    console.log(
+      "[redteam] Draft already force-approved, skipping quality checks"
+    );
+    return { issues: [], forceApproved: true };
+  }
+
   // Get progressive thresholds for this iteration
   const thresholds = getProgressiveThresholds(currentIteration);
   console.log("[redteam] Quality thresholds:", thresholds);
