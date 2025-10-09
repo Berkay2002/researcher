@@ -3,7 +3,11 @@
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex validation logic> */
 /** biome-ignore-all lint/suspicious/useAwait: <Complex validation logic> */
 
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import { getLLM } from "@/server/shared/configs/llm";
 import type {
   Citation,
@@ -138,7 +142,7 @@ export async function synthesize(
       },
     });
 
-    return { 
+    return {
       draft,
       messages: [aiMessage],
     };

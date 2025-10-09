@@ -1,7 +1,11 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Complex synthesis logic> */
 
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
 import type { Citation, Draft, ParentState, UnifiedSearchDoc } from "../state";
@@ -126,7 +130,7 @@ export async function synthesizer(
     },
   });
 
-  return { 
+  return {
     draft,
     messages: [aiMessage],
   };
