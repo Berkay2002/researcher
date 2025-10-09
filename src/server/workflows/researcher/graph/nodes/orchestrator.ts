@@ -2,6 +2,7 @@
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getLLM } from "@/server/shared/configs/llm";
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 import type { ParentState } from "../state";
 import {
   type OrchestrationAnalysis,
@@ -168,8 +169,11 @@ async function analyzeResearchGoal(
   console.log("[orchestrator] Using LLM to analyze research goal...");
 
   const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
+  const currentDate = getCurrentDateString();
 
   const systemPrompt = `You are a research planning expert. Analyze the research goal to understand its complexity and key domains.
+
+CURRENT DATE: ${currentDate}
 
 Your analysis should identify:
 1. Complexity level (simple, moderate, complex)
@@ -227,12 +231,15 @@ async function generateSupplementalTasks(
   );
 
   const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
+  const currentDate = getCurrentDateString();
 
   const issuesText = researchIssues
     .map((issue, i) => `${i + 1}. ${issue.description}`)
     .join("\n");
 
   const systemPrompt = `You are a research task planner focused on filling specific research gaps identified in a quality review.
+
+CURRENT DATE: ${currentDate}
 
 Generate 1-2 highly targeted supplemental research tasks to address ONLY the identified issues.
 
@@ -310,8 +317,11 @@ async function decomposeIntoTasks(
   console.log("[orchestrator] Decomposing research into parallel tasks...");
 
   const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
+  const currentDate = getCurrentDateString();
 
   const systemPrompt = `You are a research task planner. Break down the research goal into ${MIN_WORKERS}-${MAX_WORKERS} distinct parallel research tasks.
+
+CURRENT DATE: ${currentDate}
 
 Each task should:
 1. Focus on a specific aspect (e.g., financial analysis, technical evaluation, market trends, competitive landscape)

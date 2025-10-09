@@ -4,6 +4,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { createLLM } from "@/server/shared/configs/llm";
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 import type { Plan, Question, QuestionAnswer } from "../../../state";
 import type { PromptAnalysis } from "../state";
 
@@ -35,6 +36,23 @@ async function loadSystemPrompt(filename: string): Promise<string> {
 }
 
 /**
+ * Load system prompt and inject current date context
+ */
+async function loadSystemPromptWithDate(filename: string): Promise<string> {
+  const basePrompt = await loadSystemPrompt(filename);
+  const currentDate = getCurrentDateString();
+  
+  // Prepend date context to the prompt
+  return `**CURRENT DATE: ${currentDate}**
+
+Note: Today's date is ${currentDate}. When considering timeframes, recency, or temporal context, use this as your reference point.
+
+---
+
+${basePrompt}`;
+}
+
+/**
  * Analyze prompt completeness
  *
  * Uses Gemini 2.5 Pro to identify missing information in user's research prompt
@@ -44,7 +62,7 @@ export async function analyzePromptCompleteness(
 ): Promise<PromptAnalysis> {
   console.log("[analyzePromptCompleteness] Analyzing prompt:", goal);
 
-  const systemPrompt = await loadSystemPrompt("prompt-analyzer.system.md");
+  const systemPrompt = await loadSystemPromptWithDate("prompt-analyzer.system.md");
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -115,7 +133,7 @@ export async function generateDynamicQuestions(
     `[generateDynamicQuestions] Generating questions for ${analysis.missingAspects.length} missing aspects`
   );
 
-  const systemPrompt = await loadSystemPrompt("question-generator.system.md");
+  const systemPrompt = await loadSystemPromptWithDate("question-generator.system.md");
 
   const llm = createLLM(GENERATION_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -215,7 +233,7 @@ Respond with a JSON object containing a "questions" array following the schema i
 export async function constructPlanFromPrompt(goal: string): Promise<Plan> {
   console.log("[constructPlanFromPrompt] Building plan from complete prompt");
 
-  const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -263,7 +281,7 @@ export async function constructPlanFromAnswers(
     `[constructPlanFromAnswers] Building plan from ${answers.length} answers`
   );
 
-  const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },
@@ -327,7 +345,7 @@ Respond with JSON following the schema in the system prompt.`
 export async function constructDefaultPlan(goal: string): Promise<Plan> {
   console.log("[constructDefaultPlan] Building plan with default assumptions");
 
-  const systemPrompt = await loadSystemPrompt("plan-constructor.system.md");
+  const systemPrompt = await loadSystemPromptWithDate("plan-constructor.system.md");
 
   const llm = createLLM(ANALYSIS_MODEL, DEFAULT_TEMPERATURE).bind({
     response_format: { type: "json_object" },

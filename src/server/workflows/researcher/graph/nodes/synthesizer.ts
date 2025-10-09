@@ -8,6 +8,7 @@ import {
 } from "@langchain/core/messages";
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 import type {
   Citation,
   Draft,
@@ -294,7 +295,19 @@ ${revisionContext?.issues.map((issue, i) => `${i + 1}. [${issue.type}] ${issue.d
 Please address ALL of these issues in your revised report while maintaining the overall structure and quality.`
     : "";
 
+  // Get current date for temporal context
+  const currentDate = getCurrentDateString();
+
   const systemPrompt = `You are a research synthesis expert. Your task is to ${isRevision ? "revise" : "write"} a ${deliverable} based on the research findings from multiple parallel research workers.
+
+CURRENT DATE: ${currentDate}
+
+CRITICAL - TEMPORAL ACCURACY:
+- The current date is ${currentDate}
+- ALL citations and sources are from the PAST (before today)
+- DO NOT claim citations are "dated 2025" or any future date
+- When describing sources, use past tense (e.g., "published in 2024", "released last year")
+- Be accurate about when sources were published based on their metadata
 
 Your report should:
 1. Synthesize insights from all research aspects
@@ -303,6 +316,7 @@ Your report should:
 4. Be comprehensive yet concise
 5. Highlight key findings and insights
 6. Address different perspectives when relevant${isRevision ? "\n7. ADDRESS ALL QUALITY ISSUES from the review feedback" : ""}
+8. Ensure temporal accuracy - no future-dated citations
 
 Use markdown formatting for structure and readability.`;
 

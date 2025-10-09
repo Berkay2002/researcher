@@ -6,6 +6,7 @@
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { z } from "zod";
 import { getLLM } from "@/server/shared/configs/llm";
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 import type {
   Draft,
   Evidence,
@@ -337,13 +338,25 @@ async function performLLMQualityCheck(
 
   const llm = getLLM("quality");
 
+  // Get current date for temporal context
+  const currentDate = getCurrentDateString();
+
   const systemPrompt = `You are a quality assurance reviewer for research reports. Evaluate the draft and identify quality issues.
+
+CURRENT DATE: ${currentDate}
+
+IMPORTANT TEMPORAL CONTEXT:
+- Use the current date above to evaluate citation recency
+- Do NOT assume citations are from 2025 or any future date
+- Check if the citation dates provided are actually in the past (before today)
+- If citations claim to be from the future, that's a critical error
 
 Evaluate based on:
 1. **Relevance**: Does it address the research goal?
 2. **Coherence**: Is it well-structured and logical?
 3. **Writing Quality**: Clear, professional, well-organized?
 4. **Citation Support**: Are major claims supported by citations?
+5. **Temporal Accuracy**: Are citation dates reasonable (not from the future)?
 
 CLASSIFICATION RULES:
 - **needs_research**: Claims are COMPLETELY UNSUPPORTED or major gaps in evidence/sources/citations

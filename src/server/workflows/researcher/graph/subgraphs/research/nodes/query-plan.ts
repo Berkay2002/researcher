@@ -2,6 +2,7 @@
 
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { getLLM } from "@/server/shared/configs/llm";
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 import type { ParentState } from "../../../state";
 
 // Constants for query planning
@@ -59,8 +60,11 @@ async function generateQueriesWithLLM(
   console.log("[queryPlan] Using LLM to generate queries...");
 
   const llm = getLLM("generation");
+  const currentDate = getCurrentDateString();
 
   const systemPrompt = `You are a research query generator. Your task is to create 5-7 diverse, high-quality search queries for the given research goal.
+
+CURRENT DATE: ${currentDate}
 
 Your queries should:
 1. Cover different aspects of the topic (financial, technical, market, competitive, etc.)
@@ -68,6 +72,7 @@ Your queries should:
 3. Be specific enough to return relevant results
 4. Include different query types (overview, analysis, recent developments, etc.)
 5. Consider the provided constraints
+6. Include temporal context when relevant (e.g., "2024", "recent", "latest")
 
 Return ONLY a raw JSON array of query strings with no markdown formatting.
 Example: ["query 1", "query 2", "query 3"]`;
