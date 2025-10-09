@@ -12,9 +12,9 @@ import { redteam } from "./subgraphs/write/nodes/redteam";
 import type { ResearchTask } from "./worker-state";
 
 // Iteration limits for termination guarantees
-const MAX_TOTAL_ITERATIONS = 3;
-const MAX_RESEARCH_ITERATIONS = 1;
-const MAX_REVISION_ITERATIONS = 2;
+const MAX_TOTAL_ITERATIONS = 9;
+const MAX_RESEARCH_ITERATIONS = 4;
+const MAX_REVISION_ITERATIONS = 5;
 
 /**
  * Compiled parent graph (singleton)
@@ -124,9 +124,9 @@ function buildParentGraph() {
    * 5. If budget exhausted → Force END
    *
    * Guarantees:
-   * - Maximum total iterations: 3
-   * - Maximum research iterations: 1
-   * - Maximum revision iterations: 2
+   * - Maximum total iterations: 5
+   * - Maximum research iterations: 2
+   * - Maximum revision iterations: 3
    * - Force approval on final iteration
    */
 

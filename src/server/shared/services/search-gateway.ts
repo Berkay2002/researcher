@@ -3,6 +3,7 @@ import type { UnifiedSearchDoc } from "@/server/workflows/researcher/graph/state
 import { getExaClient } from "../tools/exa";
 import { getTavilyClient } from "../tools/tavily";
 import { shortHash } from "../utils/hashing";
+import { createRateLimiter } from "../utils/rate-limiter";
 import { dedupeKeyForUrl } from "../utils/url";
 
 // Domain resolution utilities
@@ -55,6 +56,20 @@ function resolveDomainFilters(domains: string[]): string[] {
 const DEFAULT_MAX_RESULTS = 10;
 const SEARCH_PROVIDERS_COUNT = 2;
 const EXCERPT_LENGTH = 500;
+
+// Rate limit constants
+const EXA_REQUESTS_PER_SECOND = 5; // Exa's documented rate limit
+const TAVILY_REQUESTS_PER_SECOND = 10; // Conservative preventive limit
+
+// Rate limiters for API providers
+const exaRateLimiter = createRateLimiter(
+  EXA_REQUESTS_PER_SECOND,
+  EXA_REQUESTS_PER_SECOND
+);
+const tavilyRateLimiter = createRateLimiter(
+  TAVILY_REQUESTS_PER_SECOND,
+  TAVILY_REQUESTS_PER_SECOND
+);
 
 /**
  * Search gateway mode for two-pass search architecture
@@ -213,38 +228,41 @@ async function searchTavily(
 ): Promise<UnifiedSearchDoc[]> {
   const { query, maxResults, includeDomains, excludeDomains, mode } = options;
   try {
-    const tavily = getTavilyClient();
+    // Apply rate limiting before making the API call
+    return await tavilyRateLimiter.execute(async () => {
+      const tavily = getTavilyClient();
 
-    // Discovery mode: advanced depth, no raw content
-    // Enrich mode: not used for search, only for content fetching
-    const searchOptions = {
-      query,
-      maxResults,
-      includeDomains,
-      excludeDomains,
-      searchDepth: (mode === "discovery" ? "advanced" : "basic") as
-        | "basic"
-        | "advanced",
-      includeRawContent: false,
-    };
+      // Discovery mode: advanced depth, no raw content
+      // Enrich mode: not used for search, only for content fetching
+      const searchOptions = {
+        query,
+        maxResults,
+        includeDomains,
+        excludeDomains,
+        searchDepth: (mode === "discovery" ? "advanced" : "basic") as
+          | "basic"
+          | "advanced",
+        includeRawContent: false,
+      };
 
-    const results = await tavily.search(searchOptions);
+      const results = await tavily.search(searchOptions);
 
-    return results.map((r) => ({
-      id: shortHash(r.url),
-      provider: "tavily" as const,
-      query,
-      url: r.url,
-      hostname: new URL(r.url).hostname,
-      title: r.title,
-      excerpt: r.snippet,
-      content: null, // No full content in discovery mode
-      publishedAt: r.publishedAt ?? null,
-      providerScore: r.score,
-      score: null, // Will be normalized later
-      fetchedAt: new Date().toISOString(),
-      sourceMeta: r, // Keep raw provider record
-    }));
+      return results.map((r) => ({
+        id: shortHash(r.url),
+        provider: "tavily" as const,
+        query,
+        url: r.url,
+        hostname: new URL(r.url).hostname,
+        title: r.title,
+        excerpt: r.snippet,
+        content: null, // No full content in discovery mode
+        publishedAt: r.publishedAt ?? null,
+        providerScore: r.score,
+        score: null, // Will be normalized later
+        fetchedAt: new Date().toISOString(),
+        sourceMeta: r, // Keep raw provider record
+      }));
+    });
   } catch (error) {
     // Log error but don't throw - allow other provider to succeed
     console.error("[searchGateway] Tavily search failed:", error);
@@ -268,39 +286,42 @@ async function searchExa(
 ): Promise<UnifiedSearchDoc[]> {
   const { query, maxResults, includeDomains, excludeDomains, mode } = options;
   try {
-    const exa = getExaClient();
+    // Apply rate limiting before making the API call
+    return await exaRateLimiter.execute(async () => {
+      const exa = getExaClient();
 
-    // Discovery mode: highlights only, no full content
-    const searchOptions = {
-      query,
-      maxResults,
-      includeDomains,
-      excludeDomains,
-      contents:
-        mode === "discovery"
-          ? {
-              highlights: { numSentences: 1, highlightsPerUrl: 1 },
-            }
-          : undefined,
-    };
+      // Discovery mode: highlights only, no full content
+      const searchOptions = {
+        query,
+        maxResults,
+        includeDomains,
+        excludeDomains,
+        contents:
+          mode === "discovery"
+            ? {
+                highlights: { numSentences: 1, highlightsPerUrl: 1 },
+              }
+            : undefined,
+      };
 
-    const results = await exa.search(searchOptions);
+      const results = await exa.search(searchOptions);
 
-    return results.map((r) => ({
-      id: shortHash(r.url),
-      provider: "exa" as const,
-      query,
-      url: r.url,
-      hostname: new URL(r.url).hostname,
-      title: r.title,
-      excerpt: r.snippet,
-      content: null, // No full content in discovery mode
-      publishedAt: r.publishedAt ?? null,
-      providerScore: r.score,
-      score: null, // Will be normalized later
-      fetchedAt: new Date().toISOString(),
-      sourceMeta: r, // Keep raw provider record
-    }));
+      return results.map((r) => ({
+        id: shortHash(r.url),
+        provider: "exa" as const,
+        query,
+        url: r.url,
+        hostname: new URL(r.url).hostname,
+        title: r.title,
+        excerpt: r.snippet,
+        content: null, // No full content in discovery mode
+        publishedAt: r.publishedAt ?? null,
+        providerScore: r.score,
+        score: null, // Will be normalized later
+        fetchedAt: new Date().toISOString(),
+        sourceMeta: r, // Keep raw provider record
+      }));
+    });
   } catch (error) {
     console.error("[searchGateway] Exa search failed:", error);
     return [];
@@ -312,24 +333,27 @@ async function searchExa(
  */
 async function enrichUrlsTavily(urls: string[]): Promise<UnifiedSearchDoc[]> {
   try {
-    const tavily = getTavilyClient();
-    const extracted = await tavily.extract(urls);
+    // Apply rate limiting before making the API call
+    return await tavilyRateLimiter.execute(async () => {
+      const tavily = getTavilyClient();
+      const extracted = await tavily.extract(urls);
 
-    return extracted.map((r) => ({
-      id: shortHash(r.url),
-      provider: "tavily" as const,
-      query: r.url,
-      url: r.url,
-      hostname: new URL(r.url).hostname,
-      title: r.title ?? null,
-      excerpt: r.raw_content ? r.raw_content.slice(0, EXCERPT_LENGTH) : null,
-      content: r.raw_content ?? null,
-      publishedAt: r.published_date ?? null,
-      providerScore: null,
-      score: null,
-      fetchedAt: new Date().toISOString(),
-      sourceMeta: r, // Keep raw provider record
-    }));
+      return extracted.map((r) => ({
+        id: shortHash(r.url),
+        provider: "tavily" as const,
+        query: r.url,
+        url: r.url,
+        hostname: new URL(r.url).hostname,
+        title: r.title ?? null,
+        excerpt: r.raw_content ? r.raw_content.slice(0, EXCERPT_LENGTH) : null,
+        content: r.raw_content ?? null,
+        publishedAt: r.published_date ?? null,
+        providerScore: null,
+        score: null,
+        fetchedAt: new Date().toISOString(),
+        sourceMeta: r, // Keep raw provider record
+      }));
+    });
   } catch (error) {
     console.error("[searchGateway] Tavily enrichment failed:", error);
     return [];
@@ -341,28 +365,31 @@ async function enrichUrlsTavily(urls: string[]): Promise<UnifiedSearchDoc[]> {
  */
 async function enrichUrlsExa(urls: string[]): Promise<UnifiedSearchDoc[]> {
   try {
-    const exa = getExaClient();
+    // Apply rate limiting before making the API call
+    return await exaRateLimiter.execute(async () => {
+      const exa = getExaClient();
 
-    // Use Exa's contents endpoint for full text
-    const results = await exa.getContents(urls, {
-      text: true,
+      // Use Exa's contents endpoint for full text
+      const results = await exa.getContents(urls, {
+        text: true,
+      });
+
+      return results.map((result) => ({
+        id: shortHash(result.url),
+        provider: "exa" as const,
+        query: result.url,
+        url: result.url,
+        hostname: new URL(result.url).hostname,
+        title: result.title,
+        excerpt: result.text?.slice(0, EXCERPT_LENGTH) || null,
+        content: result.text || null,
+        publishedAt: result.publishedDate ?? null,
+        providerScore: result.score,
+        score: null,
+        fetchedAt: new Date().toISOString(),
+        sourceMeta: result, // Keep raw provider record
+      }));
     });
-
-    return results.map((result) => ({
-      id: shortHash(result.url),
-      provider: "exa" as const,
-      query: result.url,
-      url: result.url,
-      hostname: new URL(result.url).hostname,
-      title: result.title,
-      excerpt: result.text?.slice(0, EXCERPT_LENGTH) || null,
-      content: result.text || null,
-      publishedAt: result.publishedDate ?? null,
-      providerScore: result.score,
-      score: null,
-      fetchedAt: new Date().toISOString(),
-      sourceMeta: result, // Keep raw provider record
-    }));
   } catch (error) {
     console.error("[searchGateway] Exa enrichment failed:", error);
     return [];

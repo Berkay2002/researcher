@@ -232,17 +232,17 @@ async function generateSupplementalTasks(
     .map((issue, i) => `${i + 1}. ${issue.description}`)
     .join("\n");
 
-  const systemPrompt = `You are a research task planner focused on addressing specific research gaps.
+  const systemPrompt = `You are a research task planner focused on filling specific research gaps identified in a quality review.
 
-Generate 1-2 highly focused supplemental research tasks to address the identified issues.
+Generate 1-2 highly targeted supplemental research tasks to address ONLY the identified issues.
 
 Each task should:
-1. Directly address one or more research issues
-2. Have 2-3 targeted search queries
-3. Be independently executable
+1. Directly address specific missing evidence or unsupported claims
+2. Have 2-3 precise search queries targeting the gaps
+3. Be minimal and focused - ONLY what's needed to fix the issues
 4. Have a priority score (0-1)
 
-Keep tasks minimal and focused - this is supplemental research, not comprehensive analysis.`;
+IMPORTANT: This is supplemental research to fill gaps, not a comprehensive re-research. Only search for what's explicitly missing.`;
 
   const constraintsText =
     Object.keys(constraints).length > 0
@@ -251,10 +251,10 @@ Keep tasks minimal and focused - this is supplemental research, not comprehensiv
 
   const humanPrompt = `Original research goal: ${goal}
 
-Research Issues to Address:
+Specific Research Gaps Identified:
 ${issuesText}${constraintsText}
 
-Please create 1-2 focused supplemental research tasks with targeted queries to address these specific issues.`;
+Create 1-2 minimal supplemental research tasks with precise queries to fill ONLY these specific gaps. Do not re-research the entire topic.`;
 
   try {
     const llmWithStructuredOutput = llm.withStructuredOutput(
