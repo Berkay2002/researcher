@@ -214,6 +214,8 @@ export type PlanningSession = {
   analysis?: PromptAnalysis;
   questions?: Question[];
   answers?: QuestionAnswer[];
+  // biome-ignore lint/suspicious/noExplicitAny: Tasks are dynamically added by orchestrator
+  tasks?: any[];
 };
 
 // ============================================================================
@@ -265,6 +267,24 @@ export const ParentStateAnnotation = Annotation.Root({
   research: Annotation<ResearchState | null>({
     reducer: (_, next) => next,
     default: () => null,
+  }),
+
+  // Worker results from parallel research tasks (Orchestrator-Worker pattern)
+  // Accumulates results from all workers executing in parallel
+  workerResults: Annotation<
+    Array<{
+      taskId: string;
+      aspect: string;
+      documents: UnifiedSearchDoc[];
+      summary: string;
+      confidence: number;
+      queriesExecuted: number;
+      documentsFound: number;
+      documentsSelected: number;
+    }>
+  >({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
+    default: () => [],
   }),
 
   // Processed evidence with content (legacy, for backward compatibility)

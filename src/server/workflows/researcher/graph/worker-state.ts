@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 import { Annotation } from "@langchain/langgraph";
 import { z } from "zod";
-import type { UnifiedSearchDoc } from "../../state";
+import type { UnifiedSearchDoc } from "./state";
 
 // ============================================================================
 // Research Task Schema
@@ -33,9 +33,7 @@ export const TaskDecompositionSchema = z.object({
   tasks: z
     .array(ResearchTaskSchema)
     .describe("List of research tasks to execute in parallel"),
-  reasoning: z
-    .string()
-    .describe("Explanation of task decomposition strategy"),
+  reasoning: z.string().describe("Explanation of task decomposition strategy"),
 });
 
 export type TaskDecomposition = z.infer<typeof TaskDecompositionSchema>;
@@ -50,9 +48,7 @@ export type TaskDecomposition = z.infer<typeof TaskDecompositionSchema>;
 export const WorkerResultSchema = z.object({
   taskId: z.string().describe("Task ID this result corresponds to"),
   aspect: z.string().describe("Research aspect covered"),
-  documents: z
-    .array(z.any())
-    .describe("Discovered and assessed documents"),
+  documents: z.array(z.any()).describe("Discovered and assessed documents"),
   summary: z.string().describe("Brief summary of findings"),
   confidence: z
     .number()
@@ -144,9 +140,7 @@ export const OrchestrationAnalysisSchema = z.object({
   complexity: z
     .enum(["simple", "moderate", "complex"])
     .describe("Complexity of the research goal"),
-  domains: z
-    .array(z.string())
-    .describe("Key domains or fields involved"),
+  domains: z.array(z.string()).describe("Key domains or fields involved"),
   aspects: z
     .array(z.string())
     .describe("Different aspects to research in parallel"),
@@ -155,14 +149,14 @@ export const OrchestrationAnalysisSchema = z.object({
     .min(1)
     .max(10)
     .describe("Estimated number of parallel workers needed"),
-  strategy: z
-    .string()
-    .describe("Overall research strategy and approach"),
+  strategy: z.string().describe("Overall research strategy and approach"),
 });
 
-export type OrchestrationAnalysis = z.infer<
-  typeof OrchestrationAnalysisSchema
->;
+export type OrchestrationAnalysis = z.infer<typeof OrchestrationAnalysisSchema>;
+
+// Constants for synthesis configuration
+const MIN_DOCUMENTS = 5;
+const MAX_DOCUMENTS = 50;
 
 /**
  * Synthesis configuration for aggregating worker results
@@ -176,8 +170,8 @@ export const SynthesisConfigSchema = z.object({
     .describe("Criteria for ranking final document set"),
   maxDocuments: z
     .number()
-    .min(5)
-    .max(50)
+    .min(MIN_DOCUMENTS)
+    .max(MAX_DOCUMENTS)
     .describe("Maximum documents to include in final set"),
   minConfidence: z
     .number()
