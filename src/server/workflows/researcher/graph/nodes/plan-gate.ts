@@ -175,7 +175,8 @@ async function calculateCoherence(goal: string): Promise<number> {
 export async function planGate(
   state: ParentState
 ): Promise<Partial<ParentState>> {
-  let { userInputs } = state;
+  // Initialize userInputs if not provided (for LangSmith Chat support)
+  let userInputs = state.userInputs || { goal: "" };
   let { goal, modeOverride } = userInputs;
 
   // Extract goal from messages if not provided in userInputs (LangSmith Chat support)
@@ -193,6 +194,11 @@ export async function planGate(
         `[planGate] Extracted goal from messages: "${goal.substring(0, GOAL_PREVIEW_LENGTH)}${TRUNCATE_SUFFIX}"`
       );
     }
+  }
+  
+  // Validation: ensure we have a goal
+  if (!goal) {
+    throw new Error("No goal provided in userInputs or messages");
   }
 
   console.log(

@@ -48,10 +48,20 @@ export async function synthesizer(
 ): Promise<Partial<ParentState>> {
   console.log("[synthesizer] Aggregating results from all workers...");
 
-  const { workerResults, userInputs, plan } = state;
+  const { workerResults, userInputs, plan, issues, draft: previousDraft } = state;
 
   if (!userInputs?.goal) {
     throw new Error("No goal provided in userInputs");
+  }
+
+  // Check if this is a revision iteration (redteam found issues)
+  const isRevision = issues && issues.length > 0 && previousDraft;
+  
+  if (isRevision) {
+    console.log(`[synthesizer] REVISION MODE: Addressing ${issues.length} issues from redteam`);
+    console.log("[synthesizer] Issues to address:", issues);
+  } else {
+    console.log("[synthesizer] INITIAL SYNTHESIS: Generating first draft");
   }
 
   if (!workerResults || workerResults.length === 0) {
@@ -62,6 +72,7 @@ export async function synthesizer(
         citations: [],
         confidence: 0,
       },
+      issues: [], // Clear issues
     };
   }
 

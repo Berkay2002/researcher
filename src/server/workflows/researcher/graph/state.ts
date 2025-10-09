@@ -1,5 +1,4 @@
-import type { BaseMessage } from "@langchain/core/messages";
-import { Annotation, messagesStateReducer } from "@langchain/langgraph";
+import { Annotation, MessagesAnnotation } from "@langchain/langgraph";
 import { z } from "zod";
 import type { PromptAnalysis } from "./subgraphs/planner/state";
 
@@ -228,25 +227,25 @@ export type PlanningSession = {
  *
  * This state is shared across all subgraphs and nodes in the research pipeline.
  * Uses proper reducer patterns for state merging and supports Command-based updates.
+ * 
+ * Extends MessagesAnnotation to provide proper LangSmith Chat support.
  */
 export const ParentStateAnnotation = Annotation.Root({
+  // Extend MessagesAnnotation for LangSmith Chat compatibility
+  // This provides the standard 'messages' channel that LangSmith expects
+  ...MessagesAnnotation.spec,
+
   // Thread identifier (required on all invocations)
   // This enables checkpointing and persistence across interrupts
   threadId: Annotation<string>({
     reducer: (_, next) => next,
   }),
 
-  // Messages for LangSmith Chat interface support
-  // Uses built-in messagesStateReducer for proper message handling
-  messages: Annotation<BaseMessage[]>({
-    reducer: messagesStateReducer,
-    default: () => [],
-  }),
-
   // User inputs and configuration
   // Merges user inputs with previous state to preserve partial updates
   userInputs: Annotation<UserInputs>({
     reducer: (prev, next) => ({ ...prev, ...next }),
+    default: () => ({ goal: "" }),
   }),
 
   // Planned execution strategy

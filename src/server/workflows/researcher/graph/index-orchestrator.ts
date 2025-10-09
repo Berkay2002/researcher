@@ -108,6 +108,24 @@ function buildParentGraph() {
     });
   }
 
+  /**
+   * Router function to handle redteam feedback
+   *
+   * If redteam finds issues, loop back to synthesizer for revision.
+   * Otherwise, proceed to END.
+   */
+  function routeRedteam(state: ParentState): string {
+    const hasIssues = state.issues && state.issues.length > 0;
+    
+    if (hasIssues) {
+      console.log(`[router] Redteam found ${state.issues.length} issues, looping back to synthesizer`);
+      return "synthesizer";
+    }
+    
+    console.log("[router] Redteam passed, proceeding to END");
+    return END;
+  }
+
   const builder = new StateGraph(ParentStateAnnotation)
     // Add nodes
     .addNode("planGate", planGate)
@@ -129,9 +147,14 @@ function buildParentGraph() {
     // Workers complete → synthesizer aggregates results
     .addEdge("researchWorker", "synthesizer")
 
-    // Final quality gate and completion
+    // Synthesizer → redteam quality gate
     .addEdge("synthesizer", "redteam")
-    .addEdge("redteam", END);
+    
+    // Conditional edge: redteam → synthesizer (if issues) or END (if passed)
+    .addConditionalEdges("redteam", routeRedteam, {
+      synthesizer: "synthesizer",
+      [END]: END,
+    });
 
   // Compile with Postgres checkpointer for persistent thread-level memory
   return builder.compile({ checkpointer: checkpointerSingleton });
