@@ -46,10 +46,12 @@ import { IterativeResearchStateAnnotation } from "./state";
  */
 function initializeIterativeState(state: Record<string, unknown>) {
   console.log("[IterativeResearch] Initializing subgraph state");
-  
+
   const userInputs = state.userInputs as { goal?: string } | undefined;
-  const plan = state.plan as { constraints?: Record<string, unknown> } | undefined;
-  
+  const plan = state.plan as
+    | { constraints?: Record<string, unknown> }
+    | undefined;
+
   return {
     goal: userInputs?.goal || "",
     constraints: plan?.constraints || {},
@@ -59,7 +61,8 @@ function initializeIterativeState(state: Record<string, unknown>) {
     researchComplete: false,
     currentQueries: [],
   };
-}export function buildIterativeResearchSubgraph() {
+}
+export function buildIterativeResearchSubgraph() {
   console.log(
     "[IterativeResearch] Building 3-round sequential research subgraph..."
   );
