@@ -183,7 +183,8 @@ export async function round3ReasoningNode(
   const allQueries = state.queries || [];
   const ROUND_1_QUERY_END = 3;
   const ROUND_2_QUERY_END = 7;
-  const round2Queries = allQueries.slice(ROUND_1_QUERY_END, ROUND_2_QUERY_END) || [];
+  const round2Queries =
+    allQueries.slice(ROUND_1_QUERY_END, ROUND_2_QUERY_END) || [];
   const round2SourceCount = allSourcesCount; // Total after Round 2
 
   if (writer) {
