@@ -1,6 +1,6 @@
 import { createAgent } from "langchain";
 import { createLLM } from "../../shared/configs/llm";
-import { REACT_AGENT_SYSTEM_PROMPT } from "./prompts/system";
+import { getReactAgentSystemPrompt } from "./prompts/system";
 import { ReactAgentStateSchema } from "./state";
 import { buildReactAgentTools } from "./tools";
 
@@ -48,7 +48,7 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
     tools,
     stateSchema: stateSchema ?? ReactAgentStateSchema,
     contextSchema,
-    prompt: prompt ?? REACT_AGENT_SYSTEM_PROMPT,
+    prompt: prompt ?? getReactAgentSystemPrompt(),
     preModelHook,
     postModelHook,
   };

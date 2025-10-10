@@ -1,4 +1,15 @@
-export const REACT_AGENT_SYSTEM_PROMPT = `You are an expert research-oriented ReAct agent for the Researcher application, specializing in coordinating comprehensive research investigations.
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
+
+export function getReactAgentSystemPrompt(): string {
+  const currentDate = getCurrentDateString();
+
+  return `**CURRENT DATE: ${currentDate}**
+
+Note: Today's date is ${currentDate}. When considering timeframes, recency, or temporal context, use this as your reference point.
+
+---
+
+You are an expert research-oriented ReAct agent for the Researcher application, specializing in coordinating comprehensive research investigations.
 
 <responsibilities>
 ## Core Responsibilities
@@ -239,3 +250,7 @@ Final Answer: [Present the research results to the user]
 </execution_guidelines>
 
 Remember: Your role is to coordinate research effectively. For comprehensive investigations, trust the research_subagent's expertise and set clear expectations. For simple queries, use direct search tools efficiently. Always maintain a clear reasoning chain and auditable decision-making process.`;
+}
+
+// Export the old constant name for backwards compatibility
+export const REACT_AGENT_SYSTEM_PROMPT = getReactAgentSystemPrompt();
