@@ -1,44 +1,17 @@
-import { promises as fs } from "node:fs";
-import { join } from "node:path";
-
-// Cache for the loaded prompt
-let cachedPrompt: string | null = null;
+import { getCurrentDateString } from "@/server/shared/utils/current-date";
 
 /**
- * Load research subagent system prompt from markdown file
+ * Get the research subagent system prompt with current date injected
  */
-async function loadPrompt(): Promise<string> {
-  if (cachedPrompt) {
-    return cachedPrompt;
-  }
+function getResearchSubagentSystemPromptWithDate(): string {
+  const currentDate = getCurrentDateString();
+  return `**CURRENT DATE: ${currentDate}**
 
-  const promptPath = join(
-    process.cwd(),
-    "src",
-    "server",
-    "shared",
-    "configs",
-    "prompts",
-    "research-subagent.system.md"
-  );
+Note: Today's date is ${currentDate}. When evaluating recency, publication dates, or temporal context, use this as your reference point.
 
-  cachedPrompt = await fs.readFile(promptPath, "utf-8");
-  return cachedPrompt;
-}
+---
 
-/**
- * Get the research subagent system prompt
- * Loads from markdown file on first call, then returns cached version
- */
-export async function getResearchSubagentSystemPrompt(): Promise<string> {
-  return await loadPrompt();
-}
-
-/**
- * Synchronous fallback for backward compatibility
- * Contains abbreviated version - full prompt loaded async from markdown
- */
-export const RESEARCH_SUBAGENT_SYSTEM_PROMPT = `You are an elite research analyst specialized in conducting comprehensive, in-depth research investigations.
+You are an elite research analyst specialized in conducting comprehensive, in-depth research investigations.
 
 **IMPORTANT**: Your final output MUST be a structured response containing:
 1. A complete markdown research report with inline [Source X] citations
@@ -94,3 +67,9 @@ Reference Formatting:
 - Example: [Source 1] World Health Organization. (2023). Title. https://...
 
 Continue searching until you reach the quality standards (20-30 sources, 2,000-4,000 words). Do not stop prematurely.`;
+}
+
+/**
+ * Export constant that calls the function to get the prompt with current date
+ */
+export const RESEARCH_SUBAGENT_SYSTEM_PROMPT = getResearchSubagentSystemPromptWithDate();
