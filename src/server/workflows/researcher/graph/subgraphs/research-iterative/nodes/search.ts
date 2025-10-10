@@ -11,7 +11,7 @@ const SEARCH_PAUSE_MS = 300; // Human-like delay between queries
 
 /**
  * Execute a single search query
- * 
+ *
  * Pattern: Standard async function, not LangGraph-specific
  * Uses existing searchAll service from shared/services
  */
@@ -44,14 +44,14 @@ async function executeSearch(
 
 /**
  * Round 1 Search Node
- * 
+ *
  * Executes broad orientation queries sequentially with Tavily.
- * 
+ *
  * Pattern from: documentation/langgraph/09-streaming.md
  * - Uses config.writer for streaming search events
  * - Sequential execution with delays (no parallelization)
  * - Returns Partial<State> with findings array
- * 
+ *
  * @param state Current iterative research state
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with Round 1 finding
@@ -64,7 +64,9 @@ export async function round1SearchNode(
   const writer = config.writer;
   const startedAt = new Date().toISOString();
 
-  console.log(`[Round1 Search] Executing ${currentQueries.length} broad queries sequentially...`);
+  console.log(
+    `[Round1 Search] Executing ${currentQueries.length} broad queries sequentially...`
+  );
 
   const allResults: UnifiedSearchDoc[] = [];
   const providersUsed: ("tavily" | "exa")[] = [];
@@ -79,7 +81,11 @@ export async function round1SearchNode(
       });
     }
 
-    const results = await executeSearch(query, DEFAULT_RESULTS_PER_QUERY, constraints);
+    const results = await executeSearch(
+      query,
+      DEFAULT_RESULTS_PER_QUERY,
+      constraints
+    );
     allResults.push(...results);
 
     // Track providers (Tavily is primary for Round 1)
@@ -135,14 +141,14 @@ export async function round1SearchNode(
 
 /**
  * Round 2 Search Node
- * 
+ *
  * Executes targeted deep-dive queries sequentially, alternating Tavily/Exa.
- * 
+ *
  * Pattern from: documentation/langgraph/09-streaming.md
  * - Uses config.writer for streaming
  * - Sequential execution with provider alternation
  * - Returns partial state with findings
- * 
+ *
  * @param state Current iterative research state
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with Round 2 finding
@@ -155,7 +161,9 @@ export async function round2SearchNode(
   const writer = config.writer;
   const startedAt = new Date().toISOString();
 
-  console.log(`[Round2 Search] Executing ${currentQueries.length} targeted queries sequentially...`);
+  console.log(
+    `[Round2 Search] Executing ${currentQueries.length} targeted queries sequentially...`
+  );
 
   const allResults: UnifiedSearchDoc[] = [];
   const providersUsed: ("tavily" | "exa")[] = [];
@@ -174,7 +182,11 @@ export async function round2SearchNode(
       });
     }
 
-    const results = await executeSearch(query, DEFAULT_RESULTS_PER_QUERY, constraints);
+    const results = await executeSearch(
+      query,
+      DEFAULT_RESULTS_PER_QUERY,
+      constraints
+    );
     allResults.push(...results);
 
     if (results.length > 0) {
@@ -229,14 +241,14 @@ export async function round2SearchNode(
 
 /**
  * Round 3 Search Node
- * 
+ *
  * Executes validation queries sequentially with Tavily.
- * 
+ *
  * Pattern from: documentation/langgraph/09-streaming.md
  * - Uses config.writer for streaming
  * - Sequential execution with Tavily
  * - Returns partial state with findings
- * 
+ *
  * @param state Current iterative research state
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with Round 3 finding
@@ -249,7 +261,9 @@ export async function round3SearchNode(
   const writer = config.writer;
   const startedAt = new Date().toISOString();
 
-  console.log(`[Round3 Search] Executing ${currentQueries.length} validation queries sequentially...`);
+  console.log(
+    `[Round3 Search] Executing ${currentQueries.length} validation queries sequentially...`
+  );
 
   const allResults: UnifiedSearchDoc[] = [];
   const providersUsed: ("tavily" | "exa")[] = [];
@@ -264,7 +278,11 @@ export async function round3SearchNode(
       });
     }
 
-    const results = await executeSearch(query, DEFAULT_RESULTS_PER_QUERY, constraints);
+    const results = await executeSearch(
+      query,
+      DEFAULT_RESULTS_PER_QUERY,
+      constraints
+    );
     allResults.push(...results);
 
     if (results.length > 0) {
@@ -300,7 +318,8 @@ export async function round3SearchNode(
     round: 3,
     queries: currentQueries,
     results: allResults,
-    reasoning: "Validation queries to cross-verify findings and fill final gaps",
+    reasoning:
+      "Validation queries to cross-verify findings and fill final gaps",
     gaps: [], // No more gaps after Round 3
     metadata: {
       queriesGenerated: currentQueries.length,
