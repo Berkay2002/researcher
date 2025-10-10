@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
-import type { IterativeResearchState } from "../state";
+import type { ParentState } from "../../../state";
 import {
   analyzeRound1Gaps,
   analyzeRound2Gaps,
@@ -20,15 +20,16 @@ import {
  * - Returns Partial<State> to update only specific fields
  * - Follows LangGraph node signature: (state, config) => Promise<Partial<State>>
  *
- * @param state Current iterative research state
+ * @param state Parent state with user inputs and plan
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with queries and round number
  */
 export async function round1ReasoningNode(
-  state: IterativeResearchState,
+  state: ParentState,
   config: LangGraphRunnableConfig
-): Promise<Partial<IterativeResearchState>> {
-  const { goal, constraints } = state;
+): Promise<Partial<ParentState>> {
+  const goal = state.userInputs?.goal || "";
+  const constraints = state.plan?.constraints || {};
   const writer = config.writer;
 
   console.log(
@@ -57,9 +58,9 @@ export async function round1ReasoningNode(
   }
 
   // Return partial state update (LangGraph pattern)
+  // Add queries to parent state's queries array (accumulates via reducer)
   return {
-    currentRound: 1,
-    currentQueries: queries,
+    queries,
   };
 }
 
@@ -70,47 +71,54 @@ export async function round1ReasoningNode(
  *
  * Pattern from: documentation/langgraph/09-streaming.md
  * - Uses config.writer for streaming thoughts
- * - Accesses previous round data from state.findings
+ * - Accesses previous round data from state
  * - Returns partial state update
  *
- * @param state Current iterative research state with Round 1 findings
+ * @param state Parent state with Round 1 findings
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with new queries
  */
 export async function round2ReasoningNode(
-  state: IterativeResearchState,
+  state: ParentState,
   config: LangGraphRunnableConfig
-): Promise<Partial<IterativeResearchState>> {
-  const { goal, findings } = state;
+): Promise<Partial<ParentState>> {
   const writer = config.writer;
+
+  // Extract goal from parent state
+  const goal = state.userInputs?.goal || "";
+
+  // Get findings from research state (accumulated by search nodes)
+  const enrichedSources = state.research?.enriched || [];
+
+  // For Round 2, we need to check what was gathered in Round 1
+  // Since we don't have a findings array, we'll use the enriched sources count
 
   console.log(
     "[Round2 Reasoning] Analyzing Round 1 findings and generating deep-dive queries..."
   );
 
-  // Get Round 1 finding
-  const round1Finding = findings.find((f) => f.round === 1);
-  if (!round1Finding) {
-    console.error("[Round2 Reasoning] No Round 1 findings available");
-    return {
-      currentRound: 2,
-      currentQueries: [],
-    };
+  // Get Round 1 queries from state (set by round1ReasoningNode)
+  const ROUND_1_MAX_QUERIES = 3;
+  const round1Queries = state.queries?.slice(0, ROUND_1_MAX_QUERIES) || [];
+  const round1SourceCount = enrichedSources.length;
+
+  if (round1SourceCount === 0) {
+    console.warn("[Round2 Reasoning] No Round 1 sources found");
   }
 
   if (writer) {
     await writer({
       type: "thought",
       round: 2,
-      content: `Analyzing Round 1 findings (${round1Finding.results.length} sources)...`,
+      content: `Analyzing Round 1 findings (${round1SourceCount} sources)...`,
     });
   }
 
   // Analyze gaps from Round 1
   const { gaps } = await analyzeRound1Gaps(
     goal,
-    round1Finding.queries,
-    round1Finding.results.length
+    round1Queries,
+    round1SourceCount
   );
 
   if (writer) {
@@ -123,8 +131,8 @@ export async function round2ReasoningNode(
 
   // Generate targeted queries based on gaps
   const queries = await generateRound2Queries(goal, gaps, {
-    queries: round1Finding.queries,
-    sourceCount: round1Finding.results.length,
+    queries: round1Queries,
+    sourceCount: round1SourceCount,
   });
 
   if (writer) {
@@ -136,8 +144,7 @@ export async function round2ReasoningNode(
   }
 
   return {
-    currentRound: 2,
-    currentQueries: queries,
+    queries,
   };
 }
 
@@ -151,45 +158,48 @@ export async function round2ReasoningNode(
  * - Accesses all previous findings from state
  * - Returns partial state update
  *
- * @param state Current iterative research state with Round 1 & 2 findings
+ * @param state Parent state with Round 1 & 2 findings
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with validation queries
  */
 export async function round3ReasoningNode(
-  state: IterativeResearchState,
+  state: ParentState,
   config: LangGraphRunnableConfig
-): Promise<Partial<IterativeResearchState>> {
-  const { goal, findings, allSources } = state;
+): Promise<Partial<ParentState>> {
   const writer = config.writer;
+
+  // Extract goal from parent state
+  const goal = state.userInputs?.goal || "";
+
+  // Get all enriched sources (from Rounds 1 & 2)
+  const enrichedSources = state.research?.enriched || [];
+  const allSourcesCount = enrichedSources.length;
 
   console.log(
     "[Round3 Reasoning] Analyzing Round 2 findings and generating validation queries..."
   );
 
-  // Get Round 2 finding
-  const round2Finding = findings.find((f) => f.round === 2);
-  if (!round2Finding) {
-    console.error("[Round3 Reasoning] No Round 2 findings available");
-    return {
-      currentRound: 3,
-      currentQueries: [],
-    };
-  }
+  // Get Round 2 queries from state (queries after Round 1)
+  const allQueries = state.queries || [];
+  const ROUND_1_QUERY_END = 3;
+  const ROUND_2_QUERY_END = 7;
+  const round2Queries = allQueries.slice(ROUND_1_QUERY_END, ROUND_2_QUERY_END) || [];
+  const round2SourceCount = allSourcesCount; // Total after Round 2
 
   if (writer) {
     await writer({
       type: "thought",
       round: 3,
-      content: `Analyzing Round 2 deep-dive findings (${round2Finding.results.length} new sources)...`,
+      content: `Analyzing Round 2 deep-dive findings (${allSourcesCount} total sources)...`,
     });
   }
 
   // Analyze remaining gaps after Round 2
   const { gaps } = await analyzeRound2Gaps(
     goal,
-    round2Finding.queries,
-    round2Finding.results.length,
-    allSources.length
+    round2Queries,
+    round2SourceCount,
+    allSourcesCount
   );
 
   if (writer) {
@@ -205,10 +215,10 @@ export async function round3ReasoningNode(
     goal,
     gaps,
     {
-      queries: round2Finding.queries,
-      sourceCount: round2Finding.results.length,
+      queries: round2Queries,
+      sourceCount: round2SourceCount,
     },
-    allSources.length
+    allSourcesCount
   );
 
   if (writer) {
@@ -220,7 +230,6 @@ export async function round3ReasoningNode(
   }
 
   return {
-    currentRound: 3,
-    currentQueries: queries,
+    queries,
   };
 }
