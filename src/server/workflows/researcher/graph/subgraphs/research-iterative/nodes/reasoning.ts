@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
-import type { ParentState } from "../../../state";
+import type { IterativeResearchState } from "../state";
 import {
   analyzeRound1Gaps,
   analyzeRound2Gaps,
@@ -20,16 +20,16 @@ import {
  * - Returns Partial<State> to update only specific fields
  * - Follows LangGraph node signature: (state, config) => Promise<Partial<State>>
  *
- * @param state Parent state with user inputs and plan
+ * @param state Iterative research state with goal and constraints
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with queries and round number
  */
 export async function round1ReasoningNode(
-  state: ParentState,
+  state: IterativeResearchState,
   config: LangGraphRunnableConfig
-): Promise<Partial<ParentState>> {
-  const goal = state.userInputs?.goal || "";
-  const constraints = state.plan?.constraints || {};
+): Promise<Partial<IterativeResearchState>> {
+  const goal = state.goal || "";
+  const constraints = state.constraints || {};
   const writer = config.writer;
 
   console.log(
@@ -58,9 +58,10 @@ export async function round1ReasoningNode(
   }
 
   // Return partial state update (LangGraph pattern)
-  // Add queries to parent state's queries array (accumulates via reducer)
+  // Set currentQueries for the search node to execute
   return {
-    queries,
+    currentQueries: queries,
+    currentRound: 1,
   };
 }
 
@@ -74,33 +75,31 @@ export async function round1ReasoningNode(
  * - Accesses previous round data from state
  * - Returns partial state update
  *
- * @param state Parent state with Round 1 findings
+ * @param state Iterative research state with Round 1 findings
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with new queries
  */
 export async function round2ReasoningNode(
-  state: ParentState,
+  state: IterativeResearchState,
   config: LangGraphRunnableConfig
-): Promise<Partial<ParentState>> {
+): Promise<Partial<IterativeResearchState>> {
   const writer = config.writer;
 
-  // Extract goal from parent state
-  const goal = state.userInputs?.goal || "";
+  // Extract goal from iterative research state
+  const goal = state.goal || "";
 
-  // Get findings from research state (accumulated by search nodes)
-  const enrichedSources = state.research?.enriched || [];
-
-  // For Round 2, we need to check what was gathered in Round 1
-  // Since we don't have a findings array, we'll use the enriched sources count
+  // Get findings from Round 1
+  const round1Findings = state.findings.filter((f) => f.round === 1);
 
   console.log(
     "[Round2 Reasoning] Analyzing Round 1 findings and generating deep-dive queries..."
   );
 
-  // Get Round 1 queries from state (set by round1ReasoningNode)
-  const ROUND_1_MAX_QUERIES = 3;
-  const round1Queries = state.queries?.slice(0, ROUND_1_MAX_QUERIES) || [];
-  const round1SourceCount = enrichedSources.length;
+  // Get Round 1 queries from findings
+  const round1Queries =
+    round1Findings.length > 0 ? round1Findings[0].queries : [];
+  const round1SourceCount =
+    round1Findings.length > 0 ? round1Findings[0].metadata.sourcesFound : 0;
 
   if (round1SourceCount === 0) {
     console.warn("[Round2 Reasoning] No Round 1 sources found");
@@ -144,7 +143,8 @@ export async function round2ReasoningNode(
   }
 
   return {
-    queries,
+    currentQueries: queries,
+    currentRound: 2,
   };
 }
 
@@ -158,34 +158,32 @@ export async function round2ReasoningNode(
  * - Accesses all previous findings from state
  * - Returns partial state update
  *
- * @param state Parent state with Round 1 & 2 findings
+ * @param state Iterative research state with Round 1 & 2 findings
  * @param config LangGraph runnable config with writer for streaming
  * @returns Partial state update with validation queries
  */
 export async function round3ReasoningNode(
-  state: ParentState,
+  state: IterativeResearchState,
   config: LangGraphRunnableConfig
-): Promise<Partial<ParentState>> {
+): Promise<Partial<IterativeResearchState>> {
   const writer = config.writer;
 
-  // Extract goal from parent state
-  const goal = state.userInputs?.goal || "";
+  // Extract goal from state
+  const goal = state.goal || "";
 
-  // Get all enriched sources (from Rounds 1 & 2)
-  const enrichedSources = state.research?.enriched || [];
-  const allSourcesCount = enrichedSources.length;
+  // Get findings from Rounds 1 & 2
+  const round2Findings = state.findings.filter((f) => f.round === 2);
+  const allSourcesCount = state.allSources.length;
 
   console.log(
     "[Round3 Reasoning] Analyzing Round 2 findings and generating validation queries..."
   );
 
-  // Get Round 2 queries from state (queries after Round 1)
-  const allQueries = state.queries || [];
-  const ROUND_1_QUERY_END = 3;
-  const ROUND_2_QUERY_END = 7;
+  // Get Round 2 queries from findings
   const round2Queries =
-    allQueries.slice(ROUND_1_QUERY_END, ROUND_2_QUERY_END) || [];
-  const round2SourceCount = allSourcesCount; // Total after Round 2
+    round2Findings.length > 0 ? round2Findings[0].queries : [];
+  const round2SourceCount =
+    round2Findings.length > 0 ? round2Findings[0].metadata.sourcesFound : 0;
 
   if (writer) {
     await writer({
@@ -231,6 +229,7 @@ export async function round3ReasoningNode(
   }
 
   return {
-    queries,
+    currentQueries: queries,
+    currentRound: 3,
   };
 }

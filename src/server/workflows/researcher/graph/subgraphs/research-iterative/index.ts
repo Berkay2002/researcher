@@ -1,7 +1,6 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
 import { END, START, StateGraph } from "@langchain/langgraph";
-import { ParentStateAnnotation } from "../../state";
 import {
   round1ReasoningNode,
   round2ReasoningNode,
@@ -13,18 +12,9 @@ import {
   round3SearchNode,
 } from "./nodes/search";
 import { synthesisNode } from "./nodes/synthesis";
+import { IterativeResearchStateAnnotation } from "./state";
 
 /**
- * Iterative Research State Annotation (extends ParentStateAnnotation)
- *
- * Pattern from: documentation/langgraph/10-subgraphs.md
- * - Subgraphs should use ParentStateAnnotation directly
- * - Subgraph-specific fields can be added but are ephemeral (not persisted to parent)
- * - This approach matches existing research subgraph pattern
- *
- * NOTE: We'll use ParentStateAnnotation directly and store iterative metadata
- * in the existing `research` field as part of ResearchState.
- *//**
  * Build Iterative Research Subgraph
  *
  * Creates a 3-round sequential research pattern following ChatGPT Deep Research methodology.
@@ -36,26 +26,48 @@ import { synthesisNode } from "./nodes/synthesis";
  * - Synthesis: Prepare results for downstream synthesizer
  *
  * Pattern from: documentation/langgraph/10-subgraphs.md
- * - Uses StateGraph with Annotation-based state
+ * - Uses StateGraph with its own Annotation-based state
+ * - Input/output transformations for parent-subgraph communication
  * - Sequential edges (no conditional routing)
  * - Each node uses config.writer for streaming thoughts
- * - Follows parent-child state pattern
  *
  * NO CUSTOM CODE - Only LangGraph patterns:
- * ✅ Annotation for state management
- * ✅ StateGraph for graph construction
- * ✅ config.writer for streaming
- * ✅ Sequential .addEdge() for flow
- * ✅ Standard node signature: (state, config) => Promise<Partial<State>>
+ *  Annotation for state management
+ *  StateGraph for graph construction
+ *  config.writer for streaming
+ *  Sequential .addEdge() for flow
+ *  Standard node signature: (state, config) => Promise<Partial<State>>
  *
  * @returns Compiled LangGraph that executes iterative research
  */
-export function buildIterativeResearchSubgraph() {
+/**
+ * Initialize subgraph state from parent state
+ * This node transforms incoming state into IterativeResearchState format
+ */
+function initializeIterativeState(state: Record<string, unknown>) {
+  console.log("[IterativeResearch] Initializing subgraph state");
+  
+  const userInputs = state.userInputs as { goal?: string } | undefined;
+  const plan = state.plan as { constraints?: Record<string, unknown> } | undefined;
+  
+  return {
+    goal: userInputs?.goal || "",
+    constraints: plan?.constraints || {},
+    findings: [],
+    currentRound: 1,
+    allSources: [],
+    researchComplete: false,
+    currentQueries: [],
+  };
+}export function buildIterativeResearchSubgraph() {
   console.log(
     "[IterativeResearch] Building 3-round sequential research subgraph..."
   );
 
-  const builder = new StateGraph(ParentStateAnnotation)
+  const builder = new StateGraph(IterativeResearchStateAnnotation)
+    // Initialization node to transform parent state
+    .addNode("initialize", initializeIterativeState)
+
     // Round 1: Broad Orientation
     .addNode("round1_reasoning", round1ReasoningNode)
     .addNode("round1_search", round1SearchNode)
@@ -72,7 +84,8 @@ export function buildIterativeResearchSubgraph() {
     .addNode("synthesis", synthesisNode)
 
     // Wire sequential flow (NO conditional routing)
-    .addEdge(START, "round1_reasoning")
+    .addEdge(START, "initialize")
+    .addEdge("initialize", "round1_reasoning")
     .addEdge("round1_reasoning", "round1_search")
     .addEdge("round1_search", "round2_reasoning")
     .addEdge("round2_reasoning", "round2_search")

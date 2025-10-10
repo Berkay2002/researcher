@@ -60,13 +60,20 @@ export async function round1SearchNode(
   state: IterativeResearchState,
   config: LangGraphRunnableConfig
 ): Promise<Partial<IterativeResearchState>> {
-  const { currentQueries, constraints } = state;
+  const { currentQueries = [], constraints = {} } = state;
   const writer = config.writer;
   const startedAt = new Date().toISOString();
 
   console.log(
     `[Round1 Search] Executing ${currentQueries.length} broad queries sequentially...`
   );
+
+  if (currentQueries.length === 0) {
+    console.warn("[Round1 Search] No queries provided, skipping search");
+    return {
+      findings: [],
+    };
+  }
 
   const allResults: UnifiedSearchDoc[] = [];
   const providersUsed: ("tavily" | "exa")[] = [];
