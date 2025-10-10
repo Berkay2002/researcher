@@ -72,4 +72,5 @@ Continue searching until you reach the quality standards (20-30 sources, 2,000-4
 /**
  * Export constant that calls the function to get the prompt with current date
  */
-export const RESEARCH_SUBAGENT_SYSTEM_PROMPT = getResearchSubagentSystemPromptWithDate();
+export const RESEARCH_SUBAGENT_SYSTEM_PROMPT =
+  getResearchSubagentSystemPromptWithDate();
