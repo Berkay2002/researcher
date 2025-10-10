@@ -182,6 +182,23 @@ export const QualityIssueSchema = z.object({
   severity: z.enum(["error", "warning"]).default("error"),
 });
 
+// ============================================================================
+// COMMENTED OUT: Orchestration Decision (Parallel Mode Not Used)
+// ============================================================================
+// The following schema was used for intelligent routing between iterative and parallel modes.
+// Since we now use ONLY iterative research, this is no longer needed.
+// Preserved for future restoration if parallel mode is needed.
+
+/*
+export const OrchestrationDecisionSchema = z.object({
+  mode: z.enum(["iterative", "parallel"]),
+  reasoning: z.string(),
+  aspects: z.array(z.string()),
+  hasIntersection: z.boolean(),
+  confidence: z.number().min(0).max(1),
+});
+*/
+
 /**
  * Generated research draft with confidence scoring
  */
@@ -208,6 +225,7 @@ export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Citation = z.infer<typeof CitationSchema>;
 export type Claim = z.infer<typeof ClaimSchema>;
 export type QualityIssue = z.infer<typeof QualityIssueSchema>;
+// export type OrchestrationDecision = z.infer<typeof OrchestrationDecisionSchema>; // Commented out - not using parallel mode
 export type Draft = z.infer<typeof DraftSchema>;
 
 // ============================================================================
@@ -290,6 +308,18 @@ export const ParentStateAnnotation = Annotation.Root({
     reducer: (prev, next) => ({ ...prev, ...next }),
     default: () => null,
   }),
+
+  // ============================================================================
+  // COMMENTED OUT: Orchestration Decision (Parallel Mode Not Used)
+  // ============================================================================
+  // This field was used for routing between iterative and parallel research modes.
+  // Since we now use ONLY iterative research, this field is not needed.
+  /*
+  orchestrationDecision: Annotation<OrchestrationDecision | null>({
+    reducer: (_, next) => next,
+    default: () => null,
+  }),
+  */
 
   // Generated search queries
   // Accumulates queries from planning phases
