@@ -264,7 +264,7 @@ Respond with JSON following the schema in the system prompt.`
   const plan: Plan = {
     goal: planData.goal,
     deliverable: planData.deliverable,
-    dag: planData.dag,
+    dag: planData.dag ?? undefined, // Optional: no longer used by research system
     constraints: planData.constraints,
   };
 
@@ -336,7 +336,7 @@ Respond with JSON following the schema in the system prompt.`
   const plan: Plan = {
     goal: planData.goal,
     deliverable: planData.deliverable,
-    dag: planData.dag,
+    dag: planData.dag ?? undefined, // Optional: no longer used by research system
     constraints: planData.constraints,
   };
 
@@ -384,7 +384,7 @@ Respond with JSON following the schema in the system prompt.`
   const plan: Plan = {
     goal: planData.goal,
     deliverable: planData.deliverable,
-    dag: planData.dag,
+    dag: planData.dag ?? undefined, // Optional: no longer used by research system
     constraints: planData.constraints,
   };
 

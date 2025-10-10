@@ -85,13 +85,18 @@ export const UserInputsSchema = z.object({
 // ============================================================================
 
 /**
- * Research plan with constraints and execution graph
+ * Research plan with constraints and execution guidance
+ * 
+ * Note: The `dag` field is deprecated and no longer used by the iterative research system.
+ * It is kept optional for backward compatibility with UI components.
+ * The research process follows a fixed 3-round iterative pattern:
+ * Round 1 (Broad Orientation) → Round 2 (Deep Dive) → Round 3 (Validation) → Synthesis
  */
 export const PlanSchema = z.object({
   goal: z.string(),
   constraints: z.record(z.string(), z.unknown()).optional(),
   deliverable: z.string(),
-  dag: z.array(z.string()),
+  dag: z.array(z.string()).optional(), // Deprecated: kept for UI compatibility only
 });
 
 /**
