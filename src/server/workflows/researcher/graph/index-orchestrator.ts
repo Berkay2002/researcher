@@ -1,14 +1,17 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
-import { END, Send, START, StateGraph } from "@langchain/langgraph";
+import { END, START, StateGraph } from "@langchain/langgraph";
 import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
-import { orchestrator } from "./nodes/orchestrator";
+// Commented out: Parallel orchestration pattern (not currently used)
+// import { analyzeComplexity } from "./nodes/analyze-complexity";
+// import { orchestrator } from "./nodes/orchestrator";
+// import { researchWorker } from "./nodes/research-worker";
+// import type { ResearchTask } from "./worker-state";
 import { planGate } from "./nodes/plan-gate";
-import { researchWorker } from "./nodes/research-worker";
 import { synthesizer } from "./nodes/synthesizer";
-import { type ParentState, ParentStateAnnotation } from "./state";
+import { ParentStateAnnotation } from "./state";
 import { buildPlannerSubgraph } from "./subgraphs/planner";
-import type { ResearchTask } from "./worker-state";
+import { buildIterativeResearchSubgraph } from "./subgraphs/research-iterative";
 
 /**
  * Compiled parent graph (singleton)
@@ -23,23 +26,27 @@ let compiled: ReturnType<typeof buildParentGraph> | null = null;
 let checkpointerSingleton: PostgresSaver | null = null;
 
 /**
- * Build the parent orchestration graph with Orchestrator-Worker pattern
+ * Build the parent orchestration graph with Iterative Research pattern
  *
- * Flow: START → planGate → planner → orchestrator → (parallel workers via Send) → synthesizer → END
+ * Flow: START → planGate → planner → iterativeResearch → synthesizer → END
  *
- * Orchestrator-Worker Pattern:
- * 1. Orchestrator analyzes goal and decomposes into parallel tasks
- * 2. Each task is sent to a worker via Send API
- * 3. Workers execute independently in parallel
- * 4. All worker results accumulate in shared workerResults state key
- * 5. Synthesizer aggregates all worker results into final report
+ * Iterative Research Pattern:
+ * 1. Planner creates research plan (with optional HITL)
+ * 2. Iterative research executes 3-round sequential deep dive:
+ *    - Round 1: Broad orientation (2-3 queries)
+ *    - Round 2: Targeted deep dive (3-4 queries)
+ *    - Round 3: Validation (2-3 queries)
+ * 3. All rounds execute sequentially with adaptive query generation
+ * 4. Synthesizer generates final report from accumulated sources
  *
  * Following LangGraph 1.0-alpha patterns:
  * - All invocations require a thread_id
  * - PostgresSaver provides persistent checkpointing
- * - Send API dynamically spawns workers
- * - Workers write to shared state key (workerResults)
  * - Subgraphs inherit the checkpointer automatically
+ * - Sequential execution with thought streaming via config.writer
+ *
+ * Note: Parallel orchestration pattern is available but commented out.
+ * See commit history to restore orchestrator + workers for multi-aspect research.
  */
 function buildParentGraph() {
   // Get or create the Postgres checkpointer
@@ -68,25 +75,48 @@ function buildParentGraph() {
   // Verify node names don't clash with state channels
   assertNoNameClash("planGate");
   assertNoNameClash("planner");
-  assertNoNameClash("orchestrator");
-  assertNoNameClash("researchWorker");
+  assertNoNameClash("iterativeResearch");
   assertNoNameClash("synthesizer");
 
-  /**
-   * Router function to spawn parallel workers via Send API
-   *
-   * This follows the Orchestrator-Worker pattern from documentation:
-   * - Iterates over tasks created by orchestrator
-   * - Creates a Send command for each task
-   * - Each Send spawns a researchWorker node with task-specific state
-   * - Workers execute in parallel
-   * - All worker results are written to shared 'workerResults' key
-   */
+  // ============================================================================
+  // COMMENTED OUT: Parallel Orchestration Pattern
+  // ============================================================================
+  // The following code implements parallel research with orchestrator + workers.
+  // Currently disabled to focus on iterative research pattern.
+  // To restore parallel mode:
+  // 1. Uncomment imports at top (analyzeComplexity, orchestrator, researchWorker)
+  // 2. Uncomment the functions below
+  // 3. Uncomment the nodes and routing in the graph builder
+  // 4. Add Send back to imports from @langchain/langgraph
+
+  /*
+  assertNoNameClash("analyzeComplexity");
+  assertNoNameClash("orchestrator");
+  assertNoNameClash("researchWorker");
+
+  function routeResearch(
+    state: ParentState
+  ): "iterativeResearch" | "orchestrator" {
+    const decision = state.orchestrationDecision;
+
+    if (!decision) {
+      console.warn(
+        "[router] No orchestration decision found, defaulting to iterative"
+      );
+      return "iterativeResearch";
+    }
+
+    console.log(
+      `[router] Routing to ${decision.mode} mode (confidence: ${decision.confidence})`
+    );
+    console.log(`[router] Reasoning: ${decision.reasoning}`);
+
+    return decision.mode === "iterative" ? "iterativeResearch" : "orchestrator";
+  }
+
   function spawnWorkers(state: ParentState): Send[] {
     console.log("[router] Spawning parallel research workers...");
 
-    // Get tasks from planning cache (set by orchestrator)
-    // biome-ignore lint/suspicious/noExplicitAny: Tasks are dynamically stored
     const tasks = (state.planning as any)?.tasks as ResearchTask[] | undefined;
 
     if (!tasks || tasks.length === 0) {
@@ -96,8 +126,6 @@ function buildParentGraph() {
 
     console.log(`[router] Creating ${tasks.length} parallel workers`);
 
-    // Create Send command for each task
-    // Each Send creates a new researchWorker node instance with the task
     return tasks.map((task) => {
       console.log(
         `[router] Spawning worker for task ${task.id}: ${task.aspect}`
@@ -105,29 +133,41 @@ function buildParentGraph() {
       return new Send("researchWorker", { task });
     });
   }
+  */
 
   const builder = new StateGraph(ParentStateAnnotation)
     // Add nodes
     .addNode("planGate", planGate)
     .addNode("planner", planner, { ends: ["planner", "synthesizer"] })
-    .addNode("orchestrator", orchestrator)
-    .addNode("researchWorker", researchWorker)
+    .addNode("iterativeResearch", buildIterativeResearchSubgraph())
     .addNode("synthesizer", synthesizer)
 
-    // Linear flow
+    // Iterative research flow: planGate → planner → iterativeResearch → synthesizer
     .addEdge(START, "planGate")
     .addEdge("planGate", "planner")
-    .addEdge("planner", "orchestrator")
-
-    // Conditional edge: orchestrator → spawn parallel workers
-    // This uses the Send API to dynamically create worker nodes
-    .addConditionalEdges("orchestrator", spawnWorkers, ["researchWorker"])
-
-    // Workers complete → synthesizer aggregates results
-    .addEdge("researchWorker", "synthesizer")
-
-    // Synthesizer produces final report
+    .addEdge("planner", "iterativeResearch")
+    .addEdge("iterativeResearch", "synthesizer")
     .addEdge("synthesizer", END);
+
+  // ============================================================================
+  // COMMENTED OUT: Parallel Orchestration Nodes & Routing
+  // ============================================================================
+  // To restore parallel mode, uncomment the following and add imports:
+
+  /*
+    .addNode("analyzeComplexity", analyzeComplexity)
+    .addNode("orchestrator", orchestrator)
+    .addNode("researchWorker", researchWorker)
+    
+    // Replace the direct edge from planner to iterativeResearch with:
+    // .addEdge("planner", "analyzeComplexity")
+    // .addConditionalEdges("analyzeComplexity", routeResearch, {
+    //   iterativeResearch: "iterativeResearch",
+    //   orchestrator: "orchestrator",
+    // })
+    // .addConditionalEdges("orchestrator", spawnWorkers, ["researchWorker"])
+    // .addEdge("researchWorker", "synthesizer")
+  */
 
   // Compile with Postgres checkpointer for persistent thread-level memory
   return builder.compile({ checkpointer: checkpointerSingleton });
@@ -146,16 +186,21 @@ export function getGraph() {
 }
 
 /**
- * Create the Orchestrator-Worker research workflow
+ * Create the Iterative Research workflow
  *
  * This is the main export function for LangGraph CLI compatibility.
- * It creates a workflow that follows the Orchestrator-Worker pattern:
+ * It creates a workflow that follows the Iterative Research pattern:
  *
  * 1. User provides research goal
  * 2. Planner creates research plan (with optional HITL)
- * 3. Orchestrator decomposes goal into parallel tasks
- * 4. Workers execute tasks in parallel (via Send API)
- * 5. Synthesizer aggregates results into final report
+ * 3. Iterative research executes 3-round sequential deep dive:
+ *    - Round 1: Broad orientation queries
+ *    - Round 2: Targeted deep dive based on Round 1 gaps
+ *    - Round 3: Validation queries based on Round 2 gaps
+ * 4. Synthesizer generates final comprehensive report
+ *
+ * Note: This replaces the previous Orchestrator-Worker parallel pattern.
+ * The parallel pattern is preserved in comments for future restoration if needed.
  *
  * @returns Compiled graph for LangGraph CLI
  */
