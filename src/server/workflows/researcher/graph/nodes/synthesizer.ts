@@ -54,16 +54,23 @@ const URL_NORMALIZE_REGEX = /\/+$/u;
 export async function synthesizer(
   state: ParentState
 ): Promise<Partial<ParentState>> {
-  console.log("[synthesizer] Aggregating results from all workers...");
+  console.log("[synthesizer] Aggregating research results...");
 
-  const { workerResults, userInputs, plan } = state;
+  const { workerResults, research, userInputs, plan } = state;
 
   if (!userInputs?.goal) {
     throw new Error("No goal provided in userInputs");
   }
 
-  if (!workerResults || workerResults.length === 0) {
-    console.warn("[synthesizer] No worker results to synthesize");
+  // Support BOTH research modes:
+  // 1. Parallel mode: workerResults from multiple workers
+  // 2. Iterative mode: research.enriched from sequential deep dive
+  const hasWorkerResults = workerResults && workerResults.length > 0;
+  const hasIterativeResults =
+    research?.enriched && research.enriched.length > 0;
+
+  if (!(hasWorkerResults || hasIterativeResults)) {
+    console.warn("[synthesizer] No research results to synthesize");
     return {
       draft: {
         text: `No research results found for: ${userInputs.goal}`,
@@ -73,12 +80,26 @@ export async function synthesizer(
     };
   }
 
+  // Determine which research mode was used
+  const researchMode = hasIterativeResults ? "iterative" : "parallel";
   console.log(
-    `[synthesizer] Processing results from ${workerResults.length} workers`
+    `[synthesizer] Processing results from ${researchMode} research mode`
   );
 
-  // Step 1: Aggregate and deduplicate documents from all workers
-  const allDocuments = workerResults.flatMap((result) => result.documents);
+  // Step 1: Aggregate documents based on research mode
+  let allDocuments: UnifiedSearchDoc[] = [];
+
+  if (researchMode === "parallel") {
+    console.log(
+      `[synthesizer] Aggregating from ${workerResults.length} parallel workers`
+    );
+    allDocuments = workerResults.flatMap((result) => result.documents);
+  } else {
+    console.log(
+      `[synthesizer] Aggregating from iterative research (${research?.enriched?.length} sources)`
+    );
+    allDocuments = research?.enriched || [];
+  }
   console.log(
     `[synthesizer] Total documents from workers: ${allDocuments.length}`
   );

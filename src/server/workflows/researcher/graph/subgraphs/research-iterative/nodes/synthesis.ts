@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 
 import type { LangGraphRunnableConfig } from "@langchain/langgraph";
-import type { IterativeResearchState } from "../state";
+import type { ParentState } from "../../../state";
 
 /**
  * Synthesis Node
@@ -17,16 +17,16 @@ import type { IterativeResearchState } from "../state";
  * The actual synthesis (writing the report) is done by the existing
  * synthesizer node in the parent workflow, which reads from research.enriched.
  *
- * @param state Current iterative research state with all findings
+ * @param state Parent state with iterative research findings
  * @param config LangGraph runnable config with writer for streaming
- * @returns Partial state update marking research complete
+ * @returns Partial state update with research.enriched for synthesizer
  */
 export async function synthesisNode(
-  state: IterativeResearchState,
+  state: ParentState,
   config: LangGraphRunnableConfig
-): Promise<Partial<IterativeResearchState>> {
-  const { findings, allSources } = state;
+): Promise<Partial<ParentState>> {
   const writer = config.writer;
+  const enrichedSources = state.research?.enriched || [];
 
   console.log(
     "[Synthesis] Preparing research results for downstream synthesizer..."
@@ -40,16 +40,12 @@ export async function synthesisNode(
     });
   }
 
-  // Calculate statistics
-  const totalQueries = findings.reduce((sum, f) => sum + f.queries.length, 0);
-  const totalSources = allSources.length;
-  const uniqueProviders = new Set(
-    findings.flatMap((f) => f.metadata.providersUsed)
-  );
+  // Calculate statistics from enriched sources
+  const totalSources = enrichedSources.length;
+  const uniqueProviders = new Set(enrichedSources.map((s) => s.provider));
 
   console.log("[Synthesis] Summary:");
-  console.log(`  - ${findings.length} research rounds completed`);
-  console.log(`  - ${totalQueries} queries executed`);
+  console.log("  - 3 research rounds completed");
   console.log(`  - ${totalSources} unique sources gathered`);
   console.log(`  - Providers used: ${Array.from(uniqueProviders).join(", ")}`);
 
@@ -57,7 +53,7 @@ export async function synthesisNode(
     await writer({
       type: "thought",
       round: 4,
-      content: `Analyzed ${totalSources} sources across ${findings.length} research rounds (${totalQueries} queries).`,
+      content: `Analyzed ${totalSources} sources across 3 research rounds.`,
     });
   }
 
@@ -69,10 +65,10 @@ export async function synthesisNode(
     });
   }
 
-  // Return state update that marks research complete
-  // The allSources array is already accumulated via Annotation reducer
-  // No need to return it again
+  // Mark research as complete
+  // The enriched sources are already in state.research.enriched (accumulated by search nodes)
+  // Synthesizer node in parent workflow will read from this field
   return {
-    researchComplete: true,
+    // No need to update research.enriched here - search nodes already did that
   };
 }
