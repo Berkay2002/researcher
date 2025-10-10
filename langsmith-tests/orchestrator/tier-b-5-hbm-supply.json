@@ -1,0 +1,7 @@
+{
+  "threadId": "test-hbm-supply-001",
+  "userInputs": {
+    "goal": "Quantify 2025 **HBM market shares** and **TSMC CoWoS capacity**; assess how these constrain accelerator deliveries across vendors, and forecast near-term relief. Cite primary/secondary sources and flag uncertainties.",
+    "modeOverride": "auto"
+  }
+}
