@@ -1,5 +1,5 @@
 import { MessagesZodState } from "@langchain/langgraph";
-import { createAgent } from "langchain";
+import { createAgent, toolStrategy } from "langchain";
 import { z } from "zod";
 import { createLLM } from "../../../shared/configs/llm";
 import { SearchRunMetadataSchema } from "../../../types/react-agent";
@@ -60,6 +60,49 @@ export const RESEARCH_CONFIG = {
   ),
 } as const;
 
+// ============================================================================
+// Structured Output Schema for Research Reports
+// ============================================================================
+
+/**
+ * Claim schema for tracking factual assertions with citations
+ */
+const ClaimSchema = z.object({
+  id: z.string().describe("Unique identifier for the claim (e.g., 'claim_1')"),
+  text: z.string().describe("The factual assertion or claim being made"),
+  citations: z
+    .array(z.number())
+    .describe(
+      "Array of source indices (e.g., [1, 3, 5] for [Source 1], [Source 3], [Source 5])"
+    ),
+  confidence: z
+    .enum(["high", "medium", "low"])
+    .describe("Confidence level based on source quality and consensus"),
+});
+
+/**
+ * Research output schema with structured claims
+ * This ensures the research report includes traceable, citable claims
+ */
+const ResearchOutputSchema = z.object({
+  report: z
+    .string()
+    .describe(
+      "The complete research report in markdown format with [Source X] inline citations"
+    ),
+  claims: z
+    .array(ClaimSchema)
+    .describe(
+      "Array of key factual claims extracted from the report with their citations"
+    ),
+  sourcesUsed: z
+    .number()
+    .describe("Total number of distinct sources cited in the report"),
+  wordCount: z.number().describe("Approximate word count of the report"),
+});
+
+export type ResearchOutput = z.infer<typeof ResearchOutputSchema>;
+
 const ResearchSubagentStateSchema = z.object({
   messages: MessagesZodState.shape.messages,
   searchRuns: z.array(SearchRunMetadataSchema).default([]),
@@ -75,6 +118,8 @@ export function createResearchSubagent() {
     tools,
     stateSchema: ResearchSubagentStateSchema,
     prompt: RESEARCH_SUBAGENT_SYSTEM_PROMPT,
+    // Use toolStrategy for Gemini compatibility (Gemini doesn't support native structured output)
+    responseFormat: toolStrategy(ResearchOutputSchema),
   };
 
   return createAgent(config as unknown as AgentParams);

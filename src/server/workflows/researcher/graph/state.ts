@@ -156,6 +156,24 @@ export const CitationSchema = z.object({
 });
 
 /**
+ * Claim schema for structured factual assertions with citations
+ * Used for academic comparison between ReAct and Orchestrator-Worker patterns
+ */
+export const ClaimSchema = z.object({
+  claim_id: z.string(),
+  claim_text: z.string(),
+  sources: z.array(
+    z.object({
+      url: z.string(),
+      title: z.string(),
+      snippet: z.string(),
+      score: z.number().optional(),
+    })
+  ),
+  confidence: z.number().min(0).max(1),
+});
+
+/**
  * Quality issue with type classification for intelligent routing
  */
 export const QualityIssueSchema = z.object({
@@ -188,6 +206,7 @@ export type UnifiedSearchDoc = z.infer<typeof UnifiedSearchDocSchema>;
 export type Chunk = z.infer<typeof ChunkSchema>;
 export type Evidence = z.infer<typeof EvidenceSchema>;
 export type Citation = z.infer<typeof CitationSchema>;
+export type Claim = z.infer<typeof ClaimSchema>;
 export type QualityIssue = z.infer<typeof QualityIssueSchema>;
 export type Draft = z.infer<typeof DraftSchema>;
 
@@ -316,6 +335,13 @@ export const ParentStateAnnotation = Annotation.Root({
   draft: Annotation<Draft | null>({
     reducer: (_, next) => next,
     default: () => null,
+  }),
+
+  // Structured claims extracted from research for academic comparison
+  // Accumulates claims from different sources (synthesizer, workers, etc.)
+  claims: Annotation<Claim[]>({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
+    default: () => [],
   }),
 
   // Issues and errors with type classification (kept for backward compatibility with redteam file)

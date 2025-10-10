@@ -9,7 +9,13 @@ import {
 // import { createHash } from "crypto";
 import { getLLM } from "@/server/shared/configs/llm";
 import { getCurrentDateString } from "@/server/shared/utils/current-date";
-import type { Citation, Draft, ParentState, UnifiedSearchDoc } from "../state";
+import type {
+  Citation,
+  Claim,
+  Draft,
+  ParentState,
+  UnifiedSearchDoc,
+} from "../state";
 
 // Constants for synthesis
 const MAX_SOURCES_FOR_SYNTHESIS = 20;
@@ -27,6 +33,7 @@ const DAYS_IN_YEAR = 365;
 // biome-ignore lint/style/noMagicNumbers: <Mathematical constant for milliseconds per day>
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const CHARS_PER_THOUSAND = 1000;
+const SOURCE_PREVIEW_LENGTH = 500; // Length of source content preview for claim extraction
 
 // Regex constants (defined at top level for performance)
 const URL_NORMALIZE_REGEX = /\/+$/u;
@@ -118,7 +125,11 @@ export async function synthesizer(
     confidence,
   };
 
-  // Step 7: Append AI response to messages for LangSmith chat support
+  // Step 7: Extract structured claims for academic comparison
+  console.log("[synthesizer] Extracting structured claims for evaluation...");
+  const claims = await extractClaimsFromReport(synthesizedText, selectedDocs);
+
+  // Step 8: Append AI response to messages for LangSmith chat support
   const aiMessage = new AIMessage({
     content: synthesizedText,
     additional_kwargs: {
@@ -128,11 +139,13 @@ export async function synthesizer(
         title: c.title,
       })),
       confidence,
+      claimsCount: claims.length,
     },
   });
 
   return {
     draft,
+    claims, // Add structured claims to state
     messages: [aiMessage],
   };
 } /**
@@ -246,27 +259,40 @@ async function generateSynthesis(params: {
   // Get current date for temporal context
   const currentDate = getCurrentDateString();
 
-  const systemPrompt = `You are a research synthesis expert. Your task is to write a ${deliverable} based on the research findings from multiple parallel research workers.
+  const systemPrompt = `You are a research synthesis expert writing a ${deliverable} based on parallel worker findings.
 
 CURRENT DATE: ${currentDate}
 
-CRITICAL - TEMPORAL ACCURACY:
-- The current date is ${currentDate}
-- ALL citations and sources are from the PAST (before today)
-- DO NOT claim citations are "dated 2025" or any future date
-- When describing sources, use past tense (e.g., "published in 2024", "released last year")
-- Be accurate about when sources were published based on their metadata
+QUALITY STANDARDS (Fixed for Academic Comparison):
+- Use 20-30 authoritative sources (.edu, .gov, peer-reviewed journals, official reports)
+- Report length: 2,000-4,000 words (no flexibility)
+- Structure: Executive summary + detailed analysis + key insights + APA references section
+- Citations: Inline [1], [2] format for every factual claim
+- Evidence-first language: Indicate strength of evidence appropriately
 
-Your report should:
-1. Synthesize insights from all research aspects
-2. Present a cohesive narrative that addresses the research goal
-3. Use inline citations [1], [2], etc. to reference sources
-4. Be comprehensive yet concise
-5. Highlight key findings and insights
-6. Address different perspectives when relevant
-7. Ensure temporal accuracy - no future-dated citations
+EVIDENCE-FIRST LANGUAGE:
+When presenting information, indicate evidence strength:
+- Strong evidence: "Research consistently shows", "Multiple studies confirm"
+- Moderate evidence: "Studies suggest", "Evidence indicates"
+- Limited evidence: "Preliminary research suggests", "Some studies have found"
+- Conflicting evidence: "Research is mixed", "Studies show conflicting results"
+- Expert opinion: "Experts believe", "According to authorities"
 
-Use markdown formatting for structure and readability.`;
+TEMPORAL ACCURACY:
+- Current date is ${currentDate}
+- All sources are from the PAST (before today)
+- Use past tense when describing sources ("published in 2024", "released last year")
+- NO future-dated citations
+
+OUTPUT REQUIREMENTS:
+1. Comprehensive narrative synthesis with inline citations [1], [2], etc.
+2. APA-formatted References section at end (numbered to match citations)
+3. For evaluation: Extract 10-20 key factual claims during synthesis, noting:
+   - The claim statement (what is being asserted as fact)
+   - Supporting source indices (e.g., [1], [3], [5])
+   - Confidence level based on source quality and corroboration
+
+Your report should synthesize insights cohesively while maintaining rigorous citation standards and evidence-based reasoning.`;
 
   const humanPrompt = `Research Goal: ${goal}
 
@@ -364,4 +390,74 @@ function calculateSynthesisConfidence(
   confidence += citationScore * CITATION_DENSITY_WEIGHT;
 
   return Math.min(confidence, 1);
+}
+
+/**
+ * Extract structured claims from report using LLM
+ *
+ * For academic comparison, we need explicit claims with supporting sources.
+ * This function uses an LLM to parse the synthesized report and extract
+ * key factual assertions along with their citations and confidence levels.
+ */
+async function extractClaimsFromReport(
+  reportText: string,
+  sources: UnifiedSearchDoc[]
+): Promise<Claim[]> {
+  console.log("[synthesizer] Extracting structured claims from report...");
+
+  const llm = getLLM("analysis");
+
+  // Import ClaimSchema from state
+  const { ClaimSchema } = await import("../state");
+  const { z } = await import("zod");
+
+  const ClaimsOutputSchema = z.object({
+    claims: z.array(ClaimSchema),
+  });
+
+  const systemPrompt = `Extract 10-20 key factual claims from this research report for academic evaluation.
+
+For each major factual assertion:
+1. Extract the claim statement (what is being asserted as fact)
+2. Identify supporting sources from the report (match citation numbers [1], [2], etc. to URLs)
+3. Extract relevant snippet from the source content
+4. Assess confidence (0-1) based on:
+   - Source authority (.edu, .gov, peer-reviewed = higher confidence)
+   - Corroboration (multiple sources = higher confidence)
+   - Recency (recent sources = higher confidence for current topics)
+   - Evidence strength language used in the report
+
+Focus on substantive factual claims, not framework statements or opinions.
+Skip introductory/transitional statements like "This report examines..." or "Research shows various perspectives..."`;
+
+  // Prepare source context with content previews
+  const sourcesText = sources
+    .map((s, i) => {
+      const content = s.content || s.excerpt || "";
+      const preview = content.substring(0, SOURCE_PREVIEW_LENGTH);
+      return `[${i + 1}] ${s.title}
+URL: ${s.url}
+Published: ${s.publishedAt || "Unknown"}
+Content Preview: ${preview}`;
+    })
+    .join("\n\n---\n\n");
+
+  const humanPrompt = `Report Text:\n${reportText}\n\n---\n\nAvailable Sources:\n${sourcesText}`;
+
+  try {
+    const llmWithStructuredOutput =
+      llm.withStructuredOutput(ClaimsOutputSchema);
+
+    const result = await llmWithStructuredOutput.invoke([
+      new SystemMessage(systemPrompt),
+      new HumanMessage(humanPrompt),
+    ]);
+
+    console.log(`[synthesizer] Extracted ${result.claims.length} claims`);
+    return result.claims;
+  } catch (error) {
+    console.error("[synthesizer] Error extracting claims:", error);
+    // Return empty array on error rather than failing the entire synthesis
+    return [];
+  }
 }

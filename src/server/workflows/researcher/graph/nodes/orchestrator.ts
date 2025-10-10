@@ -109,16 +109,24 @@ async function analyzeResearchGoal(
   const llm = getLLM("analysis"); // Use Gemini 2.5 Pro for reasoning
   const currentDate = getCurrentDateString();
 
-  const systemPrompt = `You are a research planning expert. Analyze the research goal to understand its complexity and key domains.
+  const systemPrompt = `You are a research planning expert analyzing the goal to decompose it into parallel research tasks.
 
 CURRENT DATE: ${currentDate}
+
+EVIDENCE-FIRST APPROACH:
+Your decomposition should enable comprehensive, source-backed research meeting these standards:
+- 20-30 authoritative sources (.edu, .gov, peer-reviewed journals) across all tasks
+- Diverse query strategies for thorough coverage (8-12 total queries across workers)
+- Focus on recent sources (1-3 years) from official/academic institutions
+- Each task should enable gathering 5-8 high-quality sources
+- Enable comprehensive 2,000-4,000 word reports with rigorous citations
 
 Your analysis should identify:
 1. Complexity level (simple, moderate, complex)
 2. Key domains or fields involved (e.g., finance, technology, healthcare, policy)
 3. Different aspects to research in parallel (e.g., financial analysis, technical evaluation, market trends)
 4. Estimated number of parallel workers needed (3-8)
-5. Overall research strategy
+5. Overall research strategy emphasizing evidence gathering
 
 Be thorough but concise.`;
 
