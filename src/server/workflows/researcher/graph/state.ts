@@ -86,7 +86,7 @@ export const UserInputsSchema = z.object({
 
 /**
  * Research plan with constraints and execution guidance
- * 
+ *
  * Note: The `dag` field is deprecated and no longer used by the iterative research system.
  * It is kept optional for backward compatibility with UI components.
  * The research process follows a fixed 3-round iterative pattern:
