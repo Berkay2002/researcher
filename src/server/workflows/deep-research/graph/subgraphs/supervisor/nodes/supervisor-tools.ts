@@ -48,46 +48,55 @@ export async function supervisorTools(
   const researcherGraph = createResearcherGraph();
 
   // Execute all research tasks in parallel
-  const researchPromises = limitedCalls.map(async (toolCall: { id?: string; name: string; args: Record<string, unknown> }) => {
-    const { research_topic } = toolCall.args as { research_topic: string };
+  const researchPromises = limitedCalls.map(
+    async (toolCall: {
+      id?: string;
+      name: string;
+      args: Record<string, unknown>;
+    }) => {
+      const { research_topic } = toolCall.args as { research_topic: string };
 
-    try {
-      // Invoke researcher subgraph with research topic
-      const result = await researcherGraph.invoke(
-        {
-          research_topic,
-          researcher_messages: [],
-          tool_call_iterations: 0,
-          compressed_research: null,
-          raw_notes: [],
-        },
-        config
-      );
+      try {
+        // Invoke researcher subgraph with research topic
+        const result = await researcherGraph.invoke(
+          {
+            research_topic,
+            researcher_messages: [],
+            compressed_research: null,
+            raw_notes: [],
+          },
+          config
+        );
 
-      // Return tool message with compressed research
-      return {
-        toolMessage: new ToolMessage({
-          tool_call_id: toolCall.id || "",
-          content: result.compressed_research || "No research completed",
-        }),
-        rawNotes: result.raw_notes || [],
-      };
-    } catch (error) {
-      return {
-        toolMessage: new ToolMessage({
-          tool_call_id: toolCall.id || "",
-          content: `Error conducting research on "${research_topic}": ${error}`,
-        }),
-        rawNotes: [],
-      };
+        // Return tool message with compressed research
+        return {
+          toolMessage: new ToolMessage({
+            tool_call_id: toolCall.id || "",
+            content: result.compressed_research || "No research completed",
+          }),
+          rawNotes: result.raw_notes || [],
+        };
+      } catch (error) {
+        return {
+          toolMessage: new ToolMessage({
+            tool_call_id: toolCall.id || "",
+            content: `Error conducting research on "${research_topic}": ${error}`,
+          }),
+          rawNotes: [],
+        };
+      }
     }
-  });
+  );
 
   const results = await Promise.all(researchPromises);
 
   // Extract tool messages and raw notes
-  const toolMessages = results.map((r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.toolMessage);
-  const allRawNotes = results.flatMap((r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.rawNotes);
+  const toolMessages = results.map(
+    (r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.toolMessage
+  );
+  const allRawNotes = results.flatMap(
+    (r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.rawNotes
+  );
 
   // Collect notes from compressed research
   const notes = results
@@ -114,7 +123,9 @@ export async function supervisorTools(
       }
       return "";
     })
-    .filter((content: string) => content && content !== "No research completed");
+    .filter(
+      (content: string) => content && content !== "No research completed"
+    );
 
   return {
     supervisor_messages: toolMessages,

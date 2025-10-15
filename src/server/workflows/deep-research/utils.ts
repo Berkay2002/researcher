@@ -42,14 +42,6 @@ const SOURCE_INDEX_OFFSET = 1; // Offset for 1-based indexing in output
 const SEPARATOR_LINE_LENGTH = 80; // Length of separator line in formatted output
 const DEFAULT_MAX_SEARCH_RESULTS = 5; // Default number of search results per query
 
-// Model token limits map
-const MODEL_TOKEN_LIMITS: Record<string, number> = {
-  "google:gemini-2.5-pro": 1_048_576,
-  "google:gemini-2.5-flash": 1_048_576,
-  "google:gemini-flash-latest": 1_048_576,
-  "google:gemini-2.5-flash-preview-09-2025": 1_048_576,
-};
-
 // ============================================================================
 // Date/Time Utilities
 // ============================================================================
@@ -510,144 +502,11 @@ export function getNotesFromToolCalls(messages: BaseMessage[]): string[] {
     .map((msg) => String(msg.content));
 }
 
-/**
- * Remove messages up to the last AI message (for token limit handling)
- */
-export function removeUpToLastAiMessage(
-  messages: BaseMessage[]
-): BaseMessage[] {
-  // Search backwards for the last AI message
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i]._getType() === "ai") {
-      return messages.slice(0, i);
-    }
-  }
-
-  return messages;
-}
+// Note: removeUpToLastAiMessage function removed - now handled by contextEditingMiddleware
 
 // ============================================================================
-// Token Limit Detection
+// Token Limit Detection (Deprecated - Now handled by modelFallbackMiddleware)
 // ============================================================================
 
-/**
- * Check if exception indicates OpenAI token limit exceeded
- */
-function checkOpenaiTokenLimit(exception: Error, errorStr: string): boolean {
-  const exceptionType = exception.constructor.name;
-  const isOpenaiException =
-    exceptionType.toLowerCase().includes("openai") ||
-    exception.constructor.name.toLowerCase().includes("openai");
-
-  const isRequestError =
-    exceptionType === "BadRequestError" ||
-    exceptionType === "InvalidRequestError";
-
-  if (isOpenaiException && isRequestError) {
-    const tokenKeywords = [
-      "token",
-      "context",
-      "length",
-      "maximum context",
-      "reduce",
-    ];
-    if (tokenKeywords.some((keyword) => errorStr.includes(keyword))) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-/**
- * Check if exception indicates Anthropic token limit exceeded
- */
-function checkAnthropicTokenLimit(exception: Error, errorStr: string): boolean {
-  const exceptionType = exception.constructor.name;
-  const isAnthropicException = exceptionType
-    .toLowerCase()
-    .includes("anthropic");
-
-  const isBadRequest = exceptionType === "BadRequestError";
-
-  if (
-    isAnthropicException &&
-    isBadRequest &&
-    errorStr.includes("prompt is too long")
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-/**
- * Check if exception indicates Gemini token limit exceeded
- */
-function checkGeminiTokenLimit(exception: Error): boolean {
-  const exceptionType = exception.constructor.name;
-  const isGoogleException = exceptionType.toLowerCase().includes("google");
-
-  const isResourceExhausted =
-    exceptionType === "ResourceExhausted" ||
-    exceptionType === "GoogleGenerativeAIFetchError";
-
-  return isGoogleException && isResourceExhausted;
-}
-
-/**
- * Determine if an exception indicates a token/context limit was exceeded
- */
-export function isTokenLimitExceeded(
-  exception: Error,
-  modelName?: string
-): boolean {
-  const errorStr = exception.message.toLowerCase();
-
-  // Determine provider from model name if available
-  let provider: string | null = null;
-  if (modelName) {
-    const modelStr = modelName.toLowerCase();
-    if (modelStr.startsWith("openai:")) {
-      provider = "openai";
-    } else if (modelStr.startsWith("anthropic:")) {
-      provider = "anthropic";
-    } else if (
-      modelStr.startsWith("gemini:") ||
-      modelStr.startsWith("google:")
-    ) {
-      provider = "gemini";
-    }
-  }
-
-  // Check provider-specific patterns
-  if (provider === "openai") {
-    return checkOpenaiTokenLimit(exception, errorStr);
-  }
-  if (provider === "anthropic") {
-    return checkAnthropicTokenLimit(exception, errorStr);
-  }
-  if (provider === "gemini") {
-    return checkGeminiTokenLimit(exception);
-  }
-
-  // If provider unknown, check all
-  return (
-    checkOpenaiTokenLimit(exception, errorStr) ||
-    checkAnthropicTokenLimit(exception, errorStr) ||
-    checkGeminiTokenLimit(exception)
-  );
-}
-
-/**
- * Get the token limit for a specific model
- */
-export function getModelTokenLimit(modelString: string): number | null {
-  for (const [modelKey, tokenLimit] of Object.entries(MODEL_TOKEN_LIMITS)) {
-    if (modelString.includes(modelKey)) {
-      return tokenLimit;
-    }
-  }
-
-  return null;
-}
+// Note: Token limit detection functions removed - now handled by modelFallbackMiddleware
+// The middleware automatically handles token limit errors and retries with fallback models.

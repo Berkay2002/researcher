@@ -25,7 +25,7 @@ export async function researcherTools(
   config?: RunnableConfig
 ): Promise<Partial<ResearcherState>> {
   const configuration = getConfiguration(config);
-  const { researcher_messages, tool_call_iterations } = state;
+  const { researcher_messages } = state;
 
   // Get the last AI message with tool calls
   const lastMessage = researcher_messages.at(-1) as AIMessage | undefined;
@@ -80,12 +80,8 @@ export async function researcherTools(
   // Extract raw notes from tool messages
   const newRawNotes = getNotesFromToolCalls(toolMessages);
 
-  // Increment tool call iterations
-  const newIterations = tool_call_iterations + 1;
-
   return {
     researcher_messages: toolMessages,
-    tool_call_iterations: newIterations,
     raw_notes: newRawNotes,
   };
 }

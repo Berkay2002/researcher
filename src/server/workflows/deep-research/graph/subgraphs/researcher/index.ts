@@ -14,21 +14,13 @@ import { compressResearch } from "./nodes/compress-research";
 import { researcher } from "./nodes/researcher";
 import { researcherTools } from "./nodes/researcher-tools";
 
-// Constants for routing logic
-const MAX_TOOL_CALL_ITERATIONS = 10; // Default max iterations
-
 /**
  * Route from researcher based on whether there are tool calls
  */
 function shouldCallTools(
   state: typeof ResearcherStateAnnotation.State
 ): string {
-  const { researcher_messages, tool_call_iterations } = state;
-
-  // Check iteration limit
-  if (tool_call_iterations >= MAX_TOOL_CALL_ITERATIONS) {
-    return "compress_research";
-  }
+  const { researcher_messages } = state;
 
   // Get last message
   const lastMessage = researcher_messages.at(-1);

@@ -129,6 +129,13 @@ export const ConfigurationSchema = z.object({
   // MCP Configuration
   mcp_config: MCPConfigSchema.optional().nullable(),
   mcp_prompt: z.string().optional().nullable(),
+
+  // Middleware Configuration
+  use_model_call_limit: z.boolean().default(true),
+  use_tool_call_limit: z.boolean().default(true),
+  use_model_fallback: z.boolean().default(true),
+  use_context_editing: z.boolean().default(true),
+  fallback_models: z.array(z.string()).default(["gemini-2.5-flash", "gemini-2.5-pro"]),
 });
 
 export type Configuration = z.infer<typeof ConfigurationSchema>;

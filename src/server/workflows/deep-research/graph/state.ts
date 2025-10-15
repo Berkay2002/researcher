@@ -171,11 +171,6 @@ export const SupervisorStateAnnotation = Annotation.Root({
     default: () => [],
   }),
 
-  research_iterations: Annotation<number>({
-    reducer: (_, next) => next,
-    default: () => 0,
-  }),
-
   raw_notes: Annotation<string[]>({
     reducer: overrideReducer,
     default: () => [],
@@ -195,11 +190,6 @@ export const ResearcherStateAnnotation = Annotation.Root({
   researcher_messages: Annotation<BaseMessage[]>({
     reducer: (prev, next) => [...(prev ?? []), ...next],
     default: () => [],
-  }),
-
-  tool_call_iterations: Annotation<number>({
-    reducer: (_, next) => next,
-    default: () => 0,
   }),
 
   research_topic: Annotation<string>({

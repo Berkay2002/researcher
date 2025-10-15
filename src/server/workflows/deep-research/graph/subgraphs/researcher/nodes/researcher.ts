@@ -7,23 +7,21 @@
 
 import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
-import { createLLM } from "@/server/shared/configs/llm";
+import {
+  ClearToolUsesEdit,
+  contextEditingMiddleware,
+  createAgent,
+  toolCallLimitMiddleware,
+} from "langchain";
 import { getConfiguration } from "../../../../configuration";
 import { researchSystemPrompt } from "../../../../prompts";
-import {
-  exaSearchTool,
-  getTodayStr,
-  tavilySearchTool,
-  thinkTool,
-} from "../../../../utils";
+import { getTodayStr } from "../../../../utils";
 import type { ResearcherStateAnnotation } from "../../../state";
 
 type ResearcherState = typeof ResearcherStateAnnotation.State;
 
-const DEFAULT_RESEARCH_TEMPERATURE = 0.3;
-
 /**
- * Researcher node that conducts research using tool calls
+ * Researcher node that conducts research using agent with middleware
  */
 export async function researcher(
   state: ResearcherState,
@@ -32,33 +30,50 @@ export async function researcher(
   const configuration = getConfiguration(config);
   const { research_topic, researcher_messages } = state;
 
-  // Configure LLM with tools
-  const model = createLLM(
-    configuration.research_model,
-    DEFAULT_RESEARCH_TEMPERATURE,
-    {
-      maxTokens: configuration.research_model_max_tokens,
-    }
-  );
-
-  // Bind tools based on search API configuration
-  // Add search tool based on configuration and bind to model
-  const modelWithTools = (() => {
-    if (configuration.search_api === "tavily") {
-      return model.bindTools([thinkTool, tavilySearchTool]);
-    }
-    if (configuration.search_api === "exa") {
-      return model.bindTools([thinkTool, exaSearchTool]);
-    }
-    return model.bindTools([thinkTool]);
-  })();
+  // Configure LLM
+  const model: string = configuration.research_model;
 
   // Prepare system prompt with research topic and date
   const systemPrompt = researchSystemPrompt
     .replace("{date}", getTodayStr())
     .replace("{mcp_prompt}", configuration.mcp_prompt || "");
 
-  // Build messages array with system prompt
+  // Prepare middleware
+  // biome-ignore lint/suspicious/noEvolvingTypes: <Evolving based on config>
+  const middleware = [];
+
+  if (configuration.use_tool_call_limit) {
+    middleware.push(
+      toolCallLimitMiddleware({
+        threadLimit: configuration.max_react_tool_calls,
+        runLimit: Math.ceil(configuration.max_react_tool_calls / 2), // Allow multiple runs per thread
+        exitBehavior: "end",
+      })
+    );
+  }
+
+  if (configuration.use_context_editing) {
+    const CLEAR_THRESHOLD_PERCENT = 0.7; // Extract magic number to constant
+    middleware.push(
+      contextEditingMiddleware({
+        edits: [
+          new ClearToolUsesEdit({
+            maxTokens: Math.floor(
+              configuration.research_model_max_tokens * CLEAR_THRESHOLD_PERCENT
+            ),
+          }),
+        ],
+      })
+    );
+  }
+
+  // Create agent with middleware
+  const agent = createAgent({
+    model,
+    middleware,
+  });
+
+  // Build initial messages
   const messages = [
     {
       role: "system",
@@ -71,16 +86,12 @@ export async function researcher(
     ...researcher_messages,
   ];
 
-  // Invoke model
-  const response = await modelWithTools.invoke(messages);
+  // Invoke agent
+  const response = await agent.invoke({ messages }, config);
 
-  // Check if response has tool calls
-  const _hasToolCalls =
-    response.additional_kwargs?.tool_calls &&
-    response.additional_kwargs.tool_calls.length > 0;
-
-  // Return updated state with new message
   return {
-    researcher_messages: [new AIMessage(response)],
+    researcher_messages: response.messages || [
+      new AIMessage({ content: "Research completed." }),
+    ],
   };
 }
