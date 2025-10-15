@@ -6,7 +6,7 @@
  */
 
 import type { BaseMessage } from "@langchain/core/messages";
-import { HumanMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { createLLM } from "@/server/shared/configs/llm";
 import { getConfiguration } from "../../../../configuration";
@@ -51,7 +51,9 @@ export async function compressResearch(
   // Include all researcher messages for context
   const messagesBuffer = researcher_messages
     .map((msg: BaseMessage) => {
-      const role = msg._getType();
+      let role = "unknown";
+      if (HumanMessage.isInstance(msg)) role = "human";
+      else if (AIMessage.isInstance(msg)) role = "ai";
       return `${role}: ${msg.content}`;
     })
     .join("\n\n");

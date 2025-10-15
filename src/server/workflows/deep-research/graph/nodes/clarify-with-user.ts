@@ -3,6 +3,7 @@
  *
  * Analyzes user messages and asks clarifying questions if the research scope is unclear.
  */
+/** biome-ignore-all lint/style/useBlockStatements: <> */
 
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
@@ -52,7 +53,12 @@ export async function clarifyWithUser(
 
   // Step 3: Analyze whether clarification is needed
   const messagesBuffer = messages
-    .map((msg) => `${msg._getType()}: ${msg.content}`)
+    .map((msg) => {
+      let type = "unknown";
+      if (HumanMessage.isInstance(msg)) type = "human";
+      else if (AIMessage.isInstance(msg)) type = "ai";
+      return `${type}: ${msg.content}`;
+    })
     .join("\n");
 
   const promptContent = clarifyWithUserInstructions

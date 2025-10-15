@@ -1,4 +1,5 @@
 import type { BaseMessage } from "@langchain/core/messages";
+import { HumanMessage } from "@langchain/core/messages";
 import type { ReactAgentState } from "@/server/agents/react/state";
 import type { MessageData } from "@/types/ui";
 
@@ -21,7 +22,7 @@ const MILLISECONDS_TO_SECONDS = 1000;
 export function agentStateToMessages(messages: BaseMessage[]): MessageData[] {
   return messages.map((msg, idx) => ({
     id: `msg-${idx}`,
-    role: msg._getType() === "human" ? "user" : "assistant",
+    role: HumanMessage.isInstance(msg) ? "user" : "assistant",
     content:
       typeof msg.content === "string"
         ? msg.content

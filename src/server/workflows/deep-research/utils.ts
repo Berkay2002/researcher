@@ -6,7 +6,7 @@
 
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { BaseMessage } from "@langchain/core/messages";
-import { HumanMessage } from "@langchain/core/messages";
+import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import type { Runnable, RunnableConfig } from "@langchain/core/runnables";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
@@ -498,7 +498,7 @@ export function getAllTools(config?: RunnableConfig): unknown[] {
 export function getNotesFromToolCalls(messages: BaseMessage[]): string[] {
   // Filter for tool messages and extract content
   return messages
-    .filter((msg) => msg._getType() === "tool")
+    .filter((msg) => ToolMessage.isInstance(msg))
     .map((msg) => String(msg.content));
 }
 

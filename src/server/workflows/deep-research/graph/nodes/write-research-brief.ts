@@ -4,7 +4,7 @@
  * Transform user messages into a structured research brief and initialize supervisor.
  */
 
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { Command } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
@@ -42,7 +42,12 @@ export async function writeResearchBrief(
 
   // Step 2: Generate structured research brief from user messages
   const messagesBuffer = state.messages
-    .map((msg) => `${msg._getType()}: ${msg.content}`)
+    .map((msg) => {
+      let type = "unknown";
+      if (HumanMessage.isInstance(msg)) type = "human";
+      else if (AIMessage.isInstance(msg)) type = "ai";
+      return `${type}: ${msg.content}`;
+    })
     .join("\n");
 
   const promptContent = transformMessagesIntoResearchTopicPrompt

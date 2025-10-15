@@ -4,7 +4,7 @@
  * Generate the final comprehensive research report with retry logic for token limits.
  */
 
-import { AIMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { AgentMiddleware } from "langchain";
 import { createAgent, modelFallbackMiddleware } from "langchain";
@@ -52,7 +52,12 @@ export async function finalReportGeneration(
 
   // Step 5: Create messages buffer for context
   const messagesBuffer = state.messages
-    .map((msg) => `${msg._getType()}: ${msg.content}`)
+    .map((msg) => {
+      let type = "unknown";
+      if (HumanMessage.isInstance(msg)) type = "human";
+      else if (AIMessage.isInstance(msg)) type = "ai";
+      return `${type}: ${msg.content}`;
+    })
     .join("\n");
 
   // Step 6: Invoke agent to generate the final report
