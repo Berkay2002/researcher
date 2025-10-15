@@ -34,10 +34,6 @@ export function createLLM(
     apiKey: OPENAI_API_KEY,
     configuration: {
       baseURL: GEMINI_BASE_URL,
-      defaultHeaders: {
-        "HTTP-Referer": "http://localhost:3000",
-        "X-Title": "Research Assistant",
-      },
     },
     // Disable stream_options to avoid token metadata conflicts
     streamUsage: false,
