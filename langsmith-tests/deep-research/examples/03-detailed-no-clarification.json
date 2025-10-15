@@ -1,0 +1,14 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "content": "Analyze the EU AI Act's classification system for General Purpose AI (GPAI) models, including the 10^25 FLOPs threshold, compliance obligations for high-impact GPAI, timelines for implementation, and how GPAI requirements differ from high-risk AI system regulations."
+    }
+  ],
+  "configurable": {
+    "thread_id": "demo-skip-clarification",
+    "allow_clarification": false,
+    "max_concurrent_research_units": 4,
+    "max_researcher_iterations": 5
+  }
+}

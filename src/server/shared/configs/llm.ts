@@ -3,6 +3,7 @@ import { LANGCHAIN_TRACING_V2, OPENAI_API_KEY } from "./env";
 
 // Constants for LLM configuration
 const GEMINI_BASE_URL =
+  process.env.GEMINI_BASE_URL ||
   "https://generativelanguage.googleapis.com/v1beta/openai/";
 const DEFAULT_TEMPERATURE = 0.3;
 const QUALITY_TEMPERATURE = 0.1;

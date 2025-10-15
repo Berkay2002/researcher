@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "content": "I need research on AI benchmarks"
+    },
+    {
+      "type": "ai",
+      "content": "I'd like to clarify your research scope to provide the most relevant information. Could you please specify:\n\n1. **Benchmark Type**: Are you interested in:\n   - Training benchmarks (e.g., MLPerf Training)\n   - Inference benchmarks (e.g., MLPerf Inference)\n   - Agent/reasoning benchmarks (e.g., MMLU, HumanEval, AgentBench)\n   - Multimodal benchmarks (e.g., MMMU, VQA)\n\n2. **Specific Questions**: What aspects are most important?\n   - Performance comparisons (hardware, models, or frameworks)\n   - Benchmark methodology and metrics\n   - Industry adoption and standardization\n   - Benchmark limitations or gaps\n\n3. **Domain Focus**: Any specific application area?\n   - General-purpose LLMs\n   - Computer vision\n   - Healthcare/Science AI\n   - Production deployment scenarios\n\nPlease provide more details so I can conduct targeted research."
+    },
+    {
+      "type": "human",
+      "content": "Focus on MLPerf Inference v5.1 results for datacenter GPUs - specifically comparing NVIDIA H100, H200, B200, and AMD MI325X. I want to understand performance differences, architectural reasons (HBM, interconnect), and which results are from vendors vs independent audits."
+    }
+  ],
+  "configurable": {
+    "thread_id": "demo-clarification-needed",
+    "allow_clarification": true
+  }
+}
