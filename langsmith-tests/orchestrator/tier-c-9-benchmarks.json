@@ -1,0 +1,7 @@
+{
+  "threadId": "test-bench-to-deploy-001",
+  "userInputs": {
+    "goal": "Reconcile **MLPerf**/vendor claims with deployment constraints (memory capacity, HBM availability, interconnect topology, software stack maturity). Build a 'what actually matters' checklist for capacity planning in 2025–26.",
+    "modeOverride": "auto"
+  }
+}

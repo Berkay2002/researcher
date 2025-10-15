@@ -245,13 +245,13 @@ await graph.invoke(new Command({ resume: true }), threadConfig);
 
   // Next steps after approval
   function approvedNode(state: z.infer<typeof StateAnnotation>) {
-    console.log("✅ Approved path taken.");
+    console.log(" Approved path taken.");
     return state;
   }
 
   // Alternative path after rejection
   function rejectedNode(state: z.infer<typeof StateAnnotation>) {
-    console.log("❌ Rejected path taken.");
+    console.log(" Rejected path taken.");
     return state;
   }
 
@@ -367,7 +367,7 @@ await graph.invoke(
 
   // Simulate downstream use of the edited summary
   function downstreamUse(state: z.infer<typeof StateAnnotation>) {
-    console.log(`✅ Using edited summary: ${state.summary}`);
+    console.log(` Using edited summary: ${state.summary}`);
     return state;
   }
 
@@ -722,7 +722,7 @@ graphBuilder.addNode("humanNode", (state) => {
 
   // Node that uses the valid input
   function reportAge(state: z.infer<typeof StateAnnotation>) {
-    console.log(`✅ Human is ${state.age} years old.`);
+    console.log(` Human is ${state.age} years old.`);
     return state;
   }
 

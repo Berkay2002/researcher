@@ -1,0 +1,8 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "react-agent": "./src/server/agents/react/agent.ts:createReactAgent",
+    "researcher-orchestrator": "./src/server/workflows/researcher/graph/index-orchestrator.ts:createResearcherWorkflow"
+  },
+  "env": ".env.local"
+}

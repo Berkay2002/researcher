@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/suspicious/noExplicitAny: <> */
 import { type NextRequest, NextResponse } from "next/server";
-import { getGraph } from "@/server/graph";
+import { getGraph } from "@/server/workflows/researcher/graph";
 
 /**
  * GET /api/threads/:threadId/state

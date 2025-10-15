@@ -6,7 +6,7 @@ import {
   getThreadHistoryEntry,
   setThreadHistoryEntry,
 } from "@/lib/store/thread-history";
-import { getGraph } from "@/server/graph";
+import { getGraph } from "@/server/workflows/researcher/graph";
 
 /**
  * POST /api/threads/:threadId/resume

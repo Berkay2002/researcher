@@ -11,7 +11,7 @@ import type {
   Evidence,
   ResearchState,
   UnifiedSearchDoc,
-} from "@/server/graph/state";
+} from "@/server/workflows/researcher/graph/state";
 
 // ============================================================================
 // SSE Event Types

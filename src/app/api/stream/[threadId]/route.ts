@@ -1,7 +1,7 @@
 /** biome-ignore-all lint/suspicious/noConsole: <For development> */
 /** biome-ignore-all lint/style/useTemplate: <> */
 import { type NextRequest, NextResponse } from "next/server";
-import { getGraph } from "@/server/graph";
+import { getGraph } from "@/server/workflows/researcher/graph";
 
 // Ensure Node.js runtime for SSE streaming support
 export const runtime = "nodejs";

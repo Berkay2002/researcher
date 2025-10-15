@@ -26,9 +26,9 @@ Multi-agent systems are useful when:
 
 | Question                                              | Tool Calling | Handoffs |
 | ----------------------------------------------------- | ------------ | -------- |
-| Need centralized control over workflow?               | ✅ Yes        | ❌ No     |
-| Want agents to interact directly with the user?       | ❌ No         | ✅ Yes    |
-| Complex, human-like conversation between specialists? | ❌ Limited    | ✅ Strong |
+| Need centralized control over workflow?               |  Yes        |  No     |
+| Want agents to interact directly with the user?       |  No         |  Yes    |
+| Complex, human-like conversation between specialists? |  Limited    |  Strong |
 
 <Tip>
   You can mix both patterns — use **handoffs** for agent switching, and have each agent **call subagents as tools** for specialized tasks.
