@@ -11,7 +11,7 @@ type StreamState = Omit<ReactAgentState, "messages"> & {
   messages: BaseMessage[];
 };
 
-const REACT_AGENT_ASSISTANT_ID = "react-agent";
+const REACT_AGENT_ASSISTANT_ID = "researcher";
 
 export type UseAgentStreamOptions = {
   threadId: string | null;

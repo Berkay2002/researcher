@@ -16,7 +16,7 @@ import { getLangGraphClient } from "@/lib/langgraph-client";
 
 const PLACEHOLDER_TEXT = "What would you like me to help you with today?";
 const MIN_INPUT_LENGTH = 3;
-const REACT_AGENT_ASSISTANT_ID = "react-agent";
+const REACT_AGENT_ASSISTANT_ID = "researcher";
 
 /**
  * New Agent Session Page
