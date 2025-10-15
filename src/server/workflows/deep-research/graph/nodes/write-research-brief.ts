@@ -4,10 +4,14 @@
  * Transform user messages into a structured research brief and initialize supervisor.
  */
 
-import { AIMessage, HumanMessage, SystemMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  HumanMessage,
+  SystemMessage,
+} from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { Command } from "@langchain/langgraph";
-import { ChatOpenAI } from "@langchain/openai";
+import { createLLM } from "@/server/shared/configs/llm";
 import { getConfiguration } from "../../configuration";
 import {
   leadResearcherPrompt,
@@ -32,11 +36,13 @@ export async function writeResearchBrief(
   const configuration = getConfiguration(config);
 
   // Configure model for structured research question generation
-  const researchModel = new ChatOpenAI({
-    modelName: configuration.research_model,
-    maxTokens: configuration.research_model_max_tokens,
-    temperature: 0,
-  }).withStructuredOutput(ResearchQuestionSchema, {
+  const researchModel = createLLM(
+    configuration.research_model,
+    0, // temperature for consistent research brief generation
+    {
+      maxTokens: configuration.research_model_max_tokens,
+    }
+  ).withStructuredOutput(ResearchQuestionSchema, {
     method: "jsonMode",
   });
 
@@ -44,8 +50,11 @@ export async function writeResearchBrief(
   const messagesBuffer = state.messages
     .map((msg) => {
       let type = "unknown";
-      if (HumanMessage.isInstance(msg)) type = "human";
-      else if (AIMessage.isInstance(msg)) type = "ai";
+      if (HumanMessage.isInstance(msg)) {
+        type = "human";
+      } else if (AIMessage.isInstance(msg)) {
+        type = "ai";
+      }
       return `${type}: ${msg.content}`;
     })
     .join("\n");
