@@ -4,19 +4,11 @@
  * Transform user messages into a structured research brief and initialize supervisor.
  */
 
-import {
-  AIMessage,
-  HumanMessage,
-  SystemMessage,
-} from "@langchain/core/messages";
+import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { Command } from "@langchain/langgraph";
-import { createLLM } from "@/server/shared/configs/llm";
-import { getConfiguration } from "../../configuration";
-import {
-  leadResearcherPrompt,
-  transformMessagesIntoResearchTopicPrompt,
-} from "../../prompts";
+import { createResearchBriefModel } from "../../configuration";
+import { transformMessagesIntoResearchTopicPrompt } from "../../prompts";
 import { getTodayStr } from "../../utils";
 import type { AgentState } from "../state";
 import { ResearchQuestionSchema } from "../state";
@@ -33,18 +25,13 @@ export async function writeResearchBrief(
   config?: RunnableConfig
 ): Promise<Command> {
   // Step 1: Set up the research model for structured output
-  const configuration = getConfiguration(config);
-
   // Configure model for structured research question generation
-  const researchModel = createLLM(
-    configuration.research_model,
-    0, // temperature for consistent research brief generation
+  const researchModel = createResearchBriefModel(config).withStructuredOutput(
+    ResearchQuestionSchema,
     {
-      maxTokens: configuration.research_model_max_tokens,
+      method: "jsonMode",
     }
-  ).withStructuredOutput(ResearchQuestionSchema, {
-    method: "jsonMode",
-  });
+  );
 
   // Step 2: Generate structured research brief from user messages
   const messagesBuffer = state.messages
@@ -67,28 +54,14 @@ export async function writeResearchBrief(
     new HumanMessage({ content: promptContent }),
   ]);
 
-  // Step 3: Initialize supervisor with research brief and instructions
-  const supervisorSystemPrompt = leadResearcherPrompt
-    .replace("{date}", getTodayStr())
-    .replace(
-      "{max_concurrent_research_units}",
-      String(configuration.max_concurrent_research_units)
-    )
-    .replace(
-      "{max_researcher_iterations}",
-      String(configuration.max_researcher_iterations)
-    );
-
+  // Step 3: Return research brief - supervisor will initialize its own messages
   return new Command({
     goto: "research_supervisor",
     update: {
       research_brief: response.research_brief,
       supervisor_messages: {
         type: "override",
-        value: [
-          new SystemMessage({ content: supervisorSystemPrompt }),
-          new HumanMessage({ content: response.research_brief }),
-        ],
+        value: [], // Clear any existing messages - supervisor will initialize
       },
     },
   });

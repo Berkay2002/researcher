@@ -10,9 +10,9 @@ import { HumanMessage, ToolMessage } from "@langchain/core/messages";
 import type { Runnable, RunnableConfig } from "@langchain/core/runnables";
 import { tool } from "@langchain/core/tools";
 import { z } from "zod";
-import { createLLM } from "@/server/shared/configs/llm";
 import { getExaClient } from "@/server/shared/tools/exa";
 import {
+  createSummarizationModel,
   getConfiguration,
   getExaApiKey,
   getTavilyApiKey,
@@ -205,9 +205,8 @@ export const tavilySearchTool = tool(
     const configuration = getConfiguration(config);
     const maxCharToInclude = configuration.max_content_length;
 
-    const summarizationModel = createLLM(configuration.summarization_model, 0, {
-      maxTokens: configuration.summarization_model_max_tokens,
-    }).withStructuredOutput(SummarySchema);
+    const summarizationModel =
+      createSummarizationModel(config).withStructuredOutput(SummarySchema);
 
     // Create summarization tasks
     const summarizationTasks: Promise<string | null>[] = Array.from(
@@ -340,9 +339,8 @@ export const exaSearchTool = tool(
     const configuration = getConfiguration(config);
     const maxCharToInclude = configuration.max_content_length;
 
-    const summarizationModel = createLLM(configuration.summarization_model, 0, {
-      maxTokens: configuration.summarization_model_max_tokens,
-    }).withStructuredOutput(SummarySchema);
+    const summarizationModel =
+      createSummarizationModel(config).withStructuredOutput(SummarySchema);
 
     // Create summarization tasks
     const summarizationTasks: Promise<string | null>[] = Array.from(

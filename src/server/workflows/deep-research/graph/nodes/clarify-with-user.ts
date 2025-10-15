@@ -8,8 +8,10 @@
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { Command } from "@langchain/langgraph";
-import { createLLM } from "@/server/shared/configs/llm";
-import { getConfiguration } from "../../configuration";
+import {
+  createClarificationModel,
+  getConfiguration,
+} from "../../configuration";
 import { clarifyWithUserInstructions } from "../../prompts";
 import { getTodayStr } from "../../utils";
 import type { AgentState } from "../state";
@@ -39,15 +41,9 @@ export async function clarifyWithUser(
   const messages = state.messages;
 
   // Configure model with structured output and retry logic
-  const llm = createLLM(
-    configuration.research_model,
-    0, // temperature
-    {
-      maxTokens: configuration.research_model_max_tokens,
-    }
-  );
-
-  const clarificationModel = llm.withStructuredOutput(ClarifyWithUserSchema, {
+  const clarificationModel = createClarificationModel(
+    config
+  ).withStructuredOutput(ClarifyWithUserSchema, {
     method: "jsonMode",
   });
 

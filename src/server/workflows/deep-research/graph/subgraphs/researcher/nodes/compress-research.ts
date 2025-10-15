@@ -9,16 +9,13 @@
 import type { BaseMessage } from "@langchain/core/messages";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
-import { createLLM } from "@/server/shared/configs/llm";
-import { getConfiguration } from "../../../../configuration";
+import { createCompressionModel } from "../../../../configuration";
 import {
   compressResearchSimpleHumanMessage,
   compressResearchSystemPrompt,
 } from "../../../../prompts";
 import { getTodayStr } from "../../../../utils";
 import type { ResearcherState } from "../../../state";
-
-const COMPRESSION_TEMPERATURE = 0.1; // Low temperature for quality
 
 // Regex patterns for extracting sources from compressed research
 const SOURCES_SECTION_REGEX = /###?\s*Sources[\s\S]*/i;
@@ -31,17 +28,10 @@ export async function compressResearch(
   state: ResearcherState,
   config?: RunnableConfig
 ): Promise<Partial<ResearcherState>> {
-  const configuration = getConfiguration(config);
   const { researcher_messages } = state;
 
   // Configure compression model
-  const compressionModel = createLLM(
-    configuration.compression_model,
-    COMPRESSION_TEMPERATURE,
-    {
-      maxTokens: configuration.compression_model_max_tokens,
-    }
-  );
+  const compressionModel = createCompressionModel(config);
 
   // Build compression prompt
   const systemPrompt = compressResearchSystemPrompt.replace(

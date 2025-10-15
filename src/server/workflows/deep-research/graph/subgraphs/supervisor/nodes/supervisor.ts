@@ -8,13 +8,11 @@
 import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { tool } from "@langchain/core/tools";
+import { createAgent, modelCallLimitMiddleware } from "langchain";
 import {
-  ClearToolUsesEdit,
-  contextEditingMiddleware,
-  createAgent,
-  modelCallLimitMiddleware,
-} from "langchain";
-import { getConfiguration } from "../../../../configuration";
+  createSupervisorModel,
+  getConfiguration,
+} from "../../../../configuration";
 import {
   ConductResearchSchema,
   ResearchCompleteSchema,
@@ -54,10 +52,17 @@ export async function supervisor(
   config?: RunnableConfig
 ): Promise<Partial<SupervisorState>> {
   const configuration = getConfiguration(config);
-  const { supervisor_messages, research_brief } = state;
+  const { research_brief } = state;
 
-  // Configure LLM
-  const model: string = configuration.research_model;
+  // Validate research_brief is present
+  if (!research_brief) {
+    throw new Error(
+      "research_brief is required for supervisor but was not provided"
+    );
+  }
+
+  // Create model instance with tracing support from configuration
+  const model = createSupervisorModel(config);
 
   const tools = [conductResearchTool, researchCompleteTool, thinkTool];
 
@@ -87,14 +92,6 @@ export async function supervisor(
     );
   }
 
-  if (configuration.use_context_editing) {
-    middleware.push(
-      contextEditingMiddleware({
-        edits: [new ClearToolUsesEdit({})],
-      })
-    );
-  }
-
   // Create agent with middleware
   const agent = createAgent({
     model,
@@ -105,22 +102,36 @@ export async function supervisor(
   // Build initial messages
   const messages = [
     {
-      role: "system",
+      role: "system" as const,
       content: systemPrompt,
     },
     {
-      role: "user",
-      content: `Research Brief: ${research_brief}`,
+      role: "user" as const,
+      content: research_brief,
     },
-    ...supervisor_messages,
   ];
 
   // Invoke agent
-  const response = await agent.invoke({ messages }, config);
+  try {
+    const response = await agent.invoke({ messages }, config);
 
-  return {
-    supervisor_messages: response.messages || [
-      new AIMessage({ content: "Research completed." }),
-    ],
-  };
+    return {
+      supervisor_messages: response.messages || [
+        new AIMessage({ content: "Research completed." }),
+      ],
+    };
+  } catch (error) {
+    const err = error as Error;
+    const DEBUG_BRIEF_LENGTH = 100;
+    // Log the full error for debugging
+    // biome-ignore lint/suspicious/noConsole: Debugging supervisor errors
+    console.error("Supervisor agent error:", {
+      message: err.message,
+      stack: err.stack,
+      model,
+      research_brief: research_brief?.substring(0, DEBUG_BRIEF_LENGTH),
+    });
+
+    throw new Error(`Supervisor failed: ${err.message}`);
+  }
 }

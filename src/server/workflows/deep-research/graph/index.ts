@@ -21,7 +21,11 @@ import { createSupervisorGraph } from "./subgraphs/supervisor";
 let graphInstance: CompiledStateGraph<
   AgentState,
   Partial<AgentState>,
-  "__start__" | "clarify_with_user" | "write_research_brief" | "supervisor" | "final_report_generation"
+  | "__start__"
+  | "clarify_with_user"
+  | "write_research_brief"
+  | "supervisor"
+  | "final_report_generation"
 > | null = null;
 
 /**
@@ -41,7 +45,7 @@ export function getDeepResearchGraph() {
   // Build main graph
   const graph = new StateGraph(AgentStateAnnotation)
     .addNode("clarify_with_user", clarifyWithUser, {
-      ends: ["write_research_brief", "__end__"]
+      ends: ["write_research_brief", "__end__"],
     })
     .addNode("write_research_brief", writeResearchBrief)
     .addNode("supervisor", supervisorGraph)

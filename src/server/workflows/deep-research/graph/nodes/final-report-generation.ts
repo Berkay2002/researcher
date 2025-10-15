@@ -8,7 +8,7 @@ import { AIMessage, HumanMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { AgentMiddleware } from "langchain";
 import { createAgent, modelFallbackMiddleware } from "langchain";
-import { getConfiguration } from "../../configuration";
+import { createFinalReportModel, getConfiguration } from "../../configuration";
 import type { AgentState } from "../state";
 
 /**
@@ -28,10 +28,10 @@ export async function finalReportGeneration(
     notes: { type: "override", value: [] } as unknown as string[],
   };
 
-  // Step 2: Configure the final report generation model
+  // Step 2: Configure the final report generation model with tracing
   const configuration = getConfiguration(config);
 
-  const primaryModel = configuration.final_report_model;
+  const primaryModel = createFinalReportModel(config);
 
   // Step 3: Prepare middleware for model fallback
   // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
@@ -54,8 +54,11 @@ export async function finalReportGeneration(
   const messagesBuffer = state.messages
     .map((msg) => {
       let type = "unknown";
-      if (HumanMessage.isInstance(msg)) type = "human";
-      else if (AIMessage.isInstance(msg)) type = "ai";
+      if (HumanMessage.isInstance(msg)) {
+        type = "human";
+      } else if (AIMessage.isInstance(msg)) {
+        type = "ai";
+      }
       return `${type}: ${msg.content}`;
     })
     .join("\n");

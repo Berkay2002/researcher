@@ -14,7 +14,10 @@ import {
   createAgent,
   toolCallLimitMiddleware,
 } from "langchain";
-import { getConfiguration } from "../../../../configuration";
+import {
+  createResearcherModel,
+  getConfiguration,
+} from "../../../../configuration";
 import { researchSystemPrompt } from "../../../../prompts";
 import { getTodayStr } from "../../../../utils";
 import type { ResearcherStateAnnotation } from "../../../state";
@@ -31,8 +34,8 @@ export async function researcher(
   const configuration = getConfiguration(config);
   const { research_topic, researcher_messages } = state;
 
-  // Configure LLM
-  const model: string = configuration.research_model;
+  // Configure LLM with tracing support
+  const model = createResearcherModel(config);
 
   // Prepare system prompt with research topic and date
   const systemPrompt = researchSystemPrompt

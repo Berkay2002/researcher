@@ -7,6 +7,7 @@
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { z } from "zod";
 import { EXA_API_KEY, TAVILY_API_KEY } from "@/server/shared/configs/env";
+import { createLLM } from "@/server/shared/configs/llm";
 
 // ============================================================================
 // Search API Configuration
@@ -135,7 +136,9 @@ export const ConfigurationSchema = z.object({
   use_tool_call_limit: z.boolean().default(true),
   use_model_fallback: z.boolean().default(true),
   use_context_editing: z.boolean().default(true),
-  fallback_models: z.array(z.string()).default(["gemini-2.5-flash", "gemini-2.5-pro"]),
+  fallback_models: z
+    .array(z.string())
+    .default(["gemini-2.5-flash", "gemini-2.5-pro"]),
 });
 
 export type Configuration = z.infer<typeof ConfigurationSchema>;
@@ -159,7 +162,7 @@ export function fromRunnableConfig(
   const schemaKeys = Object.keys(ConfigurationSchema.shape);
 
   for (const key of schemaKeys) {
-    if (key in configurable) {
+    if (key in configurable && configurable[key] !== undefined) {
       // @ts-expect-error - Dynamic key access
       values[key] = configurable[key];
     }
@@ -188,4 +191,121 @@ export function getTavilyApiKey(): string | undefined {
  */
 export function getExaApiKey(): string | undefined {
   return EXA_API_KEY;
+}
+
+// ============================================================================
+// Model Creation Helpers
+// ============================================================================
+
+/**
+ * Create a configured LLM instance for research tasks
+ *
+ * @param modelName - The model name (e.g., "gemini-2.5-pro", "gemini-2.5-flash")
+ * @param temperature - The temperature for generation
+ * @param maxTokens - Maximum tokens for output
+ * @returns Configured ChatOpenAI instance with tracing
+ */
+export function createResearchLLM(
+  modelName: string,
+  temperature: number,
+  maxTokens?: number
+) {
+  return createLLM(modelName, temperature, {
+    maxTokens,
+  });
+}
+
+/**
+ * Create supervisor model instance from configuration
+ */
+export function createSupervisorModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+  const SUPERVISOR_TEMPERATURE = 0.3;
+
+  return createResearchLLM(
+    configuration.research_model,
+    SUPERVISOR_TEMPERATURE,
+    configuration.research_model_max_tokens
+  );
+}
+
+/**
+ * Create researcher model instance from configuration
+ */
+export function createResearcherModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+  const RESEARCHER_TEMPERATURE = 0.3;
+
+  return createResearchLLM(
+    configuration.research_model,
+    RESEARCHER_TEMPERATURE,
+    configuration.research_model_max_tokens
+  );
+}
+
+/**
+ * Create final report model instance from configuration
+ */
+export function createFinalReportModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+  const FINAL_REPORT_TEMPERATURE = 0.3;
+
+  return createResearchLLM(
+    configuration.final_report_model,
+    FINAL_REPORT_TEMPERATURE,
+    configuration.final_report_model_max_tokens
+  );
+}
+
+/**
+ * Create research brief model instance from configuration
+ */
+export function createResearchBriefModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+
+  return createResearchLLM(
+    configuration.research_model,
+    0, // Use 0 temperature for consistent research brief generation
+    configuration.research_model_max_tokens
+  );
+}
+
+/**
+ * Create clarification model instance from configuration
+ */
+export function createClarificationModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+
+  return createResearchLLM(
+    configuration.research_model,
+    0, // Use 0 temperature for consistent clarification analysis
+    configuration.research_model_max_tokens
+  );
+}
+
+/**
+ * Create compression model instance from configuration
+ */
+export function createCompressionModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+  const COMPRESSION_TEMPERATURE = 0.1; // Low temperature for quality
+
+  return createResearchLLM(
+    configuration.compression_model,
+    COMPRESSION_TEMPERATURE,
+    configuration.compression_model_max_tokens
+  );
+}
+
+/**
+ * Create summarization model instance from configuration
+ */
+export function createSummarizationModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+
+  return createResearchLLM(
+    configuration.summarization_model,
+    0, // Use 0 temperature for consistent summarization
+    configuration.summarization_model_max_tokens
+  );
 }

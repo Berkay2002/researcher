@@ -1,6 +1,6 @@
-# LangSmith Tracing for React Agent
+# LangSmith Tracing for Research Workflows
 
-This document explains how to use LangSmith tracing to debug and monitor the React agent and its subagents.
+This document explains how to use LangSmith tracing to debug and monitor both the React Agent and Deep Research workflows.
 
 ## Setup
 
@@ -12,7 +12,7 @@ Tracing is configured in your `.env.local` file:
 # LangSmith Tracing Configuration
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=your_langsmith_api_key_here
-LANGCHAIN_PROJECT=researcher-react-agent
+LANGCHAIN_PROJECT=researcher-workflows
 LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
 ```
 
@@ -25,17 +25,19 @@ LANGCHAIN_ENDPOINT=https://api.smith.langchain.com
 
 ### 3. Restart the Server
 
-After enabling tracing, restart the LangGraph server:
+After enabling tracing, restart the development server:
 
 ```bash
-npm run dev:langgraph
+npm run dev
 ```
 
 ## What Gets Traced
 
-With tracing enabled, you'll see detailed information about:
+With tracing enabled, you'll see detailed information about both workflows:
 
-### Main React Agent
+### React Agent Workflow
+
+#### Main React Agent
 - **LLM calls**: Every call to Gemini 2.5 Pro
 - **Tool invocations**: When the agent decides to use tools
 - **Tool arguments**: What parameters the agent passes to each tool
@@ -43,26 +45,63 @@ With tracing enabled, you'll see detailed information about:
 - **Agent reasoning**: The agent's decision-making process
 - **State updates**: How the state changes between steps
 
-### Research Subagent
+#### Research Subagent
 When the main agent uses the research tool, you'll see:
 - **Subagent LLM calls**: Separate trace for the research subagent
 - **Search tool usage**: Tavily and Exa search calls
 - **Search results**: What information was found
 - **Research synthesis**: How the subagent combines search results
 
-### Search Tools
+### Deep Research Workflow
+
+#### Clarification Node
+- **LLM calls**: Analysis of user query for clarification needs
+- **Decision making**: Whether clarification is needed
+- **Structured output**: Clarification questions or verification messages
+
+#### Research Brief Generation
+- **LLM calls**: Transformation of user messages into structured research brief
+- **Research question generation**: Topic, objectives, scope, constraints
+- **State initialization**: Setting up supervisor context
+
+#### Supervisor Agent
+- **Research delegation**: ConductResearch tool calls
+- **Progress tracking**: Think tool reflections
+- **Completion detection**: ResearchComplete tool usage
+- **Model call limits**: Iteration tracking via middleware
+- **Parallel research**: Multiple researcher instances
+
+#### Researcher Agents (Parallel)
+- **Search tool usage**: Tavily or Exa search calls per researcher
+- **Tool call limits**: Iteration tracking via middleware
+- **Context editing**: Tool message cleanup via middleware
+- **Research synthesis**: Individual researcher findings
+
+#### Research Compression
+- **LLM calls**: Compression of raw research notes
+- **Structured summarization**: Key findings extraction
+- **Token optimization**: Reducing context size
+
+#### Final Report Generation
+- **LLM calls**: Comprehensive report synthesis
+- **Model fallback**: Automatic retry with fallback models on token limits
+- **Report formatting**: Structured output generation
+
+### Search Tools (Both Workflows)
 - **Tavily searches**: Query, results, relevance scores
 - **Exa searches**: Query, results, content extraction
 - **Search metadata**: Timing, token usage, costs
+- **Webpage summarization**: AI-powered content extraction
 
 ## Viewing Traces
 
 ### In LangSmith Dashboard
 
 1. Go to [LangSmith Projects](https://smith.langchain.com/projects)
-2. Select your project: `researcher-react-agent`
-3. View traces in real-time as the agent runs
+2. Select your project: `researcher-workflows`
+3. View traces in real-time as workflows execute
 4. Click on any trace to see detailed execution flow
+5. Filter by workflow using tags: `model:gemini-2.5-pro` or `model:gemini-2.5-flash`
 
 ### Trace Details Include:
 
@@ -90,32 +129,50 @@ When the main agent uses the research tool, you'll see:
 
 ## Useful Traces to Monitor
 
-### 1. Successful Research Flow
-Look for traces where:
-- Agent receives user query
-- Decides to use research tool
-- Research subagent performs searches
-- Results are returned to main agent
-- Agent synthesizes final response
+### 1. Deep Research Workflow Execution
+Look for complete traces showing:
+- **Clarification phase**: User query analysis and clarification decision
+- **Research brief generation**: Structured research question creation
+- **Supervisor delegation**: Multiple ConductResearch tool calls
+- **Parallel researchers**: Multiple researcher traces running concurrently
+- **Research compression**: Note summarization for each researcher
+- **Final report**: Comprehensive synthesis of all findings
 
-### 2. Tool Selection Decisions
-Monitor which tools the agent chooses:
-- When does it use research vs. todo management?
-- Does it make appropriate tool choices?
-- Are tool arguments correctly formatted?
+### 2. Supervisor Orchestration
+Monitor supervisor behavior:
+- **Research delegation**: How many researchers are spawned?
+- **Tool call patterns**: Think → ConductResearch → Think → ResearchComplete
+- **Iteration tracking**: Model call limit middleware in action
+- **Completion detection**: When and why ResearchComplete is called
 
-### 3. Error Cases
-Track failures:
-- LLM errors (rate limits, timeouts)
-- Tool failures (search API errors)
-- State validation errors
-- Subagent crashes
+### 3. Researcher Agent Performance
+Track individual researchers:
+- **Search strategies**: What queries are being generated?
+- **Tool usage**: Tavily vs Exa, number of searches
+- **Context editing**: Tool message cleanup between iterations
+- **Research quality**: Are findings relevant and comprehensive?
 
-### 4. Performance Bottlenecks
+### 4. Error Cases
+Track failures across workflows:
+- **LLM errors**: Rate limits, timeouts, token limit exceeded
+- **Tool failures**: Search API errors, network issues
+- **State validation errors**: Schema violations, missing required fields
+- **Middleware errors**: Limit exceeded, fallback failures
+- **Subgraph crashes**: Researcher or supervisor failures
+
+### 5. Performance Bottlenecks
 Identify slow steps:
-- Which LLM calls take longest?
-- Are searches timing out?
-- Is the agent making too many tool calls?
+- **Long LLM calls**: Which nodes take longest? Research brief? Final report?
+- **Search timeouts**: Are Tavily/Exa searches timing out?
+- **Parallel bottlenecks**: Are researchers running truly in parallel?
+- **Compression overhead**: Is research note compression slowing things down?
+
+### 6. Token Usage Optimization
+Monitor token consumption:
+- **Supervisor iterations**: Are we hitting model call limits?
+- **Researcher iterations**: Are we hitting tool call limits?
+- **Research compression**: Are we effectively reducing token usage?
+- **Final report**: Is the final report generation hitting token limits?
 
 ## Filtering Traces
 
@@ -140,9 +197,13 @@ Find slow requests:
 
 ### 1. Use Descriptive Project Names
 Keep project names organized:
-- `researcher-react-agent` for production
-- `researcher-react-agent-dev` for development
-- `researcher-react-agent-test` for testing
+- `researcher-workflows` for production
+- `researcher-workflows-dev` for development
+- `researcher-workflows-test` for testing
+
+You can also use separate projects per workflow:
+- `researcher-react-agent` for React Agent workflow
+- `researcher-deep-research` for Deep Research workflow
 
 ### 2. Monitor Costs
 LangSmith shows token usage and estimated costs:
