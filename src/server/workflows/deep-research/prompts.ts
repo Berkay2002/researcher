@@ -62,7 +62,7 @@ The messages that have been exchanged so far between yourself and the user are:
 
 Today's date is {date}.
 
-You will return a single research question that will be used to guide the research.
+You will return a single research brief (labeled as "research_brief") that will be used to guide the research.
 
 Guidelines:
 1. Maximize Specificity and Detail
@@ -85,6 +85,11 @@ Guidelines:
 - For academic or scientific queries, prefer linking directly to the original paper or official journal publication rather than survey papers or secondary summaries.
 - For people, try linking directly to their LinkedIn profile, or their personal website if they have one.
 - If the query is in a specific language, prioritize sources published in that language.
+
+Respond in valid JSON format with this exact key:
+{
+  "research_brief": "<your detailed research brief here>"
+}
 `;
 
 // ============================================================================
