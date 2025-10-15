@@ -101,7 +101,7 @@ When the main agent uses the research tool, you'll see:
 2. Select your project: `researcher-workflows`
 3. View traces in real-time as workflows execute
 4. Click on any trace to see detailed execution flow
-5. Filter by workflow using tags: `model:gemini-2.5-pro` or `model:gemini-2.5-flash`
+5. Filter by workflow using tags: `model:gemini-2.5-pro` or `model:gemini-flash-latest`
 
 ### Trace Details Include:
 
@@ -123,7 +123,7 @@ When the main agent uses the research tool, you'll see:
 - Internal reasoning steps
 
 #### 🏷️ Metadata
-- Model used (`gemini-2.5-pro` or `gemini-2.5-flash`)
+- Model used (`gemini-2.5-pro` or `gemini-flash-latest`)
 - Temperature settings
 - Tags for filtering
 
@@ -178,7 +178,7 @@ Monitor token consumption:
 
 ### By Tags
 All LLM calls are tagged with:
-- `model:gemini-2.5-pro` or `model:gemini-2.5-flash`
+- `model:gemini-2.5-pro` or `model:gemini-flash-latest`
 - `temperature:X.X`
 
 Filter in LangSmith using these tags to focus on specific model calls.

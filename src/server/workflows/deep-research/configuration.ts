@@ -102,7 +102,7 @@ export const ConfigurationSchema = z.object({
     .default(DEFAULT_MAX_REACT_TOOL_CALLS),
 
   // Model Configuration
-  summarization_model: z.string().default("gemini-2.5-flash"),
+  summarization_model: z.string().default("gemini-flash-latest"),
   summarization_model_max_tokens: z
     .number()
     .default(DEFAULT_SUMMARIZATION_MODEL_MAX_TOKENS),
@@ -117,7 +117,7 @@ export const ConfigurationSchema = z.object({
     .number()
     .default(DEFAULT_RESEARCH_MODEL_MAX_TOKENS),
 
-  compression_model: z.string().default("gemini-2.5-flash"),
+  compression_model: z.string().default("gemini-flash-latest"),
   compression_model_max_tokens: z
     .number()
     .default(DEFAULT_COMPRESSION_MODEL_MAX_TOKENS),
@@ -138,7 +138,7 @@ export const ConfigurationSchema = z.object({
   use_context_editing: z.boolean().default(true),
   fallback_models: z
     .array(z.string())
-    .default(["gemini-2.5-flash", "gemini-2.5-pro"]),
+    .default(["gemini-flash-latest", "gemini-2.5-pro"]),
 });
 
 export type Configuration = z.infer<typeof ConfigurationSchema>;
@@ -200,7 +200,7 @@ export function getExaApiKey(): string | undefined {
 /**
  * Create a configured LLM instance for research tasks
  *
- * @param modelName - The model name (e.g., "gemini-2.5-pro", "gemini-2.5-flash")
+ * @param modelName - The model name (e.g., "gemini-2.5-pro", "gemini-flash-latest")
  * @param temperature - The temperature for generation
  * @param maxTokens - Maximum tokens for output
  * @returns Configured ChatOpenAI instance with tracing

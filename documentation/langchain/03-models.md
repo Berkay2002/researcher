@@ -103,7 +103,7 @@ The easiest way to get started with a model in LangChain is to use `initChatMode
     import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 
     const llm = new ChatGoogleGenerativeAI({
-      model: "gemini-2.5-flash-lite-latest",
+      model: "gemini-flash-latest-lite-latest",
     });
     ```
   </Tab>

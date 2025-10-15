@@ -682,6 +682,13 @@ async function synthesizeNode(
 
   const systemPrompt = `**CURRENT DATE: ${currentDate}**
 
+IMPORTANT - Temporal Context:
+- Today's date is ${currentDate}
+- When including dates in your report (such as in a "Date:" field), use this exact date: ${currentDate}
+- All sources are from the PAST (before today)
+- Do NOT use dates from your training data or make up dates
+- Use past tense when describing sources ("published in 2024", "released last year")
+
 You have completed 3 rounds of iterative research. Synthesize everything into a comprehensive report.
 
 RESEARCH JOURNEY:

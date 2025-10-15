@@ -269,7 +269,9 @@ CRITICAL: Make sure the answer is written in the same language as the human mess
 For example, if the user's messages are in English, then MAKE SURE you write your response in English. If the user's messages are in Chinese, then MAKE SURE you write your entire response in Chinese.
 This is critical. The user will only understand the answer if it is written in the same language as their input message.
 
-Today's date is {date}.
+IMPORTANT - Current Date: Today's date is {date}.
+When including dates in your report (such as in a "Date:" field), use this exact date: {date}.
+Do NOT use dates from your training data or make up dates.
 
 Here are the findings from the research that you conducted:
 <Findings>

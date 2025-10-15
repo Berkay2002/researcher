@@ -10,7 +10,7 @@ import type { PromptAnalysis } from "../state";
 
 // LLM Configuration - Using Gemini via OpenAI SDK compatibility
 const ANALYSIS_MODEL = "gemini-2.5-pro"; // Gemini 2.5 Pro for reasoning tasks (agentic)
-const GENERATION_MODEL = "gemini-2.5-flash"; // Gemini 2.5 Flash for well-defined tasks
+const GENERATION_MODEL = "gemini-flash-latest"; // Gemini 2.5 Flash for well-defined tasks
 const DEFAULT_TEMPERATURE = 0.3;
 
 // Logging constants

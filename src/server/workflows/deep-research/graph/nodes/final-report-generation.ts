@@ -9,6 +9,8 @@ import type { RunnableConfig } from "@langchain/core/runnables";
 import type { AgentMiddleware } from "langchain";
 import { createAgent, modelFallbackMiddleware } from "langchain";
 import { createFinalReportModel, getConfiguration } from "../../configuration";
+import { finalReportGenerationPrompt } from "../../prompts";
+import { getTodayStr } from "../../utils";
 import type { AgentState } from "../state";
 
 /**
@@ -63,19 +65,24 @@ export async function finalReportGeneration(
     })
     .join("\n");
 
-  // Step 6: Invoke agent to generate the final report
+  // Step 6: Prepare findings from research notes
+  const findings = state.notes.join("\n\n---\n\n");
+
+  // Step 7: Build the final report prompt with proper date injection
+  const promptContent = finalReportGenerationPrompt
+    .replace("{research_brief}", state.research_brief || "")
+    .replace("{messages}", messagesBuffer)
+    .replace(/{date}/g, getTodayStr()) // Replace all occurrences of {date}
+    .replace("{findings}", findings);
+
+  // Step 8: Invoke agent to generate the final report
   try {
     const response = await agent.invoke(
       {
         messages: [
           {
-            role: "system",
-            content:
-              "You are a research assistant. Generate a comprehensive research report based on the provided context.",
-          },
-          {
             role: "user",
-            content: `Generate a comprehensive research report based on the following context:\n\n${messagesBuffer}`,
+            content: promptContent,
           },
         ],
       },

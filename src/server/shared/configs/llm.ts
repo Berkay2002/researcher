@@ -14,7 +14,7 @@ const TRACING_ENABLED = LANGCHAIN_TRACING_V2 === "true";
 /**
  * Create a ChatOpenAI instance configured for Gemini OpenAI compatibility
  *
- * @param model - The model name to use (e.g., "gemini-2.5-flash", "gemini-2.5-pro")
+ * @param model - The model name to use (e.g., "gemini-flash-latest", "gemini-2.5-pro")
  * @param temperature - The temperature for generation (default: 0.3)
  * @param options - Additional options for ChatOpenAI
  * @returns Configured ChatOpenAI instance
@@ -53,10 +53,10 @@ export const LLM_INSTANCES = {
   analysis: createLLM("gemini-2.5-pro", DEFAULT_TEMPERATURE),
 
   // Gemini 2.5 Flash for well-defined tasks
-  generation: createLLM("gemini-2.5-flash", DEFAULT_TEMPERATURE),
+  generation: createLLM("gemini-flash-latest", DEFAULT_TEMPERATURE),
 
   // Low temperature for consistent evaluation
-  quality: createLLM("gemini-2.5-flash", QUALITY_TEMPERATURE),
+  quality: createLLM("gemini-flash-latest", QUALITY_TEMPERATURE),
 } as const;
 
 /**

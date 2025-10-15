@@ -47,7 +47,7 @@ You can customize the workflow behavior using the `configurable` object:
     "max_researcher_iterations": 6,
     "search_api": "tavily",
     "research_model": "gemini-2.5-pro",
-    "compression_model": "gemini-2.5-flash",
+    "compression_model": "gemini-flash-latest",
     "final_report_model": "gemini-2.5-pro"
   }
 }
@@ -60,7 +60,7 @@ You can customize the workflow behavior using the `configurable` object:
 - **`max_researcher_iterations`** (default: `6`, max: `10`) - Maximum research iterations per researcher
 - **`search_api`** (default: `"tavily"`) - Search provider: `"tavily"`, `"exa"`, or `"none"`
 - **`research_model`** (default: `"gemini-2.5-pro"`) - Model for main research analysis
-- **`compression_model`** (default: `"gemini-2.5-flash"`) - Model for summarizing research
+- **`compression_model`** (default: `"gemini-flash-latest"`) - Model for summarizing research
 - **`final_report_model`** (default: `"gemini-2.5-pro"`) - Model for final report generation
 
 ## Human-in-the-Loop (HITL) - Clarification Step

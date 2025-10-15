@@ -182,7 +182,7 @@ Result: Full research workflow executes immediately
 {
   "configurable": {
     "research_model": "gemini-2.5-pro",
-    "compression_model": "gemini-2.5-flash",
+    "compression_model": "gemini-flash-latest",
     "final_report_model": "gemini-2.5-pro"
   }
 }
