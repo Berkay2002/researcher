@@ -1,0 +1,7 @@
+{
+  "threadId": "test-nordic-grid-001",
+  "userInputs": {
+    "goal": "Estimate future **data-center electricity demand** in Nordics/Sweden and assess **grid constraints** (connection lead-times, zonal bottlenecks). Include mitigation (BESS, waste-heat reuse), and case studies (e.g., Microsoft Finland).",
+    "modeOverride": "auto"
+  }
+}

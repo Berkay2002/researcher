@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+
 /.pnp
 .pnp.*
 .yarn/*
@@ -45,7 +45,7 @@ next-env.d.ts
 .claude/config.yaml
 
 #.mcp.json
-.langgraph_api/.langgraphjs_api.checkpointer.json
-.langgraph_api/.langgraphjs_api.store.json
-.langgraph_api/.langgraphjs_ops.json
-.langgraph_api/
+node_modules
+
+# LangGraph API
+.langgraph_api

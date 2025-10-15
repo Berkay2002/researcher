@@ -1127,3 +1127,9 @@ const llmWithTools = llm.bindTools(tools);
   }
   ```
 </CodeGroup>
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/workflows-agents.mdx)
+</Callout>

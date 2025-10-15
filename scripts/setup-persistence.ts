@@ -39,17 +39,17 @@ async function main() {
     const checkpointer = PostgresSaver.fromConnString(url);
     await checkpointer.setup(); // creates & migrates the checkpointer tables
 
-    console.log("✅ Persistence setup completed successfully!");
+    console.log(" Persistence setup completed successfully!");
     console.log(
       "📊 LangGraph checkpointer tables have been created in your Neon database"
     );
   } catch (error) {
-    console.error("❌ Failed to set up persistence:", error);
+    console.error(" Failed to set up persistence:", error);
     process.exit(1);
   }
 }
 
 main().catch((err) => {
-  console.error("❌ Unexpected error:", err);
+  console.error(" Unexpected error:", err);
   process.exit(1);
 });

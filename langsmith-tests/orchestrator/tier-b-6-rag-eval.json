@@ -1,0 +1,7 @@
+{
+  "threadId": "test-rag-eval-001",
+  "userInputs": {
+    "goal": "Compare **RAG evaluation** frameworks (RAGAS, TruLens, DeepEval, FreshQA/FreshEval, RAGBench, etc.). Define metrics you'd actually use (faithfulness/attribution/grounding) and design a small eval harness for agentic research.",
+    "modeOverride": "auto"
+  }
+}
