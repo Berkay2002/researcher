@@ -87,7 +87,7 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
   ];
 
   const agentConfig = {
-    llm: resolvedLLM,
+    model: model ?? resolvedLLM,
     tools,
     stateSchema: stateSchema ?? ReactAgentStateSchema,
     contextSchema,
@@ -96,10 +96,6 @@ export function createReactAgent(options: ReactAgentOptions = {}) {
     postModelHook,
     middleware,
   };
-
-  if (model) {
-    (agentConfig as { model?: typeof model }).model = model;
-  }
 
   const agent = createAgent(agentConfig as unknown as AgentParams);
 

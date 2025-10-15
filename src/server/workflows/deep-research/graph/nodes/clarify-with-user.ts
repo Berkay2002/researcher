@@ -47,7 +47,7 @@ export async function clarifyWithUser(
   );
 
   const clarificationModel = llm.withStructuredOutput(ClarifyWithUserSchema, {
-    method: "json_mode",
+    method: "jsonMode",
   });
 
   // Step 3: Analyze whether clarification is needed

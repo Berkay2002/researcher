@@ -40,7 +40,9 @@ export function getDeepResearchGraph() {
 
   // Build main graph
   const graph = new StateGraph(AgentStateAnnotation)
-    .addNode("clarify_with_user", clarifyWithUser)
+    .addNode("clarify_with_user", clarifyWithUser, {
+      ends: ["write_research_brief", "__end__"]
+    })
     .addNode("write_research_brief", writeResearchBrief)
     .addNode("supervisor", supervisorGraph)
     .addNode("final_report_generation", finalReportGeneration)

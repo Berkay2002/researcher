@@ -37,7 +37,7 @@ export async function writeResearchBrief(
     maxTokens: configuration.research_model_max_tokens,
     temperature: 0,
   }).withStructuredOutput(ResearchQuestionSchema, {
-    method: "json_mode",
+    method: "jsonMode",
   });
 
   // Step 2: Generate structured research brief from user messages
