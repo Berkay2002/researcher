@@ -1,7 +1,7 @@
 # Messages
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -54,10 +54,10 @@ Alternatively, you can pass in a list of messages to the model by providing a li
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 
 const messages = [
-    new SystemMessage("You are a poetry expert"),
-    new HumanMessage("Write a haiku about spring"),
-    new AIMessage("Cherry blossoms bloom...")
-]
+  new SystemMessage("You are a poetry expert"),
+  new HumanMessage("Write a haiku about spring"),
+  new AIMessage("Cherry blossoms bloom..."),
+];
 const response = await model.invoke(messages);
 ```
 
@@ -73,10 +73,10 @@ You can also specify messages directly in OpenAI chat completions format.
 
 ```typescript  theme={null}
 const messages = [
-    { role: "system", content: "You are a poetry expert" },
-    { role: "user", content: "Write a haiku about spring" },
-    { role: "assistant", content: "Cherry blossoms bloom..." }
-]
+  { role: "system", content: "You are a poetry expert" },
+  { role: "user", content: "Write a haiku about spring" },
+  { role: "assistant", content: "Cherry blossoms bloom..." },
+];
 const response = await model.invoke(messages);
 ```
 
@@ -97,9 +97,9 @@ import { SystemMessage, HumanMessage, AIMessage } from "langchain";
 const systemMsg = new SystemMessage("You are a helpful coding assistant.");
 
 const messages = [
-    systemMsg,
-    new HumanMessage("How do I create a REST API?")
-]
+  systemMsg,
+  new HumanMessage("How do I create a REST API?"),
+];
 const response = await model.invoke(messages);
 ```
 
@@ -113,9 +113,9 @@ Be concise but thorough in your explanations.
 `);
 
 const messages = [
-    systemMsg,
-    new HumanMessage("How do I create a REST API?")
-]
+  systemMsg,
+  new HumanMessage("How do I create a REST API?"),
+];
 const response = await model.invoke(messages);
 ```
 
@@ -128,8 +128,9 @@ A `HumanMessage` represents user input and interactions. They can contain text, 
 #### Text content
 
 ```typescript Message object theme={null}
-const humanMsg = new HumanMessage("What is machine learning?");
-const response = await model.invoke([humanMsg]);
+const response = await model.invoke([
+  new HumanMessage("What is machine learning?"),
+]);
 ```
 
 ```typescript String shortcut theme={null}
@@ -140,9 +141,9 @@ const response = await model.invoke("What is machine learning?");
 
 ```typescript Add metadata theme={null}
 const humanMsg = new HumanMessage({
-    content: "Hello!",
-    name: "alice",
-    id: "msg_123"
+  content: "Hello!",
+  name: "alice",
+  id: "msg_123",
 });
 ```
 
@@ -171,10 +172,10 @@ import { AIMessage, SystemMessage, HumanMessage } from "langchain";
 const aiMsg = new AIMessage("I'd be happy to help you with that question!");
 
 const messages = [
-    new SystemMessage("You are a helpful assistant"),
-    new HumanMessage("Can you help me?"),
-    aiMsg,  // Insert as if it came from the model
-    new HumanMessage("Great! What's 2+2?")
+  new SystemMessage("You are a helpful assistant"),
+  new HumanMessage("Can you help me?"),
+  aiMsg,  // Insert as if it came from the model
+  new HumanMessage("Great! What's 2+2?")
 ]
 
 const response = await model.invoke(messages);
@@ -219,9 +220,9 @@ const modelWithTools = model.bindTools([getWeather]);
 const response = await modelWithTools.invoke("What's the weather in Paris?");
 
 for (const toolCall of response.tool_calls) {
-    console.log(`Tool: ${toolCall.name}`);
-    console.log(`Args: ${toolCall.args}`);
-    console.log(`ID: ${toolCall.id}`);
+  console.log(`Tool: ${toolCall.name}`);
+  console.log(`Args: ${toolCall.args}`);
+  console.log(`ID: ${toolCall.id}`);
 }
 ```
 
@@ -254,7 +255,7 @@ console.log(response.usage_metadata);
 }
 ```
 
-See @\[UsageMetadata] for details.
+See [UsageMetadata](https://reference.langchain.com/javascript/types/_langchain_core.messages.UsageMetadata.html) for details.
 
 #### Streaming and chunks
 
@@ -266,7 +267,7 @@ During streaming, you'll receive `AIMessageChunk` objects that can be combined i
 
   let finalChunk: AIMessageChunk | undefined;
   for (const chunk of chunks) {
-      finalChunk = finalChunk ? finalChunk.concat(chunk) : chunk;
+    finalChunk = finalChunk ? finalChunk.concat(chunk) : chunk;
   }
   ```
 </CodeGroup>
@@ -290,23 +291,23 @@ For models that support [tool calling](/oss/javascript/langchain/models#tool-cal
 import { AIMessage, ToolMessage } from "langchain";
 
 const aiMessage = new AIMessage({
-    content: [],
-    tool_calls: [{
-        name: "get_weather",
-        args: { location: "San Francisco" },
-        id: "call_123"
-    }]
+  content: [],
+  tool_calls: [{
+    name: "get_weather",
+    args: { location: "San Francisco" },
+    id: "call_123"
+  }]
 });
 
 const toolMessage = new ToolMessage({
-    content: "Sunny, 72°F",
-    tool_call_id: "call_123"
+  content: "Sunny, 72°F",
+  tool_call_id: "call_123"
 });
 
 const messages = [
-    new HumanMessage("What's the weather in San Francisco?"),
-    aiMessage,  // Model's tool call
-    toolMessage,  // Tool execution result
+  new HumanMessage("What's the weather in San Francisco?"),
+  aiMessage,  // Model's tool call
+  toolMessage,  // Tool execution result
 ];
 
 const response = await model.invoke(messages);  // Model processes the result
@@ -343,10 +344,10 @@ const response = await model.invoke(messages);  // Model processes the result
     const artifact = { document_id: "doc_123", page: 0 };
 
     const toolMessage = new ToolMessage({
-        content: "It was the best of times, it was the worst of times.",
-        tool_call_id: "call_123",
-        name: "search_books",
-        artifact
+      content: "It was the best of times, it was the worst of times.",
+      tool_call_id: "call_123",
+      name: "search_books",
+      artifact
     });
     ```
 
@@ -380,7 +381,10 @@ const humanMessage = new HumanMessage("Hello, how are you?");
 const humanMessage = new HumanMessage({
   content: [
     { type: "text", text: "Hello, how are you?" },
-    { type: "image_url", image_url: { url: "https://example.com/image.jpg" } },
+    {
+      type: "image_url",
+      image_url: { url: "https://example.com/image.jpg" },
+    },
   ],
 });
 
@@ -393,17 +397,11 @@ const humanMessage = new HumanMessage({
 });
 ```
 
-<Tip>
-  Specifying `contentBlocks` when initializing a message will still populate message
-  `content`, but provides a type-safe interface for doing so.
-</Tip>
-
 ### Standard content blocks
 
-LangChain maintains a standard set of types for message content that works across
-providers (see the [reference](#content-block-reference) section below).
+LangChain provides a standard representation for message content that works across providers.
 
-Messages also implement a `contentBlocks` property that will lazily parse the `content` attribute into this standard, type-safe representation. For example, messages generated from [ChatAnthropic](/oss/javascript/integrations/chat/anthropic) or [ChatOpenAI](/oss/javascript/integrations/chat/openai) will include `thinking` or `reasoning` blocks in the format of the respective provider, but these can be lazily parsed into a consistent [`ReasoningContentBlock`](#content-block-reference) representation:
+Message objects implement a `contentBlocks` property that will lazily parse the `content` attribute into a standard, type-safe representation. For example, messages generated from [ChatAnthropic](/oss/javascript/integrations/chat/anthropic) or [ChatOpenAI](/oss/javascript/integrations/chat/openai) will include `thinking` or `reasoning` blocks in the format of the respective provider, but can be lazily parsed into a consistent [`ReasoningContentBlock`](#content-block-reference) representation:
 
 <Tabs>
   <Tab title="Anthropic">
@@ -411,11 +409,19 @@ Messages also implement a `contentBlocks` property that will lazily parse the `c
     import { AIMessage } from "@langchain/core/messages";
 
     const message = new AIMessage({
-        content: [
-            {"type": "thinking", "thinking": "...", "signature": "WaUjzkyp..."},
-            {"type": "text", "text": "...", "id": "msg_abc123"},
-        ],
-        response_metadata: { model_provider: "anthropic" },
+      content: [
+        {
+          "type": "thinking",
+          "thinking": "...",
+          "signature": "WaUjzkyp...",
+        },
+        {
+          "type":"text",
+          "text": "...",
+          "id": "msg_abc123",
+        },
+      ],
+      response_metadata: { model_provider: "anthropic" },
     });
 
     console.log(message.contentBlocks);
@@ -427,18 +433,18 @@ Messages also implement a `contentBlocks` property that will lazily parse the `c
     import { AIMessage } from "@langchain/core/messages";
 
     const message = new AIMessage({
-        content: [
-            {
-            "type": "reasoning",
-            "id": "rs_abc123",
-            "summary": [
-                {"type": "summary_text", "text": "summary 1"},
-                {"type": "summary_text", "text": "summary 2"},
-            ],
-            },
-            {"type": "text", "text": "..."},
-        ],
-        response_metadata: { model_provider: "openai" },
+      content: [
+        {
+          "type": "reasoning",
+          "id": "rs_abc123",
+          "summary": [
+            {"type": "summary_text", "text": "summary 1"},
+            {"type": "summary_text", "text": "summary 2"},
+          ],
+        },
+        {"type": "text", "text": "..."},
+      ],
+      response_metadata: { model_provider: "openai" },
     });
 
     console.log(message.contentBlocks);
@@ -461,7 +467,10 @@ inference provider of your choice.
   ```typescript  theme={null}
   import { initChatModel } from "langchain";
 
-  const model = await initChatModel("openai:gpt-5-nano", { outputVersion: "v1" });
+  const model = await initChatModel(
+    "openai:gpt-5-nano",
+    { outputVersion: "v1" }
+  );
   ```
 </Note>
 
@@ -478,104 +487,108 @@ it as output. Below we show short examples of input messages featuring multimoda
   ```typescript Image input theme={null}
   // From URL
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this image." },
-          { type: "image", url: "https://example.com/path/to/image.jpg" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this image." },
+      {
+        type: "image",
+        source_type: "url",
+        url: "https://example.com/path/to/image.jpg"
+      },
+    ],
   });
 
   // From base64 data
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this image." },
-          {
-              type: "image",
-              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
-              mimeType: "image/jpeg",
-          },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this image." },
+      {
+        type: "image",
+        source_type: "base64",
+        data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+      },
+    ],
   });
 
   // From provider-managed File ID
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this image." },
-          { type: "image", fileId: "file-abc123" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this image." },
+      { type: "image", source_type: "id", id: "file-abc123" },
+    ],
   });
   ```
 
   ```typescript PDF document input theme={null}
   // From URL
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this document." },
-          { type: "file", url: "https://example.com/path/to/document.pdf" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this document." },
+      { type: "file", source_type: "url", url: "https://example.com/path/to/document.pdf" },
+    ],
   });
 
   // From base64 data
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this document." },
-          {
-              type: "file",
-              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
-              mimeType: "application/pdf",
-          },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this document." },
+      {
+        type: "file",
+        source_type: "base64",
+        data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+      },
+    ],
   });
 
   // From provider-managed File ID
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this document." },
-          { type: "file", fileId: "file-abc123" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this document." },
+      { type: "file", source_type: "id", id: "file-abc123" },
+    ],
   });
   ```
 
   ```typescript Audio input theme={null}
   // From base64 data
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this audio." },
-          {
-              type: "audio",
-              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
-              mimeType: "audio/wav",
-          },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this audio." },
+      {
+        type: "audio",
+        source_type: "base64",
+        data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+      },
+    ],
   });
 
   // From provider-managed File ID
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this audio." },
-          { type: "audio", fileId: "file-abc123" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this audio." },
+      { type: "audio", source_type: "id", id: "file-abc123" },
+    ],
   });
   ```
 
   ```typescript Video input theme={null}
   // From base64 data
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this video." },
-          {
-              type: "video",
-              data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
-              mimeType: "video/mp4",
-          },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this video." },
+      {
+        type: "video",
+        source_type: "base64",
+        data: "AAAAIGZ0eXBtcDQyAAAAAGlzb21tcDQyAAACAGlzb2...",
+      },
+    ],
   });
 
   // From provider-managed File ID
   const message = new HumanMessage({
-      content: [
-          { type: "text", text: "Describe the content of this video." },
-          { type: "video", fileId: "file-abc123" },
-      ],
+    content: [
+      { type: "text", text: "Describe the content of this video." },
+      { type: "video", source_type: "id", id: "file-abc123" },
+    ],
   });
   ```
 </CodeGroup>
@@ -593,6 +606,10 @@ Content blocks are represented (either when creating a message or accessing the 
     <AccordionGroup>
       <Accordion title="ContentBlock.Text" icon="text">
         **Purpose:** Standard text output
+
+        <ParamField body="type" type="string" required>
+          Always `"text"`
+        </ParamField>
 
         <ParamField body="text" type="string" required>
           The text content
@@ -616,6 +633,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Reasoning" icon="brain">
         **Purpose:** Model reasoning steps
 
+        <ParamField body="type" type="string" required>
+          Always `"reasoning"`
+        </ParamField>
+
         <ParamField body="reasoning" type="string" required>
           The reasoning content
         </ParamField>
@@ -637,6 +658,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Multimodal.Image" icon="image">
         **Purpose:** Image data
 
+        <ParamField body="type" type="string" required>
+          Always `"image"`
+        </ParamField>
+
         <ParamField body="url" type="string">
           URL pointing to the image location.
         </ParamField>
@@ -656,6 +681,10 @@ Content blocks are represented (either when creating a message or accessing the 
 
       <Accordion title="ContentBlock.Multimodal.Audio" icon="volume-high">
         **Purpose:** Audio data
+
+        <ParamField body="type" type="string" required>
+          Always `"audio"`
+        </ParamField>
 
         <ParamField body="url" type="string">
           URL pointing to the audio location.
@@ -677,6 +706,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Multimodal.Video" icon="video">
         **Purpose:** Video data
 
+        <ParamField body="type" type="string" required>
+          Always `"video"`
+        </ParamField>
+
         <ParamField body="url" type="string">
           URL pointing to the video location.
         </ParamField>
@@ -696,6 +729,10 @@ Content blocks are represented (either when creating a message or accessing the 
 
       <Accordion title="ContentBlock.Multimodal.File" icon="file">
         **Purpose:** Generic files (PDF, etc)
+
+        <ParamField body="type" type="string" required>
+          Always `"file"`
+        </ParamField>
 
         <ParamField body="url" type="string">
           URL pointing to the file location.
@@ -717,6 +754,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Multimodal.PlainText" icon="align-left">
         **Purpose:** Document text (`.txt`, `.md`)
 
+        <ParamField body="type" type="string" required>
+          Always `"text-plain"`
+        </ParamField>
+
         <ParamField body="text" type="string" required>
           The text content
         </ParamField>
@@ -736,6 +777,10 @@ Content blocks are represented (either when creating a message or accessing the 
     <AccordionGroup>
       <Accordion title="ContentBlock.Tools.ToolCall" icon="function">
         **Purpose:** Function calls
+
+        <ParamField body="type" type="string" required>
+          Always `"tool_call"`
+        </ParamField>
 
         <ParamField body="name" type="string" required>
           Name of the tool to call
@@ -764,6 +809,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Tools.ToolCallChunk" icon="puzzle-piece">
         **Purpose:** Streaming tool fragments
 
+        <ParamField body="type" type="string" required>
+          Always `"tool_call_chunk"`
+        </ParamField>
+
         <ParamField body="name" type="string">
           Name of the tool being called
         </ParamField>
@@ -784,6 +833,10 @@ Content blocks are represented (either when creating a message or accessing the 
       <Accordion title="ContentBlock.Tools.InvalidToolCall" icon="triangle-exclamation">
         **Purpose:** Malformed calls
 
+        <ParamField body="type" type="string" required>
+          Always `"invalid_tool_call"`
+        </ParamField>
+
         <ParamField body="name" type="string">
           Name of the tool that failed to be called
         </ParamField>
@@ -803,49 +856,92 @@ Content blocks are represented (either when creating a message or accessing the 
 
   <Accordion title="Server-Side Tool Execution" icon="server">
     <AccordionGroup>
-      <Accordion title="ContentBlock.Tools.WebSearchCall" icon="magnifying-glass">
-        **Purpose:** Built-in web search
+      <Accordion title="ContentBlock.Tools.ServerToolCall" icon="wrench">
+        **Purpose:** Tool call that is executed server-side.
 
-        <ParamField body="query" type="string" required>
-          The search query to execute
+        <ParamField body="type" type="string" required>
+          Always `"server_tool_call"`
+        </ParamField>
+
+        <ParamField body="id" type="string" required>
+          An identifier associated with the tool call.
+        </ParamField>
+
+        <ParamField body="name" type="string" required>
+          The name of the tool to be called.
+        </ParamField>
+
+        <ParamField body="args" type="string" required>
+          Partial tool arguments (may be incomplete JSON)
         </ParamField>
       </Accordion>
 
-      <Accordion title="ContentBlock.Tools.WebSearchResult" icon="globe">
+      <Accordion title="ContentBlock.Tools.ServerToolCallChunk" icon="puzzle-piece">
+        **Purpose:** Streaming server-side tool call fragments
+
+        <ParamField body="type" type="string" required>
+          Always `"server_tool_call_chunk"`
+        </ParamField>
+
+        <ParamField body="id" type="string">
+          An identifier associated with the tool call.
+        </ParamField>
+
+        <ParamField body="name" type="string">
+          Name of the tool being called
+        </ParamField>
+
+        <ParamField body="args" type="string">
+          Partial tool arguments (may be incomplete JSON)
+        </ParamField>
+
+        <ParamField body="index" type="number | string">
+          Position of this chunk in the stream
+        </ParamField>
+      </Accordion>
+
+      <Accordion title="ContentBlock.Tools.ServerToolResult" icon="box-open">
         **Purpose:** Search results
 
-        <ParamField body="urls" type="string[]" required>
-          URLs of the search results
+        <ParamField body="type" type="string" required>
+          Always `"server_tool_result"`
         </ParamField>
 
-        **Returns:** Top search results with optional snippets
-      </Accordion>
-
-      <Accordion title="ContentBlock.Tools.CodeInterpreterCall" icon="code">
-        **Purpose:** Code execution
-
-        <ParamField body="language" type="string" required>
-          Programming language to execute (e.g. `python`,
-          `javascript`, `sql`)
+        <ParamField body="tool_call_id" type="string" required>
+          Identifier of the corresponding server tool call.
         </ParamField>
 
-        <ParamField body="code" type="string" required>
-          Code to execute
-        </ParamField>
-      </Accordion>
-
-      <Accordion title="ContentBlock.Tools.CodeInterpreterResult" icon="terminal">
-        **Purpose:** Execution results
-
-        <ParamField body="output" type="string" required>
-          Output from the code execution
+        <ParamField body="id" type="string">
+          Identifier associated with the server tool result.
         </ParamField>
 
-        <ParamField body="error" type="string">
-          Error message if execution failed
+        <ParamField body="status" type="string" required>
+          Execution status of the server-side tool. `"success"` or `"error"`.
+        </ParamField>
+
+        <ParamField body="output">
+          Output of the executed tool.
         </ParamField>
       </Accordion>
     </AccordionGroup>
+  </Accordion>
+
+  <Accordion title="Provider-Specific Blocks" icon="plug">
+    <Accordion title="ContentBlock.NonStandard" icon="asterisk">
+      **Purpose:** Provider-specific escape hatch
+
+      <ParamField body="type" type="string" required>
+        Always `"non_standard"`
+      </ParamField>
+
+      <ParamField body="value" type="object" required>
+        Provider-specific data structure
+      </ParamField>
+
+      **Usage:** For experimental or provider-unique features
+    </Accordion>
+
+    Additional provider-specific content types may be found within the [reference documentation](/oss/javascript/integrations/providers) of each model provider.
   </Accordion>
 </AccordionGroup>
 
@@ -880,3 +976,9 @@ Refer to the below guides to learn more:
 
 * Built-in features for [persisting and managing conversation histories](/oss/javascript/langchain/short-term-memory)
 * Strategies for managing context windows, including [trimming and summarizing messages](/oss/javascript/langchain/short-term-memory#common-patterns)
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/messages.mdx)
+</Callout>

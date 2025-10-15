@@ -1,7 +1,7 @@
 # Run a local server
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
 </Warning>
@@ -65,11 +65,11 @@ Sample output:
 >    - LangGraph Studio Web UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
 ```
 
-The `langgraph dev` command starts LangGraph Server in an in-memory mode. This mode is suitable for development and testing purposes. For production use, deploy LangGraph Server with access to a persistent storage backend. For more information, see [Deployment options](/langgraph-platform/deployment-options).
+The `langgraph dev` command starts LangGraph Server in an in-memory mode. This mode is suitable for development and testing purposes. For production use, deploy LangGraph Server with access to a persistent storage backend. For more information, see the [Hosting overview](/langsmith/hosting).
 
-## 6. Test your application in LangGraph Studio
+## 6. Test your application in Studio
 
-[LangGraph Studio](/langgraph-platform/langgraph-studio) is a specialized UI that you can connect to LangGraph API server to visualize, interact with, and debug your application locally. Test your graph in LangGraph Studio by visiting the URL provided in the output of the `langgraph dev` command:
+[Studio](/langsmith/studio) is a specialized UI that you can connect to LangGraph API server to visualize, interact with, and debug your application locally. Test your graph in Studio by visiting the URL provided in the output of the `langgraph dev` command:
 
 ```
 >    - LangGraph Studio Web UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
@@ -149,8 +149,14 @@ For a LangGraph Server running on a custom host/port, update the baseURL paramet
 
 Now that you have a LangGraph app running locally, take your journey further by exploring deployment and advanced features:
 
-* [Deployment quickstart](/langgraph-platform/deployment-quickstart): Deploy your LangGraph app using LangGraph Platform.
+* [Deployment quickstart](/langsmith/deployment-quickstart): Deploy your LangGraph app using LangSmith.
 
-* [LangGraph Platform](/langgraph-platform): Learn about foundational LangGraph Platform concepts.
+* [LangSmith](/langsmith/home): Learn about foundational LangSmith concepts.
 
 * [JS/TS SDK Reference](https://reference.langchain.com/javascript/modules/_langchain_langgraph-sdk.html): Explore the JS/TS SDK API Reference.
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/local-server.mdx)
+</Callout>

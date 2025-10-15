@@ -1,7 +1,7 @@
 # Use time-travel
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
 </Warning>
@@ -18,7 +18,7 @@ To use [time-travel](/oss/javascript/langgraph/use-time-travel) in LangGraph:
 
 1. [Run the graph](#1-run-the-graph) with initial inputs using [`invoke`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#invoke) or [`stream`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#stream) methods.
 2. [Identify a checkpoint in an existing thread](#2-identify-a-checkpoint): Use the [`getStateHistory()`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#getStateHistory) method to retrieve the execution history for a specific `thread_id` and locate the desired `checkpoint_id`.
-   Alternatively, set a [breakpoint](/oss/javascript/langgraph/add-human-in-the-loop) before the node(s) where you want execution to pause. You can then find the most recent checkpoint recorded up to that breakpoint.
+   Alternatively, set a [breakpoint](/oss/javascript/langgraph/interrupts) before the node(s) where you want execution to pause. You can then find the most recent checkpoint recorded up to that breakpoint.
 3. [Update the graph state (optional)](#3-update-the-state-optional): Use the [`updateState`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#updateState) method to modify the graph's state at the checkpoint and resume execution from alternative state.
 4. [Resume execution from the checkpoint](#4-resume-execution-from-the-checkpoint): Use the `invoke` or `stream` methods with an input of `null` and a configuration containing the appropriate `thread_id` and `checkpoint_id`.
 
@@ -195,3 +195,9 @@ await graph.invoke(null, newConfig);
   'joke': 'Why did the chicken join a band?\n\nBecause it had excellent drumsticks!'
 }
 ```
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/use-time-travel.mdx)
+</Callout>

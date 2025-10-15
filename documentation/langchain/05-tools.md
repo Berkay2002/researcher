@@ -1,14 +1,16 @@
 # Tools
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
-
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+<AlphaCalloutJS />
 
 Many AI applications interact with users via natural language. However, some use cases require models to interface directly with external systems—such as APIs, databases, or file systems—using structured input.
 
 Tools are components that [agents](/oss/javascript/langchain/agents) call to perform actions. They extend model capabilities by letting them interact with the world through well-defined inputs and outputs. Tools encapsulate a callable function and its input schema. These can be passed to compatible [chat models](/oss/javascript/langchain/models), allowing the model to decide whether to invoke a tool and with what arguments. In these scenarios, tool calling enables models to generate requests that conform to a specified input schema.
+
+<Note>
+  **Server-side tool use**
+
+  Some chat models (e.g., [OpenAI](/oss/javascript/integrations/chat/openai), [Anthropic](/oss/javascript/integrations/chat/anthropic), and [Gemini](/oss/javascript/integrations/chat/google_generative_ai)) feature [built-in tools](/oss/javascript/langchain/models#server-side-tool-use) that are executed server-side, such as web search and code interpreters. Refer to the [provider overview](/oss/javascript/integrations/providers/overview) to learn how to access these tools with your specific chat model.
+</Note>
 
 ## Create tools
 
@@ -17,330 +19,194 @@ Tools are components that [agents](/oss/javascript/langchain/agents) call to per
 The simplest way to create a tool is by importing the `tool` function from the `langchain` package. You can use [zod](https://zod.dev/) to define the tool's input schema:
 
 ```ts  theme={null}
-import { z } from "zod"
+import * as z from "zod"
 import { tool } from "langchain"
 
 const searchDatabase = tool(
-    ({ query, limit }) => {
-        return `Found ${limit} results for '${query}'`
-    },
-    {
-        name: "search_database",
-        description: "Search the customer database for records matching the query.",
-        schema: z.object({
-            query: z.string().describe("Search terms to look for"),
-            limit: z.number().describe("Maximum number of results to return")
-        })
-    }
+  ({ query, limit }) => `Found ${limit} results for '${query}'`,
+  {
+    name: "search_database",
+    description: "Search the customer database for records matching the query.",
+    schema: z.object({
+      query: z.string().describe("Search terms to look for"),
+      limit: z.number().describe("Maximum number of results to return"),
+    }),
+  }
 );
 ```
 
-Alternatively, you can define the `schema` property as a JSON schema object:
+## Accessing Context
 
-```ts  theme={null}
-const searchDatabase = tool(
-    (input) => {
-        const { query, limit } = input as { query: string; limit: number }
-        return `Found ${limit} results for '${query}'`
-    },
-    {
-        name: "search_database",
-        description: "Search the customer database for records matching the query.",
-        schema: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "Search terms to look for" },
-                limit: { type: "number", description: "Maximum number of results to return" }
-            },
-            required: ["query", "limit"]
-        }
-    }
-);
-```
+<Info>
+  **Why this matters:** Tools are most powerful when they can access agent state, runtime context, and long-term memory. This enables tools to make context-aware decisions, personalize responses, and maintain information across conversations.
+</Info>
 
-## Use tools with agents
+Tools can access different types of data:
 
-Agents go beyond simple tool binding by adding reasoning loops, state management, and multi-step execution.
+* **State** - Mutable data that flows through execution (messages, counters, custom fields)
+* **Runtime** - Access to context, memory (store), and streaming capabilities via `get_runtime()`
 
-<Tip>To see examples of how to use tools with agents, see [Agents](/oss/javascript/langchain/agents).</Tip>
+### State
 
-## Advanced tool patterns
+Use `InjectedState` to access and modify the agent's state during execution. State includes messages, custom fields, and any data your tools need to track.
 
-### ToolNode
+<Info>
+  **`InjectedState`**: An annotation that allows tools to access the current graph state without exposing it to the LLM. This lets tools read information like message history or custom state fields while keeping the tool's schema simple.
+</Info>
 
-ToolNode is a prebuilt LangGraph component that handles tool calls within an agent's workflow. It works seamlessly with `createAgent()`, offering advanced tool execution control, built in parallelism, and error handling.
+### Runtime
 
-#### Configuration options
+Use `get_runtime()` to access immutable configuration, context, memory (store), and streaming capabilities. The runtime provides access to data that persists across the agent's execution.
 
-`ToolNode` accepts the following parameters:
+#### Context
 
-```ts  theme={null}
-import { ToolNode } from "langchain";
+Access immutable configuration and contextual data like user IDs, session details, or application-specific configuration.
 
-const toolNode = new ToolNode([searchDatabase, calculate], {
-    name: "tools",
-    tags: ["tool-execution"],
-    handleToolErrors: true
-})
-```
-
-<ParamField path="tools">A list of LangChain `tool` objects.</ParamField>
-
-<ParamField path="handleToolErrors">
-  Controls how tool execution failures are handled.
-  Can be:
-
-  * `boolean`
-    * `((error: unknown, toolCall: ToolCall) => ToolMessage | undefined)`
-
-  See [Error handling strategies](#error-handling-strategies) below for details.
-  Default: `true`
-</ParamField>
-
-#### Error handling strategies
-
-`ToolNode` provides built-in error handling for tool execution through its `handleToolErrors` property.
-
-To customize the error handling behavior, you can configure `handleToolErrors` to either be a `boolean` or a custom error handler function:
-
-* **`true`**: Catch all errors and return a `ToolMessage` with the default error template containing the exception details. (default)
-* **`false`**: Disable error handling entirely, allowing exceptions to propagate.
-* **`((error: unknown, toolCall: ToolCall) => ToolMessage | undefined)`**: Catch all errors and return a `ToolMessage` with the result of calling the function with the exception.
-
-Examples of how to use the different error handling strategies:
-
-```ts  theme={null}
-const toolNode = new ToolNode([my_tool], {
-    handleToolErrors: true
-})
-
-const toolNode = new ToolNode([my_tool], {
-    handleToolErrors: (error, toolCall) => {
-        return new ToolMessage({
-            content: "I encountered an issue. Please try rephrasing your request.",
-            tool_call_id: toolCall.id
-        })
-    }
-})
-```
-
-#### Agent creation
-
-Pass a configured `ToolNode` directly to `createAgent()`:
+Tools can access an agent's runtime context through the `config` parameter:
 
 ```ts wrap theme={null}
-import { z } from "zod"
+import * as z from "zod"
 import { ChatOpenAI } from "@langchain/openai"
-import { ToolNode, createAgent } from "langchain"
+import { createAgent } from "langchain"
 
-const searchDatabase = tool(
-    ({ query }) => {
-        return `Results for: ${query}`
-    },
-    {
-        name: "search_database",
-        description: "Search the database.",
-        schema: z.object({
-            query: z.string().describe("The query to search the database with")
-        })
-    }
+const getUserName = tool(
+  (_, config) => {
+    return config.context.user_name
+  },
+  {
+    name: "get_user_name",
+    description: "Get the user's name.",
+    schema: z.object({}),
+  }
 );
 
-const sendEmail = tool(
-    ({ to, subject, body }) => {
-        return `Email sent to ${to}`
-    },
-    {
-        name: "send_email",
-        description: "Send an email.",
-        schema: z.object({
-            to: z.string().describe("The email address to send the email to"),
-            subject: z.string().describe("The subject of the email"),
-            body: z.string().describe("The body of the email")
-        })
-    }
-);
-
-// Configure ToolNode with custom error handling
-const toolNode = new ToolNode([searchDatabase, sendEmail], {
-    name: "email_tools",
-    handleToolErrors: (error, toolCall) => {
-        return new ToolMessage({
-            content: "I encountered an issue. Please try rephrasing your request.",
-            tool_call_id: toolCall.id
-        });
-    }
+const contextSchema = z.object({
+  user_name: z.string(),
 });
 
-// Create agent with the configured ToolNode
 const agent = createAgent({
-    model: new ChatOpenAI({ model: "gpt-5" }),
-    tools: toolNode, // Pass ToolNode instead of tools list
-    prompt: "You are a helpful email assistant."
+  model: new ChatOpenAI({ model: "gpt-4o" }),
+  tools: [getUserName],
+  contextSchema,
 });
 
-// The agent will use your custom ToolNode configuration
-const result = await agent.invoke({
-    messages: [{ role: "user", content: "Search for John and email him" }]
-})
+const result = await agent.invoke(
+  {
+    messages: [{ role: "user", content: "What is my name?" }]
+  },
+  {
+    context: { user_name: "John Smith" }
+  }
+);
 ```
 
-When you pass a `ToolNode` to `createAgent()`, the agent uses your exact configuration including error handling, custom names, and tags. This is useful when you need fine-grained control over tool execution behavior.
+#### Memory (Store)
 
-### State, context, and memory
+Access persistent data across conversations using the store. The store is accessed via `get_runtime().store` and allows you to save and retrieve user-specific or application-specific data.
 
-<AccordionGroup>
-  <Accordion title="Accessing runtime context inside a tool">
-    <Info>
-      **`runtime`**: The execution environment of your agent, containing immutable configuration and contextual data that persists throughout the agent's execution (e.g., user IDs, session details, or application-specific configuration).
-    </Info>
+```ts wrap expandable theme={null}
+import * as z from "zod";
+import { createAgent, tool } from "langchain";
+import { InMemoryStore } from "@langchain/langgraph";
+import { ChatOpenAI } from "@langchain/openai";
 
-    Tools can access an agent's runtime context through the `config` parameter:
+const store = new InMemoryStore();
 
-    ```ts wrap theme={null}
-    import { z } from "zod"
-    import { ChatOpenAI } from "@langchain/openai"
-    import { ToolNode, createAgent } from "langchain"
+// Access memory
+const getUserInfo = tool(
+  async ({ user_id }) => {
+    const value = await store.get(["users"], user_id);
+    console.log("get_user_info", user_id, value);
+    return value;
+  },
+  {
+    name: "get_user_info",
+    description: "Look up user info.",
+    schema: z.object({
+      user_id: z.string(),
+    }),
+  }
+);
 
-    const getUserName = tool(
-        (_, config) => {
-            return config.context.user_name
-        },
-        {
-            name: "get_user_name",
-            description: "Get the user's name.",
-            schema: z.object({})
-        }
-    );
+// Update memory
+const saveUserInfo = tool(
+  async ({ user_id, name, age, email }) => {
+    console.log("save_user_info", user_id, name, age, email);
+    await store.put(["users"], user_id, { name, age, email });
+    return "Successfully saved user info.";
+  },
+  {
+    name: "save_user_info",
+    description: "Save user info.",
+    schema: z.object({
+      user_id: z.string(),
+      name: z.string(),
+      age: z.number(),
+      email: z.string(),
+    }),
+  }
+);
 
-    const contextSchema = z.object({
-        user_name: z.string()
-    });
+const agent = createAgent({
+  model: new ChatOpenAI({ model: "gpt-4o" }),
+  tools: [getUserInfo, saveUserInfo],
+  store,
+});
 
-    const agent = createAgent({
-        model: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserName],
-        contextSchema,
-    })
+// First session: save user info
+await agent.invoke({
+  messages: [
+    {
+      role: "user",
+      content: "Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev",
+    },
+  ],
+});
 
-    const result = await agent.invoke(
-        {
-            messages: [{ role: "user", content: "What is my name?" }]
-        },
-        {
-            context: { user_name: "John Smith" }
-        }
-    );
-    ```
-  </Accordion>
+// Second session: get user info
+const result = await agent.invoke({
+  messages: [
+    { role: "user", content: "Get user info for user with id 'abc123'" },
+  ],
+});
 
-  <Accordion title="Accessing long-term memory inside a tool">
-    <Info>
-      **`store`**: LangChain's persistence layer. An agent's long-term memory store, e.g. user-specific or application-specific data stored across conversations.
-    </Info>
+console.log(result);
+// Here is the user info for user with ID "abc123":
+// - Name: Foo
+// - Age: 25
+// - Email: foo@langchain.dev
+```
 
-    You can initialize an `InMemoryStore` to store long-term memory:
+#### Stream Writer
 
-    ```ts wrap theme={null}
-    import { z } from "zod";
-    import { createAgent, InMemoryStore } from "langchain";
-    import { ChatOpenAI } from "@langchain/openai";
+Stream custom updates from tools as they execute using `get_runtime().stream_writer`. This is useful for providing real-time feedback to users about what a tool is doing.
 
-    const store = new InMemoryStore();
+```ts wrap theme={null}
+import * as z from "zod";
+import { tool } from "langchain";
 
-    const getUserInfo = tool(
-        ({ user_id }) => {
-            return store.get(["users"], user_id)
-        },
-        {
-            name: "get_user_info",
-            description: "Look up user info.",
-            schema: z.object({
-            user_id: z.string()
-            })
-        }
-    );
+const getWeather = tool(
+  ({ city }, config) => {
+    const writer = config.streamWriter;
 
-    const agent = createAgent({
-        model: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserInfo],
-        store,
-    });
-    ```
-  </Accordion>
+    // Stream custom updates as the tool executes
+    writer(`Looking up data for city: ${city}`);
+    writer(`Acquired data for city: ${city}`);
 
-  <Accordion title="Updating long-term memory inside a tool">
-    To update long-term memory, you can use the `.put()` method of `InMemoryStore`. A complete example of persistent memory across sessions:
+    return `It's always sunny in ${city}!`;
+  },
+  {
+    name: "get_weather",
+    description: "Get weather for a given city.",
+    schema: z.object({
+      city: z.string(),
+    }),
+  }
+);
+```
 
-    ```ts wrap expandable theme={null}
-    import { z } from "zod";
-    import { createAgent, tool, InMemoryStore } from "langchain";
-    import { ChatOpenAI } from "@langchain/openai";
+***
 
-    const store = new InMemoryStore();
-
-    const getUserInfo = tool(
-        async ({ user_id }) => {
-            const value = await store.get(["users"], user_id);
-            console.log("get_user_info", user_id, value);
-            return value;
-        },
-        {
-            name: "get_user_info",
-            description: "Look up user info.",
-            schema: z.object({
-            user_id: z.string(),
-            }),
-        }
-    );
-
-    const saveUserInfo = tool(
-        async ({ user_id, name, age, email }) => {
-            console.log("save_user_info", user_id, name, age, email);
-            await store.put(["users"], user_id, { name, age, email });
-            return "Successfully saved user info.";
-        },
-        {
-            name: "save_user_info",
-            description: "Save user info.",
-            schema: z.object({
-                user_id: z.string(),
-                name: z.string(),
-                age: z.number(),
-                email: z.string(),
-            }),
-        }
-    );
-
-    const agent = createAgent({
-        llm: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserInfo, saveUserInfo],
-        store,
-    });
-
-    // First session: save user info
-    await agent.invoke({
-        messages: [
-            {
-            role: "user",
-            content:
-                "Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev",
-            },
-        ],
-    });
-
-    // Second session: get user info
-    const result = await agent.invoke({
-        messages: [
-            { role: "user", content: "Get user info for user with id 'abc123'" },
-        ],
-    });
-
-    console.log(result);
-    // Here is the user info for user with ID "abc123":
-    // - Name: Foo
-    // - Age: 25
-    // - Email: foo@langchain.dev
-    ```
-  </Accordion>
-</AccordionGroup>
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/tools.mdx)
+</Callout>

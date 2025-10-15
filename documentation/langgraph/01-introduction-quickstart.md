@@ -1,10 +1,6 @@
 # Quickstart
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
-
-  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
-</Warning>
+<AlphaCalloutJS />
 
 This quickstart demonstrates how to build a calculator agent using the LangGraph Graph API or the Functional API.
 
@@ -14,6 +10,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 <Tip>
   For conceptual information, see [Graph API overview](/oss/javascript/langgraph/graph-api) and [Functional API overview](/oss/javascript/langgraph/functional-api).
 </Tip>
+
+<Info>
+  For this example, you will need to set up a [Claude (Anthropic)](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
+</Info>
 
 <Tabs>
   <Tab title="Use the Graph API">
@@ -72,6 +72,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     ## 2. Define state
 
     The graph's state is used to store the messages and the number of LLM calls.
+
+    <Tip>
+      State in LangGraph persists throughout the agent's execution. The `Annotated` type with `operator.add` ensures that new messages are appended to the existing list rather than replacing it.
+    </Tip>
 
     ```typescript  theme={null}
     import { StateGraph, START, END } from "@langchain/langgraph";
@@ -365,6 +369,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     The model node is used to call the LLM and decide whether to call a tool or not.
 
+    <Tip>
+      The `@task` decorator marks a function as a task that can be executed as part of the agent. Tasks can be called synchronously or asynchronously within your entrypoint function.
+    </Tip>
+
     ```typescript  theme={null}
     import { task, entrypoint } from "@langchain/langgraph";
     import { SystemMessage } from "@langchain/core/messages";
@@ -393,6 +401,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     ## 4. Define agent
 
     The agent is built using the `entrypoint` function.
+
+    <Note>
+      In the Functional API, instead of defining nodes and edges explicitly, you write standard control flow logic (loops, conditionals) within a single function.
+    </Note>
 
     ```typescript  theme={null}
     import { addMessages } from "@langchain/langgraph";
@@ -528,3 +540,9 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     </Accordion>
   </Tab>
 </Tabs>
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/quickstart.mdx)
+</Callout>

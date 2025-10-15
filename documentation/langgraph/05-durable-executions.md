@@ -1,348 +1,196 @@
-# Tools
+# Durable execution
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
+  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
 </Warning>
 
-Many AI applications interact with users via natural language. However, some use cases require models to interface directly with external systems—such as APIs, databases, or file systems—using structured input.
+**Durable execution** is a technique in which a process or workflow saves its progress at key points, allowing it to pause and later resume exactly where it left off. This is particularly useful in scenarios that require [human-in-the-loop](/oss/javascript/langgraph/interrupts), where users can inspect, validate, or modify the process before continuing, and in long-running tasks that might encounter interruptions or errors (e.g., calls to an LLM timing out). By preserving completed work, durable execution enables a process to resume without reprocessing previous steps -- even after a significant delay (e.g., a week later).
 
-Tools are components that [agents](/oss/javascript/langchain/agents) call to perform actions. They extend model capabilities by letting them interact with the world through well-defined inputs and outputs. Tools encapsulate a callable function and its input schema. These can be passed to compatible [chat models](/oss/javascript/langchain/models), allowing the model to decide whether to invoke a tool and with what arguments. In these scenarios, tool calling enables models to generate requests that conform to a specified input schema.
+LangGraph's built-in [persistence](/oss/javascript/langgraph/persistence) layer provides durable execution for workflows, ensuring that the state of each execution step is saved to a durable store. This capability guarantees that if a workflow is interrupted -- whether by a system failure or for [human-in-the-loop](/oss/javascript/langgraph/interrupts) interactions -- it can be resumed from its last recorded state.
 
-## Create tools
+<Tip>
+  If you are using LangGraph with a checkpointer, you already have durable execution enabled. You can pause and resume workflows at any point, even after interruptions or failures.
+  To make the most of durable execution, ensure that your workflow is designed to be [deterministic](#determinism-and-consistent-replay) and [idempotent](#determinism-and-consistent-replay) and wrap any side effects or non-deterministic operations inside [tasks](/oss/javascript/langgraph/functional-api#task). You can use [tasks](/oss/javascript/langgraph/functional-api#task) from both the [StateGraph (Graph API)](/oss/javascript/langgraph/graph-api) and the [Functional API](/oss/javascript/langgraph/functional-api).
+</Tip>
 
-### Basic tool definition
+## Requirements
 
-The simplest way to create a tool is by importing the `tool` function from the `langchain` package. You can use [zod](https://zod.dev/) to define the tool's input schema:
+To leverage durable execution in LangGraph, you need to:
 
-```ts
-import { z } from "zod"
-import { tool } from "langchain"
+1. Enable [persistence](/oss/javascript/langgraph/persistence) in your workflow by specifying a [checkpointer](/oss/javascript/langgraph/persistence#checkpointer-libraries) that will save workflow progress.
 
-const searchDatabase = tool(
-    ({ query, limit }) => {
-        return `Found ${limit} results for '${query}'`
-    },
-    {
-        name: "search_database",
-        description: "Search the customer database for records matching the query.",
-        schema: z.object({
-            query: z.string().describe("Search terms to look for"),
-            limit: z.number().describe("Maximum number of results to return")
-        })
-    }
-);
-```
+2. Specify a [thread identifier](/oss/javascript/langgraph/persistence#threads) when executing a workflow. This will track the execution history for a particular instance of the workflow.
 
-Alternatively, you can define the `schema` property as a JSON schema object:
+3. Wrap any non-deterministic operations (e.g., random number generation) or operations with side effects (e.g., file writes, API calls) inside [tasks](https://langchain-ai.github.io/langgraphjs/reference/functions/langgraph.task.html) to ensure that when a workflow is resumed, these operations are not repeated for the particular run, and instead their results are retrieved from the persistence layer. For more information, see [Determinism and Consistent Replay](#determinism-and-consistent-replay).
 
-```ts
-const searchDatabase = tool(
-    (input) => {
-        const { query, limit } = input as { query: string; limit: number }
-        return `Found ${limit} results for '${query}'`
-    },
-    {
-        name: "search_database",
-        description: "Search the customer database for records matching the query.",
-        schema: {
-            type: "object",
-            properties: {
-                query: { type: "string", description: "Search terms to look for" },
-                limit: { type: "number", description: "Maximum number of results to return" }
-            },
-            required: ["query", "limit"]
-        }
-    }
-);
-```
+## Determinism and Consistent Replay
 
-## Use tools with agents
+When you resume a workflow run, the code does **NOT** resume from the **same line of code** where execution stopped; instead, it will identify an appropriate [starting point](#starting-points-for-resuming-workflows) from which to pick up where it left off. This means that the workflow will replay all steps from the [starting point](#starting-points-for-resuming-workflows) until it reaches the point where it was stopped.
 
-Agents go beyond simple tool binding by adding reasoning loops, state management, and multi-step execution.
+As a result, when you are writing a workflow for durable execution, you must wrap any non-deterministic operations (e.g., random number generation) and any operations with side effects (e.g., file writes, API calls) inside [tasks](/oss/javascript/langgraph/functional-api#task) or [nodes](/oss/javascript/langgraph/graph-api#nodes).
 
-<Tip>To see examples of how to use tools with agents, see [Agents](/oss/javascript/langchain/agents).</Tip>
+To ensure that your workflow is deterministic and can be consistently replayed, follow these guidelines:
 
-## Advanced tool patterns
+* **Avoid Repeating Work**: If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operations with side effects (e.g., logging, file writes, or network calls), wrap each operation in a separate **task**. This ensures that when the workflow is resumed, the operations are not repeated, and their results are retrieved from the persistence layer.
+* **Encapsulate Non-Deterministic Operations:** Wrap any code that might yield non-deterministic results (e.g., random number generation) inside **tasks** or **nodes**. This ensures that, upon resumption, the workflow follows the exact recorded sequence of steps with the same outcomes.
+* **Use Idempotent Operations**: When possible ensure that side effects (e.g., API calls, file writes) are idempotent. This means that if an operation is retried after a failure in the workflow, it will have the same effect as the first time it was executed. This is particularly important for operations that result in data writes. In the event that a **task** starts but fails to complete successfully, the workflow's resumption will re-run the **task**, relying on recorded outcomes to maintain consistency. Use idempotency keys or verify existing results to avoid unintended duplication, ensuring a smooth and predictable workflow execution.
 
-### ToolNode
+For some examples of pitfalls to avoid, see the [Common Pitfalls](/oss/javascript/langgraph/functional-api#common-pitfalls) section in the functional API, which shows
+how to structure your code using **tasks** to avoid these issues. The same principles apply to the [StateGraph (Graph API)](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.StateGraph.html).
 
-ToolNode is a prebuilt LangGraph component that handles tool calls within an agent's workflow. It works seamlessly with `createAgent()`, offering advanced tool execution control, built in parallelism, and error handling.
+## Durability modes
 
-#### Configuration options
+LangGraph supports three durability modes that allow you to balance performance and data consistency based on your application's requirements. The durability modes, from least to most durable, are as follows:
 
-`ToolNode` accepts the following parameters:
+* [`"exit"`](#exit)
+* [`"async"`](#async)
+* [`"sync"`](#sync)
 
-```ts
-import { ToolNode } from "langchain";
+A higher durability mode adds more overhead to the workflow execution.
 
-const toolNode = new ToolNode([searchDatabase, calculate], {
-    name: "tools",
-    tags: ["tool-execution"],
-    handleToolErrors: true
-})
-```
+<Tip>
+  **Added in v0.6.0**
+  Use the `durability` parameter instead of `checkpoint_during` (deprecated in v0.6.0) for persistence policy management:
 
-<ParamField path="tools">A list of LangChain `tool` objects.</ParamField>
+  * `durability="async"` replaces `checkpoint_during=True`
+  * `durability="exit"` replaces `checkpoint_during=False`
 
-<ParamField path="handleToolErrors">
-  Controls how tool execution failures are handled.
-  Can be:
+  for persistence policy management, with the following mapping:
 
-  * `boolean`
-    * `((error: unknown, toolCall: ToolCall) => ToolMessage | undefined)`
+  * `checkpoint_during=True` -> `durability="async"`
+  * `checkpoint_during=False` -> `durability="exit"`
+</Tip>
 
-  See [Error handling strategies](#error-handling-strategies) below for details.
-  Default: `true`
-</ParamField>
+### `"exit"`
 
-#### Error handling strategies
+Changes are persisted only when graph execution completes (either successfully or with an error). This provides the best performance for long-running graphs but means intermediate state is not saved, so you cannot recover from mid-execution failures or interrupt the graph execution.
 
-{/* TODO this section isn't very visually appealing */}
+### `"async"`
 
-`ToolNode` provides built-in error handling for tool execution through its `handleToolErrors` property.
+Changes are persisted asynchronously while the next step executes. This provides good performance and durability, but there's a small risk that checkpoints might not be written if the process crashes during execution.
 
-To customize the error handling behavior, you can configure `handleToolErrors` to either be a `boolean` or a custom error handler function:
+### `"sync"`
 
-* **`true`**: Catch all errors and return a `ToolMessage` with the default error template containing the exception details. (default)
-* **`false`**: Disable error handling entirely, allowing exceptions to propagate.
-* **`((error: unknown, toolCall: ToolCall) => ToolMessage | undefined)`**: Catch all errors and return a `ToolMessage` with the result of calling the function with the exception.
+Changes are persisted synchronously before the next step starts. This ensures that every checkpoint is written before continuing execution, providing high durability at the cost of some performance overhead.
 
-Examples of how to use the different error handling strategies:
+You can specify the durability mode when calling any graph execution method:
 
-```ts
-const toolNode = new ToolNode([my_tool], {
-    handleToolErrors: true
-})
+## Using tasks in nodes
 
-const toolNode = new ToolNode([my_tool], {
-    handleToolErrors: (error, toolCall) => {
-        return new ToolMessage({
-            content: "I encountered an issue. Please try rephrasing your request.",
-            tool_call_id: toolCall.id
-        })
-    }
-})
-```
+If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operations, you may find it easier to convert each operation into a **task** rather than refactor the operations into individual nodes.
 
-#### Agent creation
+<Tabs>
+  <Tab title="Original">
+    ```typescript  theme={null}
+    import { StateGraph, START, END } from "@langchain/langgraph";
+    import { MemorySaver } from "@langchain/langgraph";
+    import { v4 as uuidv4 } from "uuid";
+    import * as z from "zod";
 
-Pass a configured `ToolNode` directly to `createAgent()`:
-
-```ts wrap
-import { z } from "zod"
-import { ChatOpenAI } from "@langchain/openai"
-import { ToolNode, createAgent } from "langchain"
-
-const searchDatabase = tool(
-    ({ query }) => {
-        return `Results for: ${query}`
-    },
-    {
-        name: "search_database",
-        description: "Search the database.",
-        schema: z.object({
-            query: z.string().describe("The query to search the database with")
-        })
-    }
-);
-
-const sendEmail = tool(
-    ({ to, subject, body }) => {
-        return `Email sent to ${to}`
-    },
-    {
-        name: "send_email",
-        description: "Send an email.",
-        schema: z.object({
-            to: z.string().describe("The email address to send the email to"),
-            subject: z.string().describe("The subject of the email"),
-            body: z.string().describe("The body of the email")
-        })
-    }
-);
-
-// Configure ToolNode with custom error handling
-const toolNode = new ToolNode([searchDatabase, sendEmail], {
-    name: "email_tools",
-    handleToolErrors: (error, toolCall) => {
-        return new ToolMessage({
-            content: "I encountered an issue. Please try rephrasing your request.",
-            tool_call_id: toolCall.id
-        });
-    }
-});
-
-// Create agent with the configured ToolNode
-const agent = createAgent({
-    model: new ChatOpenAI({ model: "gpt-5" }),
-    tools: toolNode, // Pass ToolNode instead of tools list
-    prompt: "You are a helpful email assistant."
-});
-
-// The agent will use your custom ToolNode configuration
-const result = await agent.invoke({
-    messages: [{ role: "user", content: "Search for John and email him" }]
-})
-```
-
-When you pass a `ToolNode` to `createAgent()`, the agent uses your exact configuration including error handling, custom names, and tags. This is useful when you need fine-grained control over tool execution behavior.
-
-### State, context, and memory
-
-<AccordionGroup>
-  <Accordion title="Accessing runtime context inside a tool">
-    <Info>
-      **`runtime`**: The execution environment of your agent, containing immutable configuration and contextual data that persists throughout the agent's execution (e.g., user IDs, session details, or application-specific configuration).
-    </Info>
-
-    Tools can access an agent's runtime context through the `config` parameter:
-
-    ```ts wrap
-    import { z } from "zod"
-    import { ChatOpenAI } from "@langchain/openai"
-    import { ToolNode, createAgent } from "langchain"
-
-    const getUserName = tool(
-        (_, config) => {
-            return config.context.user_name
-        },
-        {
-            name: "get_user_name",
-            description: "Get the user's name.",
-            schema: z.object({})
-        }
-    );
-
-    const contextSchema = z.object({
-        user_name: z.string()
+    // Define a Zod schema to represent the state
+    const State = z.object({
+      url: z.string(),
+      result: z.string().optional(),
     });
 
-    const agent = createAgent({
-        model: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserName],
-        contextSchema,
-    })
+    const callApi = async (state: z.infer<typeof State>) => {
+      const response = await fetch(state.url);  // [!code highlight]
+      const text = await response.text();
+      const result = text.slice(0, 100); // Side-effect
+      return {
+        result,
+      };
+    };
 
-    const result = await agent.invoke(
-        {
-            messages: [{ role: "user", content: "What is my name?" }]
-        },
-        {
-            context: { user_name: "John Smith" }
-        }
-    );
+    // Create a StateGraph builder and add a node for the callApi function
+    const builder = new StateGraph(State)
+      .addNode("callApi", callApi)
+      .addEdge(START, "callApi")
+      .addEdge("callApi", END);
+
+    // Specify a checkpointer
+    const checkpointer = new MemorySaver();
+
+    // Compile the graph with the checkpointer
+    const graph = builder.compile({ checkpointer });
+
+    // Define a config with a thread ID.
+    const threadId = uuidv4();
+    const config = { configurable: { thread_id: threadId } };
+
+    // Invoke the graph
+    await graph.invoke({ url: "https://www.example.com" }, config);
     ```
-  </Accordion>
+  </Tab>
 
-  <Accordion title="Accessing long-term memory inside a tool">
-    <Info>
-      **`store`**: LangChain's persistence layer. An agent's long-term memory store, e.g. user-specific or application-specific data stored across conversations.
-    </Info>
+  <Tab title="With task">
+    ```typescript  theme={null}
+    import { StateGraph, START, END } from "@langchain/langgraph";
+    import { MemorySaver } from "@langchain/langgraph";
+    import { task } from "@langchain/langgraph";
+    import { v4 as uuidv4 } from "uuid";
+    import * as z from "zod";
 
-    You can initialize an `InMemoryStore` to store long-term memory:
-
-    ```ts wrap
-    import { z } from "zod";
-    import { createAgent, InMemoryStore } from "langchain";
-    import { ChatOpenAI } from "@langchain/openai";
-
-    const store = new InMemoryStore();
-
-    const getUserInfo = tool(
-        ({ user_id }) => {
-            return store.get(["users"], user_id)
-        },
-        {
-            name: "get_user_info",
-            description: "Look up user info.",
-            schema: z.object({
-            user_id: z.string()
-            })
-        }
-    );
-
-    const agent = createAgent({
-        model: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserInfo],
-        store,
+    // Define a Zod schema to represent the state
+    const State = z.object({
+      urls: z.array(z.string()),
+      results: z.array(z.string()).optional(),
     });
+
+    const makeRequest = task("makeRequest", async (url: string) => {
+      const response = await fetch(url);  // [!code highlight]
+      const text = await response.text();
+      return text.slice(0, 100);
+    });
+
+    const callApi = async (state: z.infer<typeof State>) => {
+      const requests = state.urls.map((url) => makeRequest(url));  // [!code highlight]
+      const results = await Promise.all(requests);
+      return {
+        results,
+      };
+    };
+
+    // Create a StateGraph builder and add a node for the callApi function
+    const builder = new StateGraph(State)
+      .addNode("callApi", callApi)
+      .addEdge(START, "callApi")
+      .addEdge("callApi", END);
+
+    // Specify a checkpointer
+    const checkpointer = new MemorySaver();
+
+    // Compile the graph with the checkpointer
+    const graph = builder.compile({ checkpointer });
+
+    // Define a config with a thread ID.
+    const threadId = uuidv4();
+    const config = { configurable: { thread_id: threadId } };
+
+    // Invoke the graph
+    await graph.invoke({ urls: ["https://www.example.com"] }, config);
     ```
-  </Accordion>
+  </Tab>
+</Tabs>
 
-  <Accordion title="Updating long-term memory inside a tool">
-    To update long-term memory, you can use the `.put()` method of `InMemoryStore`. A complete example of persistent memory across sessions:
+## Resuming Workflows
 
-    ```ts wrap expandable
-    import { z } from "zod";
-    import { createAgent, tool, InMemoryStore } from "langchain";
-    import { ChatOpenAI } from "@langchain/openai";
+Once you have enabled durable execution in your workflow, you can resume execution for the following scenarios:
 
-    const store = new InMemoryStore();
+* **Pausing and Resuming Workflows:** Use the [interrupt](https://langchain-ai.github.io/langgraphjs/reference/functions/langgraph.interrupt-2.html) function to pause a workflow at specific points and the [Command](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) primitive to resume it with updated state. See [**Interrupts**](/oss/javascript/langgraph/interrupts) for more details.
+* **Recovering from Failures:** Automatically resume workflows from the last successful checkpoint after an exception (e.g., LLM provider outage). This involves executing the workflow with the same thread identifier by providing it with a `null` as the input value (see this [example](/oss/javascript/langgraph/use-functional-api#resuming-after-an-error) with the functional API).
 
-    const getUserInfo = tool(
-        async ({ user_id }) => {
-            const value = await store.get(["users"], user_id);
-            console.log("get_user_info", user_id, value);
-            return value;
-        },
-        {
-            name: "get_user_info",
-            description: "Look up user info.",
-            schema: z.object({
-            user_id: z.string(),
-            }),
-        }
-    );
+## Starting Points for Resuming Workflows
 
-    const saveUserInfo = tool(
-        async ({ user_id, name, age, email }) => {
-            console.log("save_user_info", user_id, name, age, email);
-            await store.put(["users"], user_id, { name, age, email });
-            return "Successfully saved user info.";
-        },
-        {
-            name: "save_user_info",
-            description: "Save user info.",
-            schema: z.object({
-                user_id: z.string(),
-                name: z.string(),
-                age: z.number(),
-                email: z.string(),
-            }),
-        }
-    );
+* If you're using a [StateGraph (Graph API)](/oss/javascript/langgraph/graph-api), the starting point is the beginning of the [**node**](/oss/javascript/langgraph/graph-api#nodes) where execution stopped.
+* If you're making a subgraph call inside a node, the starting point will be the **parent** node that called the subgraph that was halted.
+  Inside the subgraph, the starting point will be the specific [**node**](/oss/javascript/langgraph/graph-api#nodes) where execution stopped.
+* If you're using the Functional API, the starting point is the beginning of the [**entrypoint**](/oss/javascript/langgraph/functional-api#entrypoint) where execution stopped.
 
-    const agent = createAgent({
-        llm: new ChatOpenAI({ model: "gpt-4o" }),
-        tools: [getUserInfo, saveUserInfo],
-        store,
-    });
+***
 
-    // First session: save user info
-    await agent.invoke({
-        messages: [
-            {
-            role: "user",
-            content:
-                "Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev",
-            },
-        ],
-    });
-
-    // Second session: get user info
-    const result = await agent.invoke({
-        messages: [
-            { role: "user", content: "Get user info for user with id 'abc123'" },
-        ],
-    });
-
-    console.log(result);
-    // Here is the user info for user with ID "abc123":
-    // - Name: Foo
-    // - Age: 25
-    // - Email: foo@langchain.dev
-    ```
-  </Accordion>
-</AccordionGroup>
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/durable-execution.mdx)
+</Callout>

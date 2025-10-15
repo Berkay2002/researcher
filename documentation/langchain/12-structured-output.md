@@ -1,7 +1,7 @@
 # Structured output
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -10,7 +10,7 @@ Structured output allows agents to return data in a specific, predictable format
 
 LangChain's prebuilt ReAct agent `createAgent` handles structured output automatically. The user sets their desired structured output schema, and when the model generates the structured data, it's captured, validated, and returned in the `structuredResponse` key of the agent's state.
 
-```ts
+```ts  theme={null}
 type ResponseFormat = (
     | ZodSchema<StructuredResponseT> // a Zod schema
     | Record<string, unknown> // a JSON Schema
@@ -22,24 +22,24 @@ const agent = createAgent({
 })
 ```
 
-<ParamField path="responseFormat">
-  Controls how the agent returns structured data. You can provide either a Zod object or JSON schema. By default, the agent uses a tool calling strategy, in which the output is created by an additional tool call. Certain models support native structured output, in which case the agent will use that strategy instead.
+## Response Format
 
-  You can control the behavior by wrapping `ResponseFormat` in a `toolStrategy` or `providerStrategy` function call:
+Controls how the agent returns structured data. You can provide either a Zod object or JSON schema. By default, the agent uses a tool calling strategy, in which the output is created by an additional tool call. Certain models support native structured output, in which case the agent will use that strategy instead.
 
-  ```ts
-  import { toolStrategy, providerStrategy } from "langchain";
+You can control the behavior by wrapping `ResponseFormat` in a `toolStrategy` or `providerStrategy` function call:
 
-  const agent = createAgent({
-      // use a provider strategy if supported by the model
-      responseFormat: providerStrategy(z.object({ ... }))
-      // or enforce a tool strategy
-      responseFormat: toolStrategy(z.object({ ... }))
-  })
-  ```
+```ts  theme={null}
+import { toolStrategy, providerStrategy } from "langchain";
 
-  The structured response is returned in the `structuredResponse` key of the agent's final state.
-</ParamField>
+const agent = createAgent({
+    // use a provider strategy if supported by the model
+    responseFormat: providerStrategy(z.object({ ... }))
+    // or enforce a tool strategy
+    responseFormat: toolStrategy(z.object({ ... }))
+})
+```
+
+The structured response is returned in the `structuredResponse` key of the agent's final state.
 
 ## Provider strategy
 
@@ -47,7 +47,7 @@ Some model providers support structured output natively through their APIs (curr
 
 To use this strategy, configure a `ProviderStrategy`:
 
-```ts
+```ts  theme={null}
 function providerStrategy<StructuredResponseT>(
     schema: ZodSchema<StructuredResponseT> | JsonSchemaFormat
 ): ProviderStrategy<StructuredResponseT>
@@ -63,8 +63,8 @@ function providerStrategy<StructuredResponseT>(
 LangChain automatically uses `ProviderStrategy` when you pass a schema type directly to `createAgent.responseFormat` and the model supports native structured output:
 
 <CodeGroup>
-  ```ts Zod Schema
-  import { z } from "zod";
+  ```ts Zod Schema theme={null}
+  import * as z from "zod";
   import { createAgent, providerStrategy } from "langchain";
 
   const ContactInfo = z.object({
@@ -87,7 +87,7 @@ LangChain automatically uses `ProviderStrategy` when you pass a schema type dire
   // { name: "John Doe", email: "john@example.com", phone: "(555) 123-4567" }
   ```
 
-  ```ts JSON Schema
+  ```ts JSON Schema theme={null}
   import { createAgent, providerStrategy } from "langchain";
 
   const contactInfoSchema = {
@@ -128,7 +128,7 @@ For models that don't support native structured output, LangChain uses tool call
 
 To use this strategy, configure a `ToolStrategy`:
 
-```ts
+```ts  theme={null}
 function toolStrategy<StructuredResponseT>(
     responseFormat:
         | JsonSchemaFormat
@@ -159,8 +159,8 @@ function toolStrategy<StructuredResponseT>(
 </ParamField>
 
 <CodeGroup>
-  ```ts Zod Schema
-  import { z } from "zod";
+  ```ts Zod Schema theme={null}
+  import * as z from "zod";
   import { createAgent, toolStrategy } from "langchain";
 
   const ProductReview = z.object({
@@ -183,7 +183,7 @@ function toolStrategy<StructuredResponseT>(
   // { "rating": 5, "sentiment": "positive", "keyPoints": ["fast shipping", "expensive"] }
   ```
 
-  ```ts JSON Schema
+  ```ts JSON Schema theme={null}
   import { createAgent, toolStrategy } from "langchain";
 
   const productReviewSchema = {
@@ -224,8 +224,8 @@ function toolStrategy<StructuredResponseT>(
   // { "rating": 5, "sentiment": "positive", "keyPoints": ["fast shipping", "expensive"] }
   ```
 
-  ```ts Union Types
-  import { z } from "zod";
+  ```ts Union Types theme={null}
+  import * as z from "zod";
   import { createAgent, toolStrategy } from "langchain";
 
   const ProductReview = z.object({
@@ -259,8 +259,8 @@ function toolStrategy<StructuredResponseT>(
 
 The `toolMessageContent` parameter allows you to customize the message that appears in the conversation history when structured output is generated:
 
-```ts
-import { z } from "zod";
+```ts  theme={null}
+import * as z from "zod";
 import { createAgent, toolStrategy } from "langchain";
 
 const MeetingAction = z.object({
@@ -296,7 +296,7 @@ console.log(result);
 
 Without `toolMessageContent`, we'd see:
 
-```ts
+```ts  theme={null}
 # console.log(result);
 /**
  * {
@@ -317,8 +317,8 @@ Models can make mistakes when generating structured output via tool calling. Lan
 
 When a model incorrectly calls multiple structured output tools, the agent provides error feedback in a `ToolMessage` and prompts the model to retry:
 
-```ts
-import { z } from "zod";
+```ts  theme={null}
+import * as z from "zod";
 import { createAgent, toolStrategy } from "langchain";
 
 const ContactInfo = z.object({
@@ -368,8 +368,8 @@ console.log(result);
 
 When structured output doesn't match the expected schema, the agent provides specific error feedback:
 
-```ts
-import { z } from "zod";
+```ts  theme={null}
+import * as z from "zod";
 import { createAgent, toolStrategy } from "langchain";
 
 const ProductRating = z.object({
@@ -414,7 +414,7 @@ You can customize how errors are handled using the `handleErrors` parameter:
 
 **Custom error message:**
 
-```ts
+```ts  theme={null}
 const responseFormat = toolStrategy(ProductRating, {
     handleError: "Please provide a valid rating between 1-5 and include a comment."
 )
@@ -425,7 +425,7 @@ const responseFormat = toolStrategy(ProductRating, {
 
 **Handle specific exceptions only:**
 
-```ts
+```ts  theme={null}
 import { ToolInputParsingException } from "@langchain/core/tools";
 
 const responseFormat = toolStrategy(ProductRating, {
@@ -443,7 +443,7 @@ const responseFormat = toolStrategy(ProductRating, {
 
 **Handle multiple exception types:**
 
-```ts
+```ts  theme={null}
 const responseFormat = toolStrategy(ProductRating, {
     handleError: (error: ToolStrategyError) => {
         if (error instanceof ToolInputParsingException) {
@@ -459,8 +459,14 @@ const responseFormat = toolStrategy(ProductRating, {
 
 **No error handling:**
 
-```ts
+```ts  theme={null}
 const responseFormat = toolStrategy(ProductRating, {
     handleError: false  // All errors raised
 )
 ```
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/structured-output.mdx)
+</Callout>

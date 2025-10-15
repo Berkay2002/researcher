@@ -1,7 +1,7 @@
 # Application structure
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
 </Warning>
@@ -10,11 +10,11 @@
 
 A LangGraph application consists of one or more graphs, a configuration file (`langgraph.json`), a file that specifies dependencies, and an optional `.env` file that specifies environment variables.
 
-This guide shows a typical structure of an application and shows how the required information to deploy an application using the LangGraph Platform is specified.
+This guide shows a typical structure of an application and shows how the required information to deploy an application using the LangSmith is specified.
 
 ## Key Concepts
 
-To deploy using the LangGraph Platform, the following information should be provided:
+To deploy using the LangSmith, the following information should be provided:
 
 1. A [LangGraph configuration file](#configuration-file-concepts) (`langgraph.json`) that specifies the dependencies, graphs, and environment variables to use for the application.
 2. The [graphs](#graphs) that implement the logic of the application.
@@ -48,10 +48,10 @@ my-app/
 
 The `langgraph.json` file is a JSON file that specifies the dependencies, graphs, environment variables, and other settings required to deploy a LangGraph application.
 
-See the [LangGraph configuration file reference](/langgraph-platform/cli#configuration-file) for details on all supported keys in the JSON file.
+See the [LangGraph configuration file reference](/langsmith/cli#configuration-file) for details on all supported keys in the JSON file.
 
 <Tip>
-  The [LangGraph CLI](/langgraph-platform/cli) defaults to using the configuration file `langgraph.json` in the current directory.
+  The [LangGraph CLI](/langsmith/cli) defaults to using the configuration file `langgraph.json` in the current directory.
 </Tip>
 
 ### Examples
@@ -95,3 +95,9 @@ You can specify one or more graphs in the configuration file. Each graph is iden
 If you're working with a deployed LangGraph application locally, you can configure environment variables in the `env` key of the [LangGraph configuration file](#configuration-file-concepts).
 
 For a production deployment, you will typically want to configure the environment variables in the deployment environment.
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/application-structure.mdx)
+</Callout>

@@ -1,7 +1,7 @@
 # Long-term memory
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -62,7 +62,7 @@ For more information about the memory store, see the [Persistence](/oss/javascri
 ## Read long-term memory in tools
 
 ```typescript A tool the agent can use to look up user information theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { createAgent, tool } from "langchain";
 import { InMemoryStore, type Runtime } from "@langchain/langgraph";
 
@@ -129,7 +129,7 @@ console.log(result.messages.at(-1)?.content);
 ## Write long-term memory from tools
 
 ```typescript Example of a tool that updates user information theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { tool, createAgent, type AgentRuntime } from "langchain";
 import { InMemoryStore, type Runtime } from "@langchain/langgraph";
 
@@ -181,3 +181,9 @@ await agent.invoke(
 const result = await store.get(["users"], "user_123");
 console.log(result?.value); // Output: { name: "John Smith" }
 ```
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/long-term-memory.mdx)
+</Callout>

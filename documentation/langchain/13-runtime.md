@@ -1,7 +1,7 @@
 # Runtime
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -16,7 +16,7 @@ LangGraph exposes a [Runtime](https://reference.langchain.com/javascript/interfa
 2. **Store**: a [BaseStore](https://langchain-ai.github.io/langgraphjs/reference/classes/checkpoint.BaseStore.html) instance used for [long-term memory](/oss/javascript/langchain/long-term-memory)
 3. **Stream writer**: an object used for streaming information via the `"custom"` stream mode
 
-You can access the runtime information within [tools](#inside-tools), [prompt](#inside-prompt), and [pre and post model hooks](#inside-pre-and-post-model-hooks).
+You can access the runtime information within [tools](#inside-tools) and [middleware](#inside-middleware).
 
 ## Access
 
@@ -25,7 +25,7 @@ When creating an agent with `createAgent`, you can specify a `contextSchema` to 
 When invoking the agent, pass the `context` argument with the relevant configuration for the run:
 
 ```ts  theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { createAgent } from "langchain";
 
 const contextSchema = z.object({ // [!code highlight]
@@ -57,7 +57,7 @@ You can access the runtime information inside tools to:
 Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a tool.
 
 ```ts  theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { tool } from "langchain";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
 
@@ -89,38 +89,56 @@ const fetchUserEmailPreferences = tool(
 );
 ```
 
-### Inside prompt
+### Inside middleware
 
-Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a prompt function.
+You can access runtime information in middleware to create dynamic prompts, modify messages, or control agent behavior based on user context.
+
+Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside middleware.
 
 ```ts  theme={null}
-import { z } from "zod";
-import { createAgent, type AgentState, SystemMessage } from "langchain";
+import * as z from "zod";
+import { createAgent, createMiddleware, type AgentState, SystemMessage } from "langchain";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
 
 const contextSchema = z.object({
   userName: z.string(),
 });
 
-const prompt = (
-  state: AgentState,
-  runtime: Runtime<z.infer<typeof contextSchema>> // [!code highlight]
-) => {
-  const userName = runtime.context?.userName; // [!code highlight]
-  if (!userName) {
-    throw new Error("userName is required");
-  }
+// Dynamic prompt middleware
+const dynamicPromptMiddleware = createMiddleware({
+  name: "DynamicPrompt",
+  beforeModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+    const userName = runtime.context?.userName;  // [!code highlight]
+    if (!userName) {
+      throw new Error("userName is required");
+    }
 
-  const systemMsg = `You are a helpful assistant. Address the user as ${userName}.`; // [!code highlight]
-  return [new SystemMessage(systemMsg), ...state.messages];
-};
+    const systemMsg = `You are a helpful assistant. Address the user as ${userName}.`;
+    return {
+      messages: [new SystemMessage(systemMsg), ...state.messages]
+    };
+  }
+});
+
+// Logging middleware
+const loggingMiddleware = createMiddleware({
+  name: "Logging",
+  beforeModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+    console.log(`Processing request for user: ${runtime.context?.userName}`);  // [!code highlight]
+    return;
+  },
+  afterModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+    console.log(`Completed request for user: ${runtime.context?.userName}`);  // [!code highlight]
+    return;
+  }
+});
 
 const agent = createAgent({
   model: "openai:gpt-4o",
   tools: [
     /* ... */
   ],
-  prompt,
+  middleware: [dynamicPromptMiddleware, loggingMiddleware],  // [!code highlight]
   contextSchema,
 });
 
@@ -130,54 +148,8 @@ const result = await agent.invoke(
 );
 ```
 
-### Inside pre and post model hooks
+***
 
-Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a pre or post model hook.
-
-```ts  theme={null}
-import { z } from "zod";
-import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
-import { createAgent, type AgentState } from "langchain";
-
-const contextSchema = z.object({
-  userName: z.string(),
-});
-
-const preModelHook = (
-  state: AgentState,
-  runtime: Runtime<z.infer<typeof contextSchema>> // [!code highlight]
-) => {
-  const userName = runtime.context?.userName; // [!code highlight]
-  if (!userName) {
-    throw new Error("userName is required");
-  }
-
-  return {
-    // ...
-  };
-};
-
-const postModelHook = (
-  state: AgentState,
-  runtime: Runtime<z.infer<typeof contextSchema>> // [!code highlight]
-) => {
-  const userName = runtime.context?.userName; // [!code highlight]
-  if (!userName) {
-    throw new Error("userName is required");
-  }
-
-  return {
-    // ...
-  };
-};
-
-const agent = createAgent({
-  model: "openai:gpt-4o-mini",
-  tools: [
-    /* ... */
-  ],
-  contextSchema,
-  preModelHook,
-  postModelHook,
-});
-```
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/runtime.mdx)
+</Callout>

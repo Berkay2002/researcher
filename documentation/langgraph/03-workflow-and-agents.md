@@ -52,7 +52,7 @@ Workflows and agentic systems are based on LLMs and the various augmentations yo
 
 ```typescript  theme={null}
 
-import { z } from "zod";
+import * as z from "zod";
 import { tool } from "langchain";
 
 // Schema for structured output
@@ -386,7 +386,7 @@ Routing workflows process inputs and then directs them to context-specific tasks
 <CodeGroup>
   ```typescript Graph API theme={null}
   import { StateGraph, Annotation } from "@langchain/langgraph";
-  import { z } from "zod";
+  import * as z from "zod";
 
   // Schema for structured output to use as routing logic
   const routeSchema = z.object({
@@ -495,7 +495,7 @@ Routing workflows process inputs and then directs them to context-specific tasks
   ```
 
   ```typescript Functional API theme={null}
-  import { z } from "zod";
+  import * as z from "zod";
   import { task, entrypoint } from "@langchain/langgraph";
 
   // Schema for structured output to use as routing logic
@@ -619,7 +619,7 @@ Orchestrator-worker workflows provide more flexibility and are often used when s
   ```
 
   ```typescript Functional API theme={null}
-  import { z } from "zod";
+  import * as z from "zod";
   import { task, entrypoint } from "@langchain/langgraph";
 
   // Schema for structured output to use in planning
@@ -789,7 +789,7 @@ console.log(state.finalReport);
 
 ## Evaluator-optimizer
 
-In evaluator-optimizer workflows, one LLM call creates a response and the other evaluates that response. If the evaluator or a [human-in-the-loop](/oss/javascript/langgraph/add-human-in-the-loop) determines the response needs refinement, feedback is provided and the response is recreated. This loop continues until an acceptable response is generated.
+In evaluator-optimizer workflows, one LLM call creates a response and the other evaluates that response. If the evaluator or a [human-in-the-loop](/oss/javascript/langgraph/interrupts) determines the response needs refinement, feedback is provided and the response is recreated. This loop continues until an acceptable response is generated.
 
 Evaluator-optimizer workflows are commonly used when there's particular success criteria for a task, but iteration is required to meet that criteria. For example, there's not always a perfect match when translating text between two languages. It might take a few iterations to generate a translation with the same meaning across the two languages.
 
@@ -797,7 +797,7 @@ Evaluator-optimizer workflows are commonly used when there's particular success 
 
 <CodeGroup>
   ```typescript Graph API theme={null}
-  import { z } from "zod";
+  import * as z from "zod";
   import { Annotation, StateGraph } from "@langchain/langgraph";
 
   // Graph state
@@ -874,7 +874,7 @@ Evaluator-optimizer workflows are commonly used when there's particular success 
   ```
 
   ```typescript Functional API theme={null}
-  import { z } from "zod";
+  import * as z from "zod";
   import { task, entrypoint } from "@langchain/langgraph";
 
   // Schema for structured output to use in evaluation
@@ -953,7 +953,7 @@ Agents are typically implemented as an LLM performing actions using [tools](/oss
 
 ```typescript Using tools theme={null}
 import { tool } from "@langchain/core/tools";
-import { z } from "zod";
+import * as z from "zod";
 
 // Define tools
 const multiply = tool(

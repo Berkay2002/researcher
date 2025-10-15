@@ -1,7 +1,7 @@
 # Short-term memory
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -69,25 +69,37 @@ const checkpointer = PostgresSaver.fromConnString(DB_URI);
 
 By default, agents use `AgentState` to manage short term memory, specifically the conversation history via a `messages` key.
 
-Users can subclass `AgentState` to add additional fields to the state.
+You can extend `AgentState` to add additional fields. Custom state schemas are defined in middleware using the `state_schema` attribute.
 
-This custom state can then be accessed via tools and dynamic prompt / model functions.
+```typescript  theme={null}
+import * as z from "zod";
+import { createAgent, createMiddleware } from "langchain";
+import { MessagesZodState, MemorySaver } from "@langchain/langgraph";
 
-```typescript highlight={4-7,13} theme={null}
-import { z } from "zod";
-import { createAgent } from "langchain";
-import { MemorySaver } from "@langchain/langgraph";
+const customStateSchema = z.object({  // [!code highlight]
+    messages: MessagesZodState.shape.messages,  // [!code highlight]
+    userId: z.string(),  // [!code highlight]
+    preferences: z.record(z.string(), z.any()),  // [!code highlight]
+});  // [!code highlight]
 
-const stateSchema = z.object({
-    messages: z.array(z.any()),
+const stateExtensionMiddleware = createMiddleware({
+    name: "StateExtension",
+    stateSchema: customStateSchema,  // [!code highlight]
 });
 
 const checkpointer = new MemorySaver();
 const agent = createAgent({
     model: "openai:gpt-5",
     tools: [],
-    stateSchema,
+    middleware: [stateExtensionMiddleware] as const,  // [!code highlight]
     checkpointer,
+});
+
+// Custom state can be passed in invoke
+const result = await agent.invoke({
+    messages: [{ role: "user", content: "Hello" }],
+    userId: "user_123",  // [!code highlight]
+    preferences: { theme: "dark" },  // [!code highlight]
 });
 ```
 
@@ -256,15 +268,42 @@ Because of this, some applications benefit from a more sophisticated approach of
 
 <img src="https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=c8ed3facdccd4ef5c7e52902c72ba938" alt="" data-og-width="609" width="609" data-og-height="242" height="242" data-path="oss/images/summary.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=280&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=4208b9b0cc9f459f3dc4e5219918471b 280w, https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=560&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=7acb77c081545f57042368f4e9d0c8cb 560w, https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=840&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=2fcfdb0c481d2e1d361e76db763a41e5 840w, https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=1100&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=4abdac693a562788aa0db8681bef8ea7 1100w, https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=1650&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=40acfefa91dcb11b247a6e4a7705f22b 1650w, https://mintcdn.com/langchain-5e9cc07a/ybiAaBfoBvFquMDz/oss/images/summary.png?w=2500&fit=max&auto=format&n=ybiAaBfoBvFquMDz&q=85&s=8d765aaf7551e8b0fc2720de7d2ac2a8 2500w" />
 
-TODO
+To summarize message history in an agent, use the built-in [`summarizationMiddleware`](/oss/javascript/langchain/middleware#summarization):
 
-## Access
+```typescript  theme={null}
+import { createAgent, summarizationMiddleware } from "langchain";
+import { MemorySaver } from "@langchain/langgraph";
 
-You can access the short-term memory of an agent in a few different ways:
+const checkpointer = new MemorySaver();
 
-* [Tools](#tools)
-* [Pre model hook](#pre-model-hook)
-* [Post model hook](#post-model-hook)
+const agent = createAgent({
+  model: "openai:gpt-4o",
+  tools: [],
+  middleware: [
+    summarizationMiddleware({
+      model: "openai:gpt-4o-mini",
+      maxTokensBeforeSummary: 4000,
+      messagesToKeep: 20,
+    }),
+  ],
+  checkpointer,
+});
+
+const config = { configurable: { thread_id: "1" } };
+await agent.invoke({ messages: "hi, my name is bob" }, config);
+await agent.invoke({ messages: "write a short poem about cats" }, config);
+await agent.invoke({ messages: "now do the same but for dogs" }, config);
+const finalResponse = await agent.invoke({ messages: "what's my name?" }, config);
+
+console.log(finalResponse.messages.at(-1)?.content);
+// Your name is Bob!
+```
+
+See [summarizationMiddleware](/oss/javascript/langchain/middleware#summarization) for more configuration options.
+
+## Access memory
+
+You can access and modify the short-term memory (state) of an agent in several ways:
 
 ### Tools
 
@@ -275,7 +314,7 @@ Access short term memory (state) in a tool by injecting the agent's state into t
 This annotation hides the state from the tool signature (so the model doesn't see it), but the tool can access it.
 
 ```typescript  theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { createAgent, tool } from "langchain";
 
 const stateSchema = z.object({
@@ -322,7 +361,7 @@ To modify the agent's short-term memory (state) during execution, you can return
 This is useful for persisting intermediate results or making information accessible to subsequent tools or prompts.
 
 ```typescript  theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { tool, createAgent } from "langchain";
 import { MessagesZodState, Command } from "@langchain/langgraph";
 
@@ -369,7 +408,7 @@ const greet = tool(
 );
 
 const agent = createAgent({
-    llm: model,
+    model,
     tools: [updateUserInfo, greet],
     stateSchema: CustomState,
 });
@@ -382,10 +421,10 @@ await agent.invoke(
 
 ### Prompt
 
-Access short term memory (state) in a dynamic prompt function by injecting the agent's state into the prompt function signature.
+Access short term memory (state) in middleware to create dynamic prompts based on conversation history or custom state fields.
 
 ```typescript  theme={null}
-import { z } from "zod";
+import * as z from "zod";
 import { createAgent, tool, SystemMessage } from "langchain";
 
 const contextSchema = z.object({
@@ -415,7 +454,6 @@ const agent = createAgent({
             `You are a helpful assistant. Address the user as ${config.context?.userName}.`
         ),
         ...state.messages,
-        ];
     },
 });
 
@@ -458,77 +496,124 @@ for (const message of result.messages) {
  *   // ...
  * }
  * AIMessage {
- *   "content": "John Smith, here’s the latest: The weather in San Francisco is always sunny!\n\nIf you’d like more details (temperature, wind, humidity) or a forecast for the next few days, I can pull that up. What would you like?",
+ *   "content": "John Smith, here's the latest: The weather in San Francisco is always sunny!\n\nIf you'd like more details (temperature, wind, humidity) or a forecast for the next few days, I can pull that up. What would you like?",
  *   // ...
  * }
  */
 ```
 
-### Pre model hook
+### Before model
 
-Access short term memory (state) in a pre model hook by injecting the agent's state into the hook signature.
+Access short term memory (state) in `@before_model` middleware to process messages before model calls.
+
+```mermaid  theme={null}
+%%{
+    init: {
+        "fontFamily": "monospace",
+        "flowchart": {
+        "curve": "basis"
+        },
+        "themeVariables": {"edgeLabelBackground": "transparent"}
+    }
+}%%
+graph TD
+    S(["\_\_start\_\_"])
+    PRE(before_model)
+    MODEL(model)
+    TOOLS(tools)
+    END(["\_\_end\_\_"])
+    S --> PRE
+    PRE --> MODEL
+    MODEL -.-> TOOLS
+    MODEL -.-> END
+    TOOLS --> PRE
+    classDef blueHighlight fill:#0a1c25,stroke:#0a455f,color:#bae6fd;
+    class S blueHighlight;
+    class END blueHighlight;
+```
 
 ```typescript  theme={null}
-import {
-    createAgent,
-    type AgentState,
-    trimMessages,
-    type BaseMessage,
-} from "langchain";
+import { RemoveMessage } from "@langchain/core/messages";
+import { createAgent, createMiddleware, trimMessages, type AgentState } from "langchain";
 
-const preModelHook = async (state: AgentState) => {
-    return {
-        messages: await trimMessages(state.messages, {
-        maxTokens: 384,
-        strategy: "last",
-        startOn: "human",
-        endOn: ["human", "tool"],
-        tokenCounter: (msgs: BaseMessage[]) => msgs.length,
-        }),
-    };
-};
+const trimMessageHistory = createMiddleware({
+  name: "TrimMessages",
+  beforeModel: async (state) => {
+    const trimmed = await trimMessages(state.messages, {
+      maxTokens: 384,
+      strategy: "last",
+      startOn: "human",
+      endOn: ["human", "tool"],
+      tokenCounter: (msgs) => msgs.length,
+    });
+    return { messages: trimmed };
+  },
+});
 
 const agent = createAgent({
     model: "openai:gpt-5-nano",
     tools: [],
-    preModelHook,
+    middleware: [trimMessageHistory],
 });
-
-const result = await agent.invoke(
-    {
-        messages: [{ role: "user", content: "hi, my name is bob" }],
-    },
-    {
-        context: { thread_id: "1" },
-    }
-);
-console.log(result.messages.at(-1)?.content);
 ```
 
-### Post model hook
+### After model
 
-Access short term memory (state) in a post model hook by injecting the agent's state into the hook signature.
+Access short term memory (state) in `@after_model` middleware to process messages after model calls.
+
+```mermaid  theme={null}
+%%{
+    init: {
+        "fontFamily": "monospace",
+        "flowchart": {
+        "curve": "basis"
+        },
+        "themeVariables": {"edgeLabelBackground": "transparent"}
+    }
+}%%
+graph TD
+    S(["\_\_start\_\_"])
+    MODEL(model)
+    POST(after_model)
+    TOOLS(tools)
+    END(["\_\_end\_\_"])
+    S --> MODEL
+    MODEL --> POST
+    POST -.-> END
+    POST -.-> TOOLS
+    TOOLS --> MODEL
+    classDef blueHighlight fill:#0a1c25,stroke:#0a455f,color:#bae6fd;
+    class S blueHighlight;
+    class END blueHighlight;
+    class POST greenHighlight;
+```
 
 ```typescript  theme={null}
 import { RemoveMessage } from "@langchain/core/messages";
-import { createAgent, type AgentState } from "langchain";
+import { createAgent, createMiddleware, type AgentState } from "langchain";
 
-function validateResponse(state: AgentState) {
+const validateResponse = createMiddleware({
+  name: "ValidateResponse",
+  afterModel: (state) => {
     const lastMessage = state.messages.at(-1)?.content;
-    if (
-        typeof lastMessage === "string" &&
-        lastMessage.toLowerCase().includes("confidential")
-    ) {
-        return {
+    if (typeof lastMessage === "string" && lastMessage.toLowerCase().includes("confidential")) {
+      return {
         messages: [new RemoveMessage({ id: "all" }), ...state.messages],
-        };
+      };
     }
-    return {};
-}
+    return;
+  },
+});
 
 const agent = createAgent({
-    model: "openai:gpt-5",
+    model: "openai:gpt-5-nano",
     tools: [],
-    postModelHook: validateResponse,
+    middleware: [validateResponse],
 });
 ```
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/short-term-memory.mdx)
+</Callout>

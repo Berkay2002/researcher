@@ -1,7 +1,7 @@
 # Multi-agent
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -19,16 +19,25 @@ Multi-agent systems are useful when:
 
 | Pattern                           | How it works                                                                                                                                                     | Control flow                                               | Example use case                                 |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------ |
-| [**Tool Calling**](#tool-calling) | A central agent calls other agents as *tools*. The “tool” agents don’t talk to the user directly — they just run their task and return results.                  | Centralized: all routing passes through the calling agent. | Task orchestration, structured workflows.        |
+| [**Tool Calling**](#tool-calling) | A **supervisor** agent calls other agents as *tools*. The “tool” agents don’t talk to the user directly — they just run their task and return results.           | Centralized: all routing passes through the calling agent. | Task orchestration, structured workflows.        |
 | [**Handoffs**](#handoffs)         | The current agent decides to **transfer control** to another agent. The active agent changes, and the user may continue interacting directly with the new agent. | Decentralized: agents can change who is active.            | Multi-domain conversations, specialist takeover. |
+
+<Card title="Tutorial: Build a supervisor agent" icon="sitemap" href="/oss/javascript/langchain/supervisor" arrow cta="Learn more">
+  Learn how to build a personal assistant using the supervisor pattern, where a central supervisor agent coordinates specialized worker agents.
+  This tutorial demonstrates:
+
+  * Creating specialized sub-agents for different domains (calendar and email)
+  * Wrapping sub-agents as tools for centralized orchestration
+  * Adding human-in-the-loop review for sensitive actions
+</Card>
 
 ## Choosing a pattern
 
 | Question                                              | Tool Calling | Handoffs |
 | ----------------------------------------------------- | ------------ | -------- |
-| Need centralized control over workflow?               |  Yes        |  No     |
-| Want agents to interact directly with the user?       |  No         |  Yes    |
-| Complex, human-like conversation between specialists? |  Limited    |  Strong |
+| Need centralized control over workflow?               | ✅ Yes        | ❌ No     |
+| Want agents to interact directly with the user?       | ❌ No         | ✅ Yes    |
+| Complex, human-like conversation between specialists? | ❌ Limited    | ✅ Strong |
 
 <Tip>
   You can mix both patterns — use **handoffs** for agent switching, and have each agent **call subagents as tools** for specialized tasks.
@@ -78,7 +87,7 @@ Below is a minimal example where the main agent is given access to a single suba
 
 ```typescript  theme={null}
 import { createAgent, tool } from "langchain";
-import { z } from "zod";
+import * as z from "zod";
 
 const subagent1 = createAgent({...});
 
@@ -99,7 +108,7 @@ const callSubagent1 = tool(
 );
 
 const agent = createAgent({
-  llm: model,
+  model,
   tools: [callSubagent1]
 });
 ```
@@ -129,7 +138,7 @@ There are two main levers to control the input that the main agent passes to a s
 ```typescript  theme={null}
 import { createAgent, tool, AgentState, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
-import { z } from "zod";
+import * as z from "zod";
 
 // Example of passing the full conversation history to the sub agent via the state.
 const callSubagent1 = tool(
@@ -167,7 +176,7 @@ Two common strategies for shaping what the main agent receives back from a subag
 ```typescript  theme={null}
 import { tool, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
-import { z } from "zod";
+import * as z from "zod";
 
 const callSubagent1 = tool(
   async ({ query }, config) => {
@@ -217,3 +226,9 @@ graph LR
 ```
 
 ### Implementation (Coming soon)
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/multi-agent.mdx)
+</Callout>

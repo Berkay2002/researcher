@@ -1,7 +1,7 @@
 # Streaming
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
@@ -10,7 +10,7 @@ LangChain implements a streaming system to surface real-time updates.
 
 Streaming is crucial for enhancing the responsiveness of applications built on LLMs. By displaying output progressively, even before a complete response is ready, streaming significantly improves user experience (UX), particularly when dealing with the latency of LLMs.
 
-## Stream from an agent
+## Overview
 
 LangChain's streaming system lets you surface live feedback from agent runs to your application.
 
@@ -21,7 +21,7 @@ What's possible with LangChain streaming:
 * <Icon icon="table" size={16} /> [**Stream custom updates**](#custom-updates) — emit user-defined signals (e.g., `"Fetched 10/100 records"`).
 * <Icon icon="layer-plus" size={16} /> [**Stream multiple modes**](#stream-multiple-modes) — choose from `updates` (agent progress), `messages` (LLM tokens + metadata), or `custom` (arbitrary user data).
 
-### Agent progress
+## Agent progress
 
 To stream agent progress, use the [`stream()`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#stream) method with `streamMode: "updates"`. This emits an event after every agent step.
 
@@ -62,7 +62,7 @@ for await (const chunk of await agent.stream(
     console.log(`content: ${JSON.stringify(content, null, 2)}`);
 }
 /**
- * step: agent
+ * step: model
  * content: {
  *   "messages": [
  *     {
@@ -95,12 +95,12 @@ for await (const chunk of await agent.stream(
  *     }
  *   ]
  * }
- * step: agent
+ * step: model
  * content: {
  *   "messages": [
  *     {
  *       "kwargs": {
- *         "content": "The latest update says: The weather in San Francisco is always sunny!\n\nIf you’d like real-time details (current temperature, humidity, wind, and today’s forecast), I can pull the latest data for you. Want me to fetch that?",
+ *         "content": "The latest update says: The weather in San Francisco is always sunny!\n\nIf you'd like real-time details (current temperature, humidity, wind, and today's forecast), I can pull the latest data for you. Want me to fetch that?",
  *         // ...
  *       }
  *     }
@@ -109,7 +109,7 @@ for await (const chunk of await agent.stream(
  */
 ```
 
-### LLM tokens
+## LLM tokens
 
 To stream tokens as they are produced by the LLM, use `streamMode: "messages"`:
 
@@ -144,7 +144,7 @@ for await (const [token, metadata] of await agent.stream(
 }
 ```
 
-### Custom updates
+## Custom updates
 
 To stream updates from tools as they are executed, you can use the `writer` parameter from the configuration.
 
@@ -192,7 +192,7 @@ Acquired data for city: San Francisco
   If you add the `writer` parameter to your tool, you won't be able to invoke the tool outside of a LangGraph execution context without providing a writer function.
 </Note>
 
-### Stream multiple modes
+## Stream multiple modes
 
 You can specify multiple streaming modes by passing streamMode as an array: `streamMode: ["updates", "messages", "custom"]`:
 
@@ -231,10 +231,16 @@ for await (const [streamMode, chunk] of await agent.stream(
 }
 ```
 
-### Disable streaming
+## Disable streaming
 
 In some applications you might need to disable streaming of individual tokens for a given model.
 
 This is useful in [multi-agent](/oss/javascript/langchain/multi-agent) systems to control which agents stream their output.
 
 See the [Models](/oss/javascript/langchain/models#disable-streaming) guide to learn how to disable streaming.
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/streaming.mdx)
+</Callout>

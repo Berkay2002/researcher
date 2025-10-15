@@ -1,53 +1,29 @@
 # Quickstart
 
 <Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](../releases/langchain-v1) release. Content is incomplete and subject to change.
+  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
 
   For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
 </Warning>
 
 This quickstart takes you from a simple setup to a fully functional AI agent in just a few minutes.
 
-## Install
-
-<CodeGroup>
-  ```bash npm theme={null}
-  npm install langchain@next @langchain/anthropic@next
-  ```
-
-  ```bash pnpm theme={null}
-  pnpm add langchain@next @langchain/anthropic@next
-  ```
-
-  ```bash yarn theme={null}
-  yarn add langchain@next @langchain/anthropic@next
-  ```
-
-  ```bash bun theme={null}
-  bun add langchain@next @langchain/anthropic@next
-  ```
-</CodeGroup>
-
 ## Build a basic agent
 
-Start by creating a simple agent that can answer questions and call tools.
-
-The agent will have the following components:
-
-* A language model (Claude Sonnet 4.5)
-* A simple tool (weather function)
-* A basic prompt
-* The ability to invoke it with messages
+Start by creating a simple agent that can answer questions and call tools. The agent will use Claude Sonnet 4.5 as its language model, a basic weather function as a tool, and a simple prompt to guide its behavior.
 
 ```ts  theme={null}
 import { createAgent, tool } from "langchain";
+import * as z from "zod";
 
 const getWeather = tool(
-  (city) => `It's always sunny in ${city}!`,
+  (input) => `It's always sunny in ${input.city}!`,
   {
     name: "get_weather",
     description: "Get the weather for a given city",
-    schema: z.string().describe("The city to get the weather for"),
+    schema: z.object({
+      city: z.string().describe("The city to get the weather for"),
+    }),
   }
 );
 
@@ -97,12 +73,12 @@ Let's walk through each step:
   </Step>
 
   <Step title="Create tools">
-    [Tools](/oss/javascript/langchain/tools) are functions your agent can call. They should be well-documented. Oftentimes tools will want to connect to external systems, and will rely on runtime configuration to do so. Notice here how the `getUserLocation` tool does exactly that:
+    [Tools](/oss/javascript/langchain/tools) are functions your agent can call. Oftentimes tools will want to connect to external systems, and will rely on runtime configuration to do so. Notice here how the `getUserLocation` tool does exactly that:
 
     ```ts  theme={null}
     import { type Runtime } from "@langchain/langgraph";
     import { tool } from "langchain";
-    import { z } from "zod";
+    import * as z from "zod";
 
     const getWeather = tool(
       (input) => `It's always sunny in ${input.city}!`,
@@ -115,15 +91,16 @@ Let's walk through each step:
       }
     );
 
+    type AgentRuntime = Runtime<{ user_id: string }>;
+
     const getUserLocation = tool(
-      (_, config: Runtime<{ user_id: string }>) => {
+      (_, config: AgentRuntime) => {
         const { user_id } = config.context;
         return user_id === "1" ? "Florida" : "SF";
       },
       {
         name: "get_user_location",
         description: "Retrieve user information based on user ID",
-        schema: z.object({}),
       }
     );
     ```
@@ -131,7 +108,7 @@ Let's walk through each step:
     <Note>
       [Zod](https://zod.dev/) is a library for validating and parsing pre-defined schemas. You can use it to define the input schema for your tools to make sure the agent only calls the tool with the correct arguments.
 
-      Alternatively, you can define the `schema` property as a JSON schema object. Keep in mind that JSON schemas *won't* be validated at runtime.
+      Alternatively, you can define the `schema` property as a [JSON schema](https://json-schema.org/overview/what-is-jsonschema) object. Keep in mind that JSON schemas **won't** be validated at runtime.
 
       <Accordion title="Example: Using JSON schema for tool input">
         ```ts  theme={null}
@@ -224,7 +201,7 @@ Let's walk through each step:
     );
     console.log(response.structuredResponse);
     // {
-    //   punny_response: "Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
+    //   punny_response: "Florida is still having a 'sun-derful' day ...",
     //   weather_conditions: "It's always sunny in Florida!"
     // }
 
@@ -235,7 +212,7 @@ Let's walk through each step:
     );
     console.log(thankYouResponse.structuredResponse);
     // {
-    //   punny_response: "You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
+    //   punny_response: "You're 'thund-erfully' welcome! ...",
     //   weather_conditions: undefined
     // }
     ```
@@ -247,7 +224,7 @@ Let's walk through each step:
   import { createAgent, tool } from "langchain";
   import { initChatModel } from "langchain/chat_models";
   import { MemorySaver, type Runtime } from "@langchain/langgraph";
-  import { z } from "zod";
+  import * as z from "zod";
 
   // Define system prompt
   const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
@@ -344,3 +321,9 @@ Congratulations! You now have an AI agent that can:
 * **Provide structured responses** in a consistent format
 * **Handle user-specific information** through context
 * **Maintain conversation state** across interactions
+
+***
+
+<Callout icon="pen-to-square" iconType="regular">
+  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/quickstart.mdx)
+</Callout>
