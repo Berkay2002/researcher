@@ -4,6 +4,7 @@
  * Compresses and cleans up research findings from the researcher's tool calls.
  * Preserves all relevant information while removing duplicates and irrelevant content.
  */
+/** biome-ignore-all lint/style/useBlockStatements: <> */
 
 import type { BaseMessage } from "@langchain/core/messages";
 import { AIMessage, HumanMessage } from "@langchain/core/messages";

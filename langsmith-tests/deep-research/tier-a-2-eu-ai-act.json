@@ -1,0 +1,8 @@
+{
+  "messages": [
+    {
+      "type": "human",
+      "content": "Explain how the EU AI Act classifies General Purpose AI (GPAI) models and what compliance obligations apply to providers of high-impact GPAI. Include timelines, thresholds (e.g., 10^25 FLOPs), and how this differs from high-risk AI systems."
+    }
+  ]
+}
