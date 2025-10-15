@@ -45,3 +45,7 @@ next-env.d.ts
 .claude/config.yaml
 
 #.mcp.json
+.langgraph_api/.langgraphjs_api.checkpointer.json
+.langgraph_api/.langgraphjs_api.store.json
+.langgraph_api/.langgraphjs_ops.json
+.langgraph_api/
