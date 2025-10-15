@@ -2,7 +2,6 @@ import { MessagesZodState } from "@langchain/langgraph";
 import { z } from "zod";
 import {
   SearchRunMetadataSchema,
-  TodoItemSchema,
   ToolCallMetadataSchema,
 } from "../../types/react-agent";
 
@@ -18,12 +17,14 @@ const AgentContextSchema = z
   })
   .optional();
 
-export const ReactAgentStateSchema = z.object({
-  messages: MessagesZodState.shape.messages,
-  todos: z.array(TodoItemSchema).default([]),
-  context: AgentContextSchema,
-  recentToolCalls: z.array(ToolCallMetadataSchema).default([]),
-  searchRuns: z.array(SearchRunMetadataSchema).default([]),
-});
+export const ReactAgentStateSchema = z
+  .object({
+    messages: MessagesZodState.shape.messages,
+    // Note: todoListMiddleware will add its own todos field
+    context: AgentContextSchema,
+    recentToolCalls: z.array(ToolCallMetadataSchema).default([]),
+    searchRuns: z.array(SearchRunMetadataSchema).default([]),
+  })
+  .passthrough(); // Allow todoListMiddleware to add its own fields
 
 export type ReactAgentState = z.infer<typeof ReactAgentStateSchema>;
