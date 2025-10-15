@@ -1,5 +1,5 @@
 import { MessagesZodState } from "@langchain/langgraph";
-import { createAgent, toolStrategy } from "langchain";
+import { createAgent, todoListMiddleware, toolStrategy } from "langchain";
 import { z } from "zod";
 import { createLLM } from "../../../shared/configs/llm";
 import { SearchRunMetadataSchema } from "../../../types/react-agent";
@@ -103,10 +103,12 @@ const ResearchOutputSchema = z.object({
 
 export type ResearchOutput = z.infer<typeof ResearchOutputSchema>;
 
-const ResearchSubagentStateSchema = z.object({
-  messages: MessagesZodState.shape.messages,
-  searchRuns: z.array(SearchRunMetadataSchema).default([]),
-});
+const ResearchSubagentStateSchema = z
+  .object({
+    messages: MessagesZodState.shape.messages,
+    searchRuns: z.array(SearchRunMetadataSchema).default([]),
+  })
+  .passthrough(); // Allow todoListMiddleware to add its own fields
 
 export type ResearchSubagentState = z.infer<typeof ResearchSubagentStateSchema>;
 
@@ -118,6 +120,10 @@ export function createResearchSubagent() {
     tools,
     stateSchema: ResearchSubagentStateSchema,
     prompt: RESEARCH_SUBAGENT_SYSTEM_PROMPT,
+    middleware: [
+      // Built-in todo list middleware for task planning and tracking
+      todoListMiddleware(),
+    ],
     // Use toolStrategy for Gemini compatibility (Gemini doesn't support native structured output)
     responseFormat: toolStrategy(ResearchOutputSchema),
   };

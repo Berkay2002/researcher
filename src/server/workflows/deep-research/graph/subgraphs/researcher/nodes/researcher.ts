@@ -7,6 +7,7 @@
 
 import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
+import type { AgentMiddleware } from "langchain";
 import {
   ClearToolUsesEdit,
   contextEditingMiddleware,
@@ -39,8 +40,8 @@ export async function researcher(
     .replace("{mcp_prompt}", configuration.mcp_prompt || "");
 
   // Prepare middleware
-  // biome-ignore lint/suspicious/noEvolvingTypes: <Evolving based on config>
-  const middleware = [];
+  // biome-ignore lint/suspicious/noExplicitAny: <Matches langchain middleware return type>
+  const middleware: AgentMiddleware<undefined, undefined, any>[] = [];
 
   if (configuration.use_tool_call_limit) {
     middleware.push(
@@ -53,16 +54,9 @@ export async function researcher(
   }
 
   if (configuration.use_context_editing) {
-    const CLEAR_THRESHOLD_PERCENT = 0.7; // Extract magic number to constant
     middleware.push(
       contextEditingMiddleware({
-        edits: [
-          new ClearToolUsesEdit({
-            maxTokens: Math.floor(
-              configuration.research_model_max_tokens * CLEAR_THRESHOLD_PERCENT
-            ),
-          }),
-        ],
+        edits: [new ClearToolUsesEdit({})],
       })
     );
   }

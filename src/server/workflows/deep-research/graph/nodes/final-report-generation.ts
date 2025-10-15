@@ -4,13 +4,11 @@
  * Generate the final comprehensive research report with retry logic for token limits.
  */
 
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
+import type { AgentMiddleware } from "langchain";
 import { createAgent, modelFallbackMiddleware } from "langchain";
-import { createLLM } from "@/server/shared/configs/llm";
 import { getConfiguration } from "../../configuration";
-import { finalReportGenerationPrompt } from "../../prompts";
-import { getTodayStr } from "../../utils";
 import type { AgentState } from "../state";
 
 /**
@@ -25,12 +23,10 @@ export async function finalReportGeneration(
   state: AgentState,
   config?: RunnableConfig
 ): Promise<Partial<AgentState>> {
-  // Step 1: Extract research findings and prepare state cleanup
-  const notes = state.notes ?? [];
+  // Step 1: Prepare state cleanup
   const clearedState = {
     notes: { type: "override", value: [] } as unknown as string[],
   };
-  const findings = notes.join("\n");
 
   // Step 2: Configure the final report generation model
   const configuration = getConfiguration(config);
@@ -38,21 +34,19 @@ export async function finalReportGeneration(
   const primaryModel = configuration.final_report_model;
 
   // Step 3: Prepare middleware for model fallback
-  const middleware = [];
+  // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
+  const middleware: AgentMiddleware<undefined, undefined, any>[] = [];
 
-  if (configuration.use_model_fallback && configuration.fallback_models.length > 0) {
-    middleware.push(
-      modelFallbackMiddleware(...configuration.fallback_models)
-    );
+  if (
+    configuration.use_model_fallback &&
+    configuration.fallback_models.length > 0
+  ) {
+    middleware.push(modelFallbackMiddleware(...configuration.fallback_models));
   }
 
   // Step 4: Create agent with middleware
   const agent = createAgent({
     model: primaryModel,
-    instructions: finalReportGenerationPrompt
-      .replace("{date}", getTodayStr())
-      .replace("{research_brief}", state.research_brief ?? "")
-      .replace("{findings}", findings),
     middleware,
   });
 
@@ -63,22 +57,33 @@ export async function finalReportGeneration(
 
   // Step 6: Invoke agent to generate the final report
   try {
-    const response = await agent.invoke({
-      messages: [
-        {
-          role: "user",
-          content: `Generate a comprehensive research report based on the following context:\n\n${messagesBuffer}`,
-        },
-      ],
-    }, config);
+    const response = await agent.invoke(
+      {
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are a research assistant. Generate a comprehensive research report based on the provided context.",
+          },
+          {
+            role: "user",
+            content: `Generate a comprehensive research report based on the following context:\n\n${messagesBuffer}`,
+          },
+        ],
+      },
+      config
+    );
 
     // Return successful report generation
     const lastMessage = response.messages?.at(-1);
-    const finalReportContent = lastMessage?.content || "Report generation completed.";
+    const finalReportContent =
+      lastMessage?.content || "Report generation completed.";
 
     return {
       final_report: String(finalReportContent),
-      messages: response.messages || [new AIMessage({ content: finalReportContent })],
+      messages: response.messages || [
+        new AIMessage({ content: finalReportContent }),
+      ],
       ...clearedState,
     };
   } catch (error) {

@@ -74,7 +74,8 @@ export async function supervisor(
     );
 
   // Prepare middleware
-  const middleware = [];
+  // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
+  const middleware: any[] = [];
 
   if (configuration.use_model_call_limit) {
     middleware.push(
@@ -89,9 +90,7 @@ export async function supervisor(
   if (configuration.use_context_editing) {
     middleware.push(
       contextEditingMiddleware({
-        edits: [
-          new ClearToolUsesEdit({}),
-        ],
+        edits: [new ClearToolUsesEdit({})],
       })
     );
   }
