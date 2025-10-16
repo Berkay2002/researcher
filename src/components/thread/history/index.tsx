@@ -1,3 +1,7 @@
+/** biome-ignore-all lint/suspicious/noConsole: <Ignore> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <Ignore> */
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+
 import type { Thread } from "@langchain/langgraph-sdk";
 import { PanelLeftCloseIcon, PanelLeftOpenIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
@@ -93,40 +97,53 @@ export default function ThreadHistory() {
 
   return (
     <>
-      <div className="hidden h-full flex-col lg:flex">
-        <PanelHeader
-          actions={
-            <Button
-              aria-label="Hide threads"
-              className="size-7 rounded-lg hover:bg-accent/60"
-              onClick={() => setChatHistoryOpen((p) => !p)}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <PanelLeftCloseIcon className="size-5" />
-            </Button>
-          }
-          subtitle={`${threads.length} total`}
-          title="Thread History"
-        />
-        <PanelContent className="space-y-2">
-          {threadsLoading ? (
-            <ThreadHistoryLoading />
-          ) : threads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <p className="text-muted-foreground text-sm">No threads yet</p>
-            </div>
-          ) : (
-            <ThreadList threads={threads} />
-          )}
-        </PanelContent>
-        <PanelFooter className="text-center">
-          <p className="text-muted-foreground text-xs">
-            {threads.length} thread{threads.length !== 1 ? "s" : ""}
-          </p>
-        </PanelFooter>
-      </div>
+      {chatHistoryOpen ? (
+        <>
+          <PanelHeader
+            actions={
+              <Button
+                aria-label="Hide threads"
+                className="size-7 rounded-lg hover:bg-accent/60"
+                onClick={() => setChatHistoryOpen((p) => !p)}
+                size="icon"
+                type="button"
+                variant="ghost"
+              >
+                <PanelLeftCloseIcon className="size-5" />
+              </Button>
+            }
+            subtitle={`${threads.length} total`}
+            title="Thread History"
+          />
+          <PanelContent className="space-y-2">
+            {threadsLoading && <ThreadHistoryLoading />}
+            {!threadsLoading && threads.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <p className="text-muted-foreground text-sm">No threads yet</p>
+              </div>
+            )}
+            {!threadsLoading && threads.length > 0 && (
+              <ThreadList threads={threads} />
+            )}
+          </PanelContent>
+          <PanelFooter className="text-center">
+            <p className="text-muted-foreground text-xs">
+              {threads.length} thread{threads.length !== 1 ? "s" : ""}
+            </p>
+          </PanelFooter>
+        </>
+      ) : (
+        <Button
+          aria-label="Show threads"
+          className="size-9 rounded-lg hover:bg-accent/60"
+          onClick={() => setChatHistoryOpen(true)}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <PanelLeftOpenIcon className="size-5" />
+        </Button>
+      )}
 
       {/* Mobile Sheet */}
       <div className="lg:hidden">

@@ -57,7 +57,7 @@ export function AppShell({
           <div
             className={cn(
               "flex h-full w-full flex-col overflow-hidden",
-              leftPanelCollapsed && "items-center"
+              leftPanelCollapsed && "items-center justify-start pt-4"
             )}
           >
             {leftPanel}
