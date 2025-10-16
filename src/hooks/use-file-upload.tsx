@@ -1,7 +1,15 @@
-import type { Base64ContentBlock } from "@langchain/core/messages";
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/correctness/noUnusedFunctionParameters: <Ignore> */
+/** biome-ignore-all lint/nursery/noShadow: <Ignore> */
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
+/** biome-ignore-all lint/style/useForOf: <Ignore> */
+/** biome-ignore-all lint/correctness/useExhaustiveDependencies: <Ignore> */
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+
+import type { ContentBlock } from "@langchain/core/messages";
 import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { fileToContentBlock } from "@/lib/multimodal-utils";
+import { fileToContentBlock } from "../lib/multimodal-utils";
 
 export const SUPPORTED_FILE_TYPES = [
   "image/jpeg",
@@ -11,25 +19,29 @@ export const SUPPORTED_FILE_TYPES = [
   "application/pdf",
 ];
 
+type MultimodalBlock =
+  | ContentBlock.Multimodal.Image
+  | ContentBlock.Multimodal.File;
+
 interface UseFileUploadOptions {
-  initialBlocks?: Base64ContentBlock[];
+  initialBlocks?: MultimodalBlock[];
 }
 
 export function useFileUpload({
   initialBlocks = [],
 }: UseFileUploadOptions = {}) {
   const [contentBlocks, setContentBlocks] =
-    useState<Base64ContentBlock[]>(initialBlocks);
+    useState<MultimodalBlock[]>(initialBlocks);
   const dropRef = useRef<HTMLDivElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const dragCounter = useRef(0);
 
-  const isDuplicate = (file: File, blocks: Base64ContentBlock[]) => {
+  const isDuplicate = (file: File, blocks: MultimodalBlock[]) => {
     if (file.type === "application/pdf") {
       return blocks.some(
         (b) =>
           b.type === "file" &&
-          b.mime_type === "application/pdf" &&
+          b.mimeType === "application/pdf" &&
           b.metadata?.filename === file.name
       );
     }
@@ -38,7 +50,7 @@ export function useFileUpload({
         (b) =>
           b.type === "image" &&
           b.metadata?.name === file.name &&
-          b.mime_type === file.type
+          b.mimeType === file.type
       );
     }
     return false;
@@ -72,7 +84,7 @@ export function useFileUpload({
       );
     }
 
-    const newBlocks = uniqueFiles.length
+    const newBlocks: MultimodalBlock[] = uniqueFiles.length
       ? await Promise.all(uniqueFiles.map(fileToContentBlock))
       : [];
     setContentBlocks((prev) => [...prev, ...newBlocks]);
@@ -132,7 +144,7 @@ export function useFileUpload({
         );
       }
 
-      const newBlocks = uniqueFiles.length
+      const newBlocks: MultimodalBlock[] = uniqueFiles.length
         ? await Promise.all(uniqueFiles.map(fileToContentBlock))
         : [];
       setContentBlocks((prev) => [...prev, ...newBlocks]);
@@ -225,7 +237,7 @@ export function useFileUpload({
         return contentBlocks.some(
           (b) =>
             b.type === "file" &&
-            b.mime_type === "application/pdf" &&
+            b.mimeType === "application/pdf" &&
             b.metadata?.filename === file.name
         );
       }
@@ -234,7 +246,7 @@ export function useFileUpload({
           (b) =>
             b.type === "image" &&
             b.metadata?.name === file.name &&
-            b.mime_type === file.type
+            b.mimeType === file.type
         );
       }
       return false;
@@ -252,7 +264,9 @@ export function useFileUpload({
       );
     }
     if (uniqueFiles.length > 0) {
-      const newBlocks = await Promise.all(uniqueFiles.map(fileToContentBlock));
+      const newBlocks: MultimodalBlock[] = await Promise.all(
+        uniqueFiles.map(fileToContentBlock)
+      );
       setContentBlocks((prev) => [...prev, ...newBlocks]);
     }
   };

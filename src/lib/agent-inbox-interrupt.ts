@@ -1,3 +1,6 @@
+// NOTE: The deprecation warning suggests using "langchain/prebuilt/interrupt",
+// but that export doesn't exist in langchain@1.0.0-alpha.9 yet.
+// Keeping the working import from @langchain/langgraph/prebuilt for now.
 import type { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 
 export function isAgentInboxInterruptSchema(

@@ -1,10 +1,10 @@
-import type { Base64ContentBlock } from "@langchain/core/messages";
+import type { ContentBlock } from "@langchain/core/messages";
 import { toast } from "sonner";
 
 // Returns a Promise of a typed multimodal block for images or PDFs
 export async function fileToContentBlock(
   file: File
-): Promise<Base64ContentBlock> {
+): Promise<ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File> {
   const supportedImageTypes = [
     "image/jpeg",
     "image/png",
@@ -25,8 +25,7 @@ export async function fileToContentBlock(
   if (supportedImageTypes.includes(file.type)) {
     return {
       type: "image",
-      source_type: "base64",
-      mime_type: file.type,
+      mimeType: file.type,
       data,
       metadata: { name: file.name },
     };
@@ -35,14 +34,14 @@ export async function fileToContentBlock(
   // PDF
   return {
     type: "file",
-    source_type: "base64",
-    mime_type: "application/pdf",
+    mimeType: "application/pdf",
     data,
     metadata: { filename: file.name },
   };
 }
 
 // Helper to convert File to base64 string
+// biome-ignore lint/suspicious/useAwait: <Ignore>
 export async function fileToBase64(file: File): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -56,34 +55,23 @@ export async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// Type guard for Base64ContentBlock
-export function isBase64ContentBlock(
+// Type guard for multimodal content blocks (Image or File)
+export function isMultimodalContentBlock(
   block: unknown
-): block is Base64ContentBlock {
+): block is ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File {
+  // biome-ignore lint/style/useBlockStatements: <Ignore>
   if (typeof block !== "object" || block === null || !("type" in block))
     return false;
-  // file type (legacy)
-  if (
-    (block as { type: unknown }).type === "file" &&
-    "source_type" in block &&
-    (block as { source_type: unknown }).source_type === "base64" &&
-    "mime_type" in block &&
-    typeof (block as { mime_type?: unknown }).mime_type === "string" &&
-    ((block as { mime_type: string }).mime_type.startsWith("image/") ||
-      (block as { mime_type: string }).mime_type === "application/pdf")
-  ) {
-    return true;
+
+  const blockType = (block as { type: unknown }).type;
+
+  // Check for image or file type with data
+  if ((blockType === "image" || blockType === "file") && "data" in block) {
+    return typeof (block as { data: unknown }).data === "string";
   }
-  // image type (new)
-  if (
-    (block as { type: unknown }).type === "image" &&
-    "source_type" in block &&
-    (block as { source_type: unknown }).source_type === "base64" &&
-    "mime_type" in block &&
-    typeof (block as { mime_type?: unknown }).mime_type === "string" &&
-    (block as { mime_type: string }).mime_type.startsWith("image/")
-  ) {
-    return true;
-  }
+
   return false;
 }
+
+// Alias for backward compatibility
+export const isBase64ContentBlock = isMultimodalContentBlock;

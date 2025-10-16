@@ -1,37 +1,18 @@
 import type { Metadata } from "next";
-import { Fira_Code, Merriweather, Oxanium } from "next/font/google";
 import "../styles/tailwind.css";
+import { Inter } from "next/font/google";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+import type React from "react";
 
-const oxanium = Oxanium({
-  variable: "--font-oxanium",
+const inter = Inter({
   subsets: ["latin"],
-  display: "swap",
-});
-
-const merriweather = Merriweather({
-  variable: "--font-merriweather",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const firaCode = Fira_Code({
-  variable: "--font-fira-code",
-  subsets: ["latin"],
+  preload: true,
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Research Assistant - AI-Powered Research with Citations",
-  description:
-    "Transform broad questions into grounded, cited reports. Multi-agent research system with human-in-the-loop planning powered by LangGraph and AI.",
-  keywords: [
-    "research",
-    "AI assistant",
-    "citations",
-    "LangGraph",
-    "multi-agent",
-    "fact-checking",
-  ],
+  title: "Agent Chat",
+  description: "Agent Chat UX by LangChain",
 };
 
 export default function RootLayout({
@@ -41,10 +22,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${oxanium.variable} ${merriweather.variable} ${firaCode.variable} antialiased`}
-      >
-        {children}
+      <body className={inter.className}>
+        <NuqsAdapter>{children}</NuqsAdapter>
       </body>
     </html>
   );
