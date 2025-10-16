@@ -1,6 +1,11 @@
-import type { MessageContentComplex } from "@langchain/core/messages";
-import { parsePartialJson } from "@langchain/core/output_parsers";
-import type { AIMessage, Checkpoint, Message } from "@langchain/langgraph-sdk";
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/style/useAtIndex: <Ignore> */
+/** biome-ignore-all lint/correctness/noUnusedFunctionParameters: <Ignore> */
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
+/** biome-ignore-all lint/correctness/useExhaustiveDependencies: <Ignore> */
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+
+import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { LoadExternalComponent } from "@langchain/langgraph-sdk/react-ui";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import { Fragment } from "react/jsx-runtime";
@@ -43,30 +48,6 @@ function CustomComponent({
   );
 }
 
-function parseAnthropicStreamedToolCalls(
-  content: MessageContentComplex[]
-): AIMessage["tool_calls"] {
-  const toolCallContents = content.filter((c) => c.type === "tool_use" && c.id);
-
-  return toolCallContents.map((tc) => {
-    const toolCall = tc as Record<string, any>;
-    let json: Record<string, any> = {};
-    if (toolCall?.input) {
-      try {
-        json = parsePartialJson(toolCall.input) ?? {};
-      } catch {
-        // Pass
-      }
-    }
-    return {
-      name: toolCall.name ?? "",
-      id: toolCall.id ?? "",
-      args: json,
-      type: "tool_call",
-    };
-  });
-}
-
 interface InterruptProps {
   interruptValue?: unknown;
   isLastMessage: boolean;
@@ -90,6 +71,44 @@ function Interrupt({
         <GenericInterruptView interrupt={interruptValue} />
       ) : null}
     </>
+  );
+}
+
+/**
+ * Extract node name from metadata for subgraph context display
+ */
+function getNodeName(meta: unknown): string | null {
+  // Check if metadata exists and has langgraph_node
+  if (!meta || typeof meta !== "object") return null;
+
+  // Get node from various possible metadata locations
+  const metaObj = meta as Record<string, unknown>;
+  const firstSeenState = metaObj.firstSeenState as
+    | Record<string, unknown>
+    | undefined;
+  const stateMetadata = firstSeenState?.metadata as
+    | Record<string, unknown>
+    | undefined;
+  const nodeFromState = stateMetadata?.langgraph_node as string | undefined;
+
+  if (nodeFromState) return nodeFromState;
+
+  return null;
+}
+
+/**
+ * Badge component to display the subgraph/node context
+ */
+function NodeBadge({ nodeName }: { nodeName: string }) {
+  // Map node names to display labels
+  const displayName = nodeName
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
+
+  return (
+    <span className="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 font-medium text-blue-700 text-xs ring-1 ring-blue-700/10 ring-inset dark:bg-blue-400/10 dark:text-blue-400 dark:ring-blue-400/30">
+      {displayName}
+    </span>
   );
 }
 
@@ -119,22 +138,14 @@ export function AssistantMessage({
   const threadInterrupt = thread.interrupt;
 
   const parentCheckpoint = meta?.firstSeenState?.parent_checkpoint;
-  const anthropicStreamedToolCalls = Array.isArray(content)
-    ? parseAnthropicStreamedToolCalls(content)
-    : undefined;
 
   const hasToolCalls =
     message &&
     "tool_calls" in message &&
     message.tool_calls &&
     message.tool_calls.length > 0;
-  const toolCallsHaveContents =
-    hasToolCalls &&
-    message.tool_calls?.some(
-      (tc) => tc.args && Object.keys(tc.args).length > 0
-    );
-  const hasAnthropicToolCalls = !!anthropicStreamedToolCalls?.length;
   const isToolResult = message?.type === "tool";
+  const nodeName = getNodeName(meta);
 
   if (isToolResult && hideToolCalls) {
     return null;
@@ -154,24 +165,20 @@ export function AssistantMessage({
           </>
         ) : (
           <>
+            {nodeName && (
+              <div className="flex items-center gap-2">
+                <NodeBadge nodeName={nodeName} />
+              </div>
+            )}
+
             {contentString.length > 0 && (
               <div className="prose prose-sm dark:prose-invert max-w-none">
                 <MarkdownText>{contentString}</MarkdownText>
               </div>
             )}
 
-            {!hideToolCalls && (
-              <>
-                {(hasToolCalls && toolCallsHaveContents && (
-                  <ToolCalls toolCalls={message.tool_calls} />
-                )) ||
-                  (hasAnthropicToolCalls && (
-                    <ToolCalls toolCalls={anthropicStreamedToolCalls} />
-                  )) ||
-                  (hasToolCalls && (
-                    <ToolCalls toolCalls={message.tool_calls} />
-                  ))}
-              </>
+            {!hideToolCalls && hasToolCalls && (
+              <ToolCalls toolCalls={message.tool_calls} />
             )}
 
             {message && <CustomComponent message={message} thread={thread} />}

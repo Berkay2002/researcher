@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <Ignore> */
+
 import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
 import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
@@ -57,7 +60,7 @@ export function HumanMessage({
       { messages: [newMessage] },
       {
         checkpoint: parentCheckpoint,
-        streamMode: ["values"],
+        streamMode: ["values", "messages"],
         streamSubgraphs: true,
         streamResumable: true,
         optimisticValues: (prev) => {

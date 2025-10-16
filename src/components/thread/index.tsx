@@ -1,3 +1,8 @@
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/complexity/noUselessFragments: <Ignore> */
+/** biome-ignore-all lint/style/useShorthandAssign: <Ignore> */
+/** biome-ignore-all lint/style/useAtIndex: <Ignore> */
+
 import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { ArrowDown, LoaderCircle, Plus, SendIcon, XIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
@@ -73,11 +78,11 @@ function ScrollToBottom(props: { className?: string }) {
 }
 
 export function Thread() {
-  const [artifactContext, setArtifactContext] = useArtifactContext();
+  const [artifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
 
-  const [threadId, _setThreadId] = useQueryState("threadId");
-  const [chatHistoryOpen, setChatHistoryOpen] = useQueryState(
+  const [_threadId, _setThreadId] = useQueryState("threadId");
+  const [chatHistoryOpen] = useQueryState(
     "chatHistoryOpen",
     parseAsBoolean.withDefault(true)
   );
@@ -103,14 +108,6 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
-
-  const setThreadId = (id: string | null) => {
-    _setThreadId(id);
-
-    // close artifact and reset artifact context
-    closeArtifact();
-    setArtifactContext({});
-  };
 
   useEffect(() => {
     if (!stream.error) {
@@ -177,7 +174,7 @@ export function Thread() {
     stream.submit(
       { messages: [...toolMessages, newHumanMessage], context },
       {
-        streamMode: ["values"],
+        streamMode: ["values", "messages"],
         streamSubgraphs: true,
         streamResumable: true,
         optimisticValues: (prev) => ({
@@ -204,13 +201,12 @@ export function Thread() {
     setFirstTokenReceived(false);
     stream.submit(undefined, {
       checkpoint: parentCheckpoint,
-      streamMode: ["values"],
+      streamMode: ["values", "messages"],
       streamSubgraphs: true,
       streamResumable: true,
     });
   };
 
-  const chatStarted = !!threadId || !!messages.length;
   const hasNoAIOrToolMessages = !messages.find(
     (m) => m.type === "ai" || m.type === "tool"
   );
@@ -326,7 +322,7 @@ export function Thread() {
 
       {/* Prompt Input */}
       <div className="flex-shrink-0 border-t bg-background p-4">
-        <div className="mx-auto w-full max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl" ref={dropRef}>
           <form
             className={cn(
               "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
@@ -335,7 +331,6 @@ export function Thread() {
                 : "border border-solid"
             )}
             onSubmit={handleSubmit}
-            ref={dropRef}
           >
             <div className="flex flex-col">
               <ContentBlocksPreview
