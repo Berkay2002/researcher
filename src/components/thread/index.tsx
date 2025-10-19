@@ -270,7 +270,7 @@ export function Thread() {
 
   // Center panel - Main conversation
   const centerPanel = (
-    <div className="flex h-full min-h-0 flex-1 flex-col">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col">
       {/* Conversation Area */}
       <StickToBottom className="relative flex-1 overflow-y-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>div::-webkit-scrollbar]:hidden [&>div]:[-ms-overflow-style:none] [&>div]:[scrollbar-width:none]">
         <StickyToBottomContent
@@ -325,7 +325,7 @@ export function Thread() {
             </>
           }
           contentClassName={cn(
-            "mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-6"
+            "relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-6"
           )}
           footer={
             <div className="sticky bottom-0">
@@ -336,11 +336,14 @@ export function Thread() {
       </StickToBottom>
 
       {/* Prompt Input */}
-      <div className="flex-shrink-0 bg-transparent px-4 pb-3">
-        <div className="mx-auto w-full max-w-3xl" ref={dropRef}>
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-transparent pb-3">
+        <div
+          className="pointer-events-auto relative mx-auto w-full max-w-3xl px-4"
+          ref={dropRef}
+        >
           <form
             className={cn(
-              "flex w-full flex-col gap-3",
+              "relative z-20 flex w-full flex-col gap-3",
               dragOver && "rounded-xl border-2 border-primary border-dotted p-3"
             )}
             onSubmit={handleSubmit}
@@ -373,7 +376,7 @@ export function Thread() {
                 </ButtonGroup>
 
                 <ButtonGroup className="flex-1">
-                  <InputGroup className="flex-1">
+                  <InputGroup className="flex-1 bg-background">
                     <InputGroupInput
                       onChange={(event) => setInput(event.target.value)}
                       onKeyDown={(event) => {
