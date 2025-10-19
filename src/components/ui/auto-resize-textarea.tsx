@@ -9,6 +9,7 @@ export interface AutoResizeTextareaProps
   extends React.ComponentProps<typeof TextareaAutosize> {
   maxHeightClassName?: string;
   invalid?: boolean;
+  onHeightChange?: (height: number) => void;
 }
 
 // biome-ignore lint/nursery/noReactForwardRef: <It is fine>
@@ -21,8 +22,10 @@ export const AutoResizeTextarea = React.forwardRef<
       className,
       maxHeightClassName = "max-h-[50vh]",
       invalid,
+      onHeightChange,
       onChange,
       onInput,
+      onPaste,
       minRows = 1,
       maxRows = 12,
       ...props
@@ -30,36 +33,67 @@ export const AutoResizeTextarea = React.forwardRef<
     forwardedRef
   ) => {
     const innerRef = React.useRef<HTMLTextAreaElement | null>(null);
+    const lastReportedHeightRef = React.useRef<number | null>(null);
     const [clamped, setClamped] = React.useState(false);
 
     const measure = React.useCallback(() => {
       const el = innerRef.current;
       // biome-ignore lint/style/useBlockStatements: <Ignore>
       if (!el) return;
-      const isClamped = el.scrollHeight > el.clientHeight + 1;
+      const clientHeight = el.clientHeight;
+      const scrollHeight = el.scrollHeight;
+      const isClamped = scrollHeight > clientHeight + 1;
       if (isClamped !== clamped) {
         setClamped(isClamped);
       }
-    }, [clamped]);
+
+      if (onHeightChange) {
+        const reportedHeight = isClamped
+          ? clientHeight
+          : Math.max(clientHeight, scrollHeight);
+
+        if (lastReportedHeightRef.current !== reportedHeight) {
+          lastReportedHeightRef.current = reportedHeight;
+          onHeightChange(reportedHeight);
+        }
+      }
+    }, [clamped, onHeightChange]);
+
+    const scheduleMeasure = React.useCallback(() => {
+      queueMicrotask(() => {
+        measure();
+      });
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => {
+          measure();
+        });
+      }
+      setTimeout(() => {
+        measure();
+      }, 0);
+    }, [measure]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: <Ignore>
-    React.useEffect(() => {
-      queueMicrotask(measure);
-    }, [measure, props.value]);
+    React.useLayoutEffect(() => {
+      scheduleMeasure();
+    }, [scheduleMeasure, props.value]);
 
     const composedRef = React.useCallback(
       (node: HTMLTextAreaElement | null) => {
         innerRef.current = node;
+        if (!node) {
+          lastReportedHeightRef.current = null;
+        }
         if (typeof forwardedRef === "function") {
           forwardedRef(node);
         } else if (forwardedRef) {
           forwardedRef.current = node;
         }
         if (node) {
-          queueMicrotask(measure);
+          scheduleMeasure();
         }
       },
-      [forwardedRef, measure]
+      [forwardedRef, scheduleMeasure]
     );
 
     return (
@@ -78,11 +112,15 @@ export const AutoResizeTextarea = React.forwardRef<
         minRows={minRows}
         onChange={(event) => {
           onChange?.(event);
-          queueMicrotask(measure);
+          scheduleMeasure();
         }}
         onInput={(event) => {
           onInput?.(event);
-          queueMicrotask(measure);
+          scheduleMeasure();
+        }}
+        onPaste={(event) => {
+          onPaste?.(event);
+          scheduleMeasure();
         }}
         ref={composedRef}
         style={{

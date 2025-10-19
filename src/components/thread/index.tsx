@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/style/noMagicNumbers: <Ignore> */
 /** biome-ignore-all lint/style/noNestedTernary: <Ignore> */
 /** biome-ignore-all lint/complexity/noUselessFragments: <Ignore> */
 /** biome-ignore-all lint/style/useShorthandAssign: <Ignore> */
@@ -8,9 +9,12 @@ import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
 import { ArrowDown, LoaderCircle, Plus, WrenchIcon, XIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import {
+  type CSSProperties,
   type FormEvent,
   type ReactNode,
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -50,6 +54,7 @@ function StickyToBottomContent(props: {
   footer?: ReactNode;
   className?: string;
   contentClassName?: string;
+  contentStyle?: CSSProperties;
 }) {
   const context = useStickToBottomContext();
   return (
@@ -58,7 +63,11 @@ function StickyToBottomContent(props: {
       ref={context.scrollRef}
       style={{ width: "100%", height: "100%" }}
     >
-      <div className={props.contentClassName} ref={context.contentRef}>
+      <div
+        className={props.contentClassName}
+        ref={context.contentRef}
+        style={props.contentStyle}
+      >
         {props.content}
       </div>
 
@@ -99,6 +108,11 @@ export function Thread() {
     parseAsBoolean.withDefault(false)
   );
   const [input, setInput] = useState("");
+  const [isInputExpanded, setIsInputExpanded] = useState(false);
+  const [promptHeight, setPromptHeight] = useState(0);
+  const baseInputHeight = useRef<number | null>(null);
+  const EXPANSION_THRESHOLD = 8;
+  const promptContainerRef = useRef<HTMLDivElement | null>(null);
   const {
     contentBlocks,
     setContentBlocks,
@@ -119,6 +133,37 @@ export function Thread() {
   const isLoading = stream.isLoading;
 
   const lastError = useRef<string | undefined>(undefined);
+
+  const updatePromptHeight = useCallback(() => {
+    const nextHeight = promptContainerRef.current?.offsetHeight ?? 0;
+    setPromptHeight((prev) => (prev !== nextHeight ? nextHeight : prev));
+  }, []);
+
+  useLayoutEffect(() => {
+    updatePromptHeight();
+  }, [updatePromptHeight]);
+
+  useEffect(() => {
+    const element = promptContainerRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+
+    const observer = new ResizeObserver(() => {
+      updatePromptHeight();
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [updatePromptHeight]);
+
+  useEffect(() => {
+    if (input.trim().length === 0 && contentBlocks.length === 0) {
+      setIsInputExpanded(false);
+      baseInputHeight.current = null;
+      queueMicrotask(() => {
+        updatePromptHeight();
+      });
+    }
+  }, [contentBlocks.length, input, updatePromptHeight]);
 
   useEffect(() => {
     if (!stream.error) {
@@ -204,6 +249,106 @@ export function Thread() {
     setContentBlocks([]);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <Ignore>
+  const handleInputHeightChange = useCallback(
+    (height: number) => {
+      if (baseInputHeight.current === null) {
+        baseInputHeight.current = height;
+      }
+
+      const baseHeight = baseInputHeight.current ?? height;
+      const expanded = height > baseHeight + EXPANSION_THRESHOLD;
+
+      if (!expanded) {
+        baseInputHeight.current = height;
+      }
+
+      setIsInputExpanded(expanded);
+      queueMicrotask(() => {
+        updatePromptHeight();
+      });
+    },
+    [EXPANSION_THRESHOLD, updatePromptHeight]
+  );
+
+  const renderUploadButton = () => (
+    <Button
+      aria-label="Upload files"
+      className="size-10 shrink-0 rounded-lg hover:text-primary"
+      onClick={() => fileInputRef.current?.click()}
+      size="icon"
+      type="button"
+      variant="ghost"
+    >
+      <Plus className="size-5" />
+    </Button>
+  );
+
+  const renderToolButtons = () => (
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+            aria-pressed={toolsVisible}
+            className="size-10 rounded-lg hover:text-primary"
+            data-active={toolsVisible}
+            onClick={() => setHideToolCalls(!(hideToolCalls ?? false))}
+            onMouseEnter={() => setToolToggleHovered(true)}
+            onMouseLeave={() => setToolToggleHovered(false)}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <WrenchIcon
+              className={cn(
+                "size-5 transition-colors",
+                toolsVisible
+                  ? toolToggleHovered
+                    ? "text-muted-foreground"
+                    : "text-primary"
+                  : toolToggleHovered
+                    ? "text-primary"
+                    : "text-muted-foreground"
+              )}
+            />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+        </TooltipContent>
+      </Tooltip>
+
+      {stream.isLoading ? (
+        <Button
+          aria-label="Cancel streaming"
+          className="size-10 rounded-lg"
+          onClick={() => stream.stop()}
+          size="icon"
+          type="button"
+          variant="ghost"
+        >
+          <LoaderCircle className="size-5 animate-spin" />
+        </Button>
+      ) : null}
+    </>
+  );
+
+  const setPromptContainerRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      dropRef.current = node;
+      promptContainerRef.current = node;
+      if (node) {
+        queueMicrotask(() => {
+          updatePromptHeight();
+        });
+      } else {
+        updatePromptHeight();
+      }
+    },
+    [dropRef, updatePromptHeight]
+  );
+
   const handleRegenerate = (
     parentCheckpoint: Checkpoint | null | undefined
   ) => {
@@ -265,6 +410,7 @@ export function Thread() {
   ) : undefined;
 
   // Center panel - Main conversation
+  const computedBottomPadding = Math.max(promptHeight + 24, 96);
   const centerPanel = (
     <div className="relative flex h-full min-h-0 flex-1 flex-col">
       {/* Conversation Area */}
@@ -323,6 +469,7 @@ export function Thread() {
           contentClassName={cn(
             "relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-6 pb-24"
           )}
+          contentStyle={{ paddingBottom: computedBottomPadding }}
           footer={
             <div className="sticky bottom-0">
               <ScrollToBottom className="-translate-x-1/2 absolute bottom-full left-1/2 mb-4" />
@@ -335,7 +482,7 @@ export function Thread() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-transparent pb-3">
         <div
           className="pointer-events-auto relative mx-auto w-full max-w-3xl px-4"
-          ref={dropRef}
+          ref={setPromptContainerRef}
         >
           <form
             className={cn(
@@ -360,21 +507,12 @@ export function Thread() {
               />
               <div
                 className={cn(
-                  "flex w-full items-end rounded-xl border border-input bg-background px-3 py-2 shadow-sm transition-[border-color,box-shadow]",
+                  "flex w-full flex-col rounded-xl border border-input bg-background px-3 py-2 shadow-sm transition-[border-color,box-shadow]",
                   "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40"
                 )}
               >
-                <div className="flex flex-1 items-end gap-2">
-                  <Button
-                    aria-label="Upload files"
-                    className="size-10 shrink-0 rounded-lg hover:text-primary"
-                    onClick={() => fileInputRef.current?.click()}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Plus className="size-5" />
-                  </Button>
+                <div className="flex items-end gap-2">
+                  {isInputExpanded ? null : renderUploadButton()}
 
                   <AutoResizeTextarea
                     aria-label="Message input"
@@ -382,6 +520,7 @@ export function Thread() {
                     maxRows={8}
                     minRows={1}
                     onChange={(event) => setInput(event.target.value)}
+                    onHeightChange={handleInputHeightChange}
                     onKeyDown={(event) => {
                       if (
                         event.key === "Enter" &&
@@ -395,63 +534,28 @@ export function Thread() {
                         form?.requestSubmit();
                       }
                     }}
-                    onPaste={handlePaste}
+                    onPaste={(event) => {
+                      handlePaste(event);
+                    }}
                     placeholder="Send a message..."
                     value={input}
                   />
+
+                  {isInputExpanded ? null : (
+                    <div className="ml-2 flex items-center gap-2">
+                      {renderToolButtons()}
+                    </div>
+                  )}
                 </div>
 
-                <div className="ml-2 flex items-center gap-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        aria-label={
-                          hideToolCalls ? "Show tool calls" : "Hide tool calls"
-                        }
-                        aria-pressed={toolsVisible}
-                        className="size-10 rounded-lg hover:text-primary"
-                        data-active={toolsVisible}
-                        onClick={() =>
-                          setHideToolCalls(!(hideToolCalls ?? false))
-                        }
-                        onMouseEnter={() => setToolToggleHovered(true)}
-                        onMouseLeave={() => setToolToggleHovered(false)}
-                        size="icon"
-                        type="button"
-                        variant="ghost"
-                      >
-                        <WrenchIcon
-                          className={cn(
-                            "size-5 transition-colors",
-                            toolsVisible
-                              ? toolToggleHovered
-                                ? "text-muted-foreground"
-                                : "text-primary"
-                              : toolToggleHovered
-                                ? "text-primary"
-                                : "text-muted-foreground"
-                          )}
-                        />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {hideToolCalls ? "Show tool calls" : "Hide tool calls"}
-                    </TooltipContent>
-                  </Tooltip>
-
-                  {stream.isLoading ? (
-                    <Button
-                      aria-label="Cancel streaming"
-                      className="size-10 rounded-lg"
-                      onClick={() => stream.stop()}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <LoaderCircle className="size-5 animate-spin" />
-                    </Button>
-                  ) : null}
-                </div>
+                {isInputExpanded ? (
+                  <div className="mt-2 flex items-center justify-between">
+                    {renderUploadButton()}
+                    <div className="flex items-center gap-2">
+                      {renderToolButtons()}
+                    </div>
+                  </div>
+                ) : null}
               </div>
               {/* Original button group retained for reference */}
               <ButtonGroup className="hidden w-full [--radius:9999rem]">
