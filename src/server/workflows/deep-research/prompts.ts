@@ -309,14 +309,15 @@ Think like a human researcher with limited time. Follow these steps:
 2. **Start with broader searches** - Use broad, comprehensive queries first
 3. **After each search, pause and assess** - Do I have enough to answer? What's still missing?
 4. **Execute narrower searches as you gather information** - Fill in the gaps
-5. **Stop when you can answer confidently** - Don't keep searching for perfection
+5. **Cross-reference your findings** - Verify claims across multiple sources when possible
+6. **Stop when you can answer confidently** - Don't keep searching for perfection
 </Instructions>
 
 <Hard Limits>
 **Tool Call Budgets** (Prevent excessive searching):
-- **Simple queries**: Use 3-5 search tool calls maximum
-- **Complex queries**: Use up to 7 search tool calls maximum
-- **Always stop**: After 7 search tool calls if you cannot find the right sources
+- **Simple queries**: Use 5-8 search tool calls maximum
+- **Complex queries**: Use up to 15 search tool calls maximum
+- **Always stop**: After 15 search tool calls if you cannot find the right sources
 
 **Stop Immediately When**:
 - You can answer the user's question comprehensively
@@ -330,6 +331,7 @@ After each search tool call, use think_tool to analyze the results:
 - What's missing?
 - Do I have enough to answer the question comprehensively?
 - Should I search more or provide my answer?
+- Can I cross-reference findings from multiple sources?
 </Show Your Thinking>
 `;
 
@@ -343,7 +345,6 @@ export const compressResearchSystemPrompt = `You are a research assistant that h
 You need to clean up information gathered from tool calls and web searches in the existing messages.
 All relevant information should be repeated and rewritten verbatim, but in a cleaner format.
 The purpose of this step is just to remove any obviously irrelevant or duplicative information.
-For example, if three sources all say "X", you could say "These three sources all stated X".
 Only these fully comprehensive cleaned findings are going to be returned to the user, so it's crucial that you don't lose any information from the raw messages.
 </Task>
 
@@ -354,6 +355,7 @@ Only these fully comprehensive cleaned findings are going to be returned to the 
 4. You should include a "Sources" section at the end of the report that lists all of the sources the researcher found with corresponding citations, cited against statements in the report.
 5. Make sure to include ALL of the sources that the researcher gathered in the report, and how they were used to answer the question!
 6. It's really important not to lose any sources. A later LLM will be used to merge this report with others, so having all of the sources is critical.
+7. CRITICAL: Preserve ALL sources individually - even if multiple sources confirm the same fact. When multiple sources support a claim, cite each one: "X is true [1][2][3]" rather than "Three sources confirmed X [1][2][3]". Maximum source diversity is essential for the final report.
 </Guidelines>
 
 <Output Format>
@@ -461,10 +463,38 @@ Make sure the final answer report is in the SAME language as the human messages 
 
 Format the report in clear markdown with proper structure and include source references where appropriate.
 
+<Citation Expectations>
+This report is the result of extensive research with multiple sources gathered across different research units.
+Your citations should reflect the depth and breadth of research conducted:
+
+- **Comprehensive reports** (overview, comparison, multi-faceted analysis): Aim for 15-30+ citations
+- **Focused reports** (specific topic deep-dive, detailed comparison): Aim for 10-20+ citations  
+- **Targeted reports** (specific question, curated list): Aim for 8-15+ citations
+
+CRITICAL GUIDELINES:
+- The research findings likely contain 15-40+ sources from multiple researchers
+- You should cite MOST of these sources in your final report - do not artificially limit to 6-13 citations
+- High citation density = authoritative, well-researched report
+- If a finding references a source, you should cite it in your report
+- When in doubt, include the citation rather than exclude it
+
+Citation Best Practices:
+- Cite sources inline immediately after specific claims, facts, or data points
+- Multiple sources can support the same point - cite all relevant ones: "Revenue grew 25% [1][2][3]"
+- Diverse sources strengthen credibility - prefer citing multiple sources over cherry-picking
+- Every major section should have multiple citations distributed throughout
+- Lists and comparisons should cite sources for each item when available
+- Tables with data should cite sources in relevant cells or in table caption
+</Citation Expectations>
+
 <Citation Rules>
 - Assign each unique URL a single citation number in your text
+- Use citations liberally throughout the report - aim for high citation density
+- When multiple sources support a claim, cite all of them: "The market grew 25% [1][2][3]"
+- Each major claim, statistic, or data point should have at least one citation
 - End with ### Sources that lists each source with corresponding numbers
-- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
+- Number sources sequentially without gaps (1,2,3,4...)
+- Include ALL relevant sources from the research findings - these are valuable references for users
 - CRITICAL: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
 - Example format (use markdown list):
   - [1] Source Title: URL
@@ -474,7 +504,7 @@ Format the report in clear markdown with proper structure and include source ref
 
   1. [1] Source Title: URL
   2. [2] Source Title: URL
-- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
+- Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information and verify claims.
 </Citation Rules>
 `;
 

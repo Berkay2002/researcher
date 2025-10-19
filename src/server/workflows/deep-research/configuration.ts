@@ -36,21 +36,22 @@ const MAX_STRUCTURED_OUTPUT_RETRIES_LIMIT = 10;
 const DEFAULT_MAX_CONCURRENT_RESEARCH_UNITS = 5;
 const MAX_CONCURRENT_RESEARCH_UNITS_LIMIT = 20;
 
-const DEFAULT_MAX_RESEARCHER_ITERATIONS = 6;
-const MAX_RESEARCHER_ITERATIONS_LIMIT = 10;
+const DEFAULT_MAX_RESEARCHER_ITERATIONS = 10;
+const MAX_RESEARCHER_ITERATIONS_LIMIT = 20;
 
-const DEFAULT_MAX_REACT_TOOL_CALLS = 10;
-const MAX_REACT_TOOL_CALLS_LIMIT = 30;
+const DEFAULT_MAX_REACT_TOOL_CALLS = 20; // Increased from 10 to allow more cross-referencing
+const MAX_REACT_TOOL_CALLS_LIMIT = 40; // Increased from 30 for complex research
 
 const DEFAULT_SUMMARIZATION_MODEL_MAX_TOKENS = 8192;
 
-const MIN_CONTENT_LENGTH = 1000;
+const MIN_CONTENT_LENGTH = 1500;
 const MAX_CONTENT_LENGTH_LIMIT = 200_000;
 const DEFAULT_MAX_CONTENT_LENGTH = 50_000;
 
-const DEFAULT_RESEARCH_MODEL_MAX_TOKENS = 10_000;
+const DEFAULT_RESEARCH_MODEL_MAX_TOKENS = 20_000;
+const DEFAULT_RESEARCHER_MODEL_MAX_TOKENS = 20_000;
 const DEFAULT_COMPRESSION_MODEL_MAX_TOKENS = 8192;
-const DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS = 10_000;
+const DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS = 25_000;
 
 const DEFAULT_CLARIFICATION_MODEL_MAX_TOKENS = 2048;
 const DEFAULT_RESEARCH_BRIEF_MODEL_MAX_TOKENS = 4096;
@@ -123,6 +124,11 @@ export const ConfigurationSchema = z.object({
   research_model_max_tokens: z
     .number()
     .default(DEFAULT_RESEARCH_MODEL_MAX_TOKENS),
+
+  researcher_model: z.string().default("gemini-2.5-pro"),
+  researcher_model_max_tokens: z
+    .number()
+    .default(DEFAULT_RESEARCHER_MODEL_MAX_TOKENS),
 
   compression_model: z.string().default("gemini-flash-latest"),
   compression_model_max_tokens: z
@@ -272,9 +278,9 @@ export function createResearcherModel(config?: RunnableConfig) {
   const RESEARCHER_TEMPERATURE = 0.3;
 
   return createResearchLLM(
-    configuration.research_model,
+    configuration.researcher_model,
     RESEARCHER_TEMPERATURE,
-    configuration.research_model_max_tokens
+    configuration.researcher_model_max_tokens
   );
 }
 
