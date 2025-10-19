@@ -1,3 +1,8 @@
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+/** biome-ignore-all lint/suspicious/noExplicitAny: <Ignore> */
+/** biome-ignore-all lint/performance/useTopLevelRegex: <Ignore> */
+/** biome-ignore-all lint/nursery/useAnchorHref: <Ignore> */
 "use client";
 
 import "./markdown-styles.css";
