@@ -4,7 +4,14 @@
 /** biome-ignore-all lint/style/useAtIndex: <Ignore> */
 
 import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
-import { ArrowDown, LoaderCircle, Plus, SendIcon, XIcon } from "lucide-react";
+import {
+  ArrowDown,
+  LoaderCircle,
+  Plus,
+  SendIcon,
+  WrenchIcon,
+  XIcon,
+} from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   type FormEvent,
@@ -25,8 +32,9 @@ import {
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { Button } from "../ui/button";
-import { Label } from "../ui/label";
-import { Switch } from "../ui/switch";
+import { ButtonGroup } from "../ui/button-group";
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../ui/input-group";
+import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   ArtifactContent,
   ArtifactTitle,
@@ -102,6 +110,8 @@ export function Thread() {
     handlePaste,
   } = useFileUpload();
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const toolsVisible = !(hideToolCalls ?? false);
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -325,94 +335,93 @@ export function Thread() {
         <div className="mx-auto w-full max-w-3xl" ref={dropRef}>
           <form
             className={cn(
-              "w-full divide-y overflow-hidden rounded-xl border bg-background shadow-sm",
-              dragOver
-                ? "border-2 border-primary border-dotted"
-                : "border border-solid"
+              "flex w-full flex-col gap-3",
+              dragOver && "rounded-xl border-2 border-primary border-dotted p-3"
             )}
             onSubmit={handleSubmit}
           >
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-3">
+              <input
+                accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                className="hidden"
+                id="thread-file-input"
+                multiple
+                onChange={handleFileUpload}
+                ref={fileInputRef}
+                type="file"
+              />
               <ContentBlocksPreview
                 blocks={contentBlocks}
                 onRemove={removeBlock}
               />
-              <textarea
-                className="field-sizing-content max-h-48 min-h-16 w-full resize-none rounded-none border-none bg-transparent p-3 shadow-none outline-none ring-0 focus:outline-none focus:ring-0"
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (
-                    e.key === "Enter" &&
-                    !e.shiftKey &&
-                    !e.metaKey &&
-                    !e.nativeEvent.isComposing
-                  ) {
-                    e.preventDefault();
-                    const el = e.target as HTMLElement | undefined;
-                    const form = el?.closest("form");
-                    form?.requestSubmit();
-                  }
-                }}
-                onPaste={handlePaste}
-                placeholder="What would you like to know?"
-                value={input}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-1">
-              <div className="flex items-center gap-1">
-                <div className="flex items-center space-x-2 px-2">
-                  <Switch
-                    checked={hideToolCalls ?? false}
-                    id="render-tool-calls"
-                    onCheckedChange={setHideToolCalls}
-                  />
-                  <Label
-                    className="text-muted-foreground text-sm"
-                    htmlFor="render-tool-calls"
+              <ButtonGroup className="w-full [--radius:9999rem]">
+                <ButtonGroup>
+                  <Button
+                    aria-label="Upload files"
+                    onClick={() => fileInputRef.current?.click()}
+                    size="icon"
+                    type="button"
+                    variant="outline"
                   >
-                    Hide Tool Calls
-                  </Label>
-                </div>
-                <Label
-                  className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition hover:bg-accent"
-                  htmlFor="file-input"
-                >
-                  <Plus className="size-4 text-muted-foreground" />
-                  <span className="text-muted-foreground text-sm">Upload</span>
-                </Label>
-                <input
-                  accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
-                  className="hidden"
-                  id="file-input"
-                  multiple
-                  onChange={handleFileUpload}
-                  type="file"
-                />
-              </div>
-              {stream.isLoading ? (
-                <Button
-                  className="gap-1.5 rounded-lg"
-                  key="stop"
-                  onClick={() => stream.stop()}
-                  size="default"
-                  type="button"
-                >
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                  Cancel
-                </Button>
-              ) : (
-                <Button
-                  className="gap-1.5 rounded-lg"
-                  disabled={
-                    isLoading || (!input.trim() && contentBlocks.length === 0)
-                  }
-                  size="default"
-                  type="submit"
-                >
-                  <SendIcon className="size-4" />
-                </Button>
-              )}
+                    <Plus className="size-4" />
+                  </Button>
+                </ButtonGroup>
+
+                <ButtonGroup className="flex-1">
+                  <InputGroup className="flex-1">
+                    <InputGroupInput
+                      onChange={(event) => setInput(event.target.value)}
+                      onPaste={handlePaste}
+                      placeholder="Send a message..."
+                      type="text"
+                      value={input}
+                    />
+                    <InputGroupAddon align="inline-end">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <InputGroupButton
+                            aria-pressed={toolsVisible}
+                            aria-label={hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+                            className="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
+                            data-active={toolsVisible}
+                            onClick={() => setHideToolCalls(!(hideToolCalls ?? false))}
+                            size="icon-xs"
+                          >
+                            <WrenchIcon className="size-4" />
+                          </InputGroupButton>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+                        </TooltipContent>
+                      </Tooltip>
+
+                      {stream.isLoading ? (
+                        <InputGroupButton
+                          aria-label="Cancel streaming"
+                          onClick={() => stream.stop()}
+                          size="icon-xs"
+                        >
+                          <LoaderCircle className="size-4 animate-spin" />
+                        </InputGroupButton>
+                      ) : (
+                        <InputGroupButton
+                          aria-disabled={
+                            isLoading || (!input.trim() && contentBlocks.length === 0)
+                          }
+                          aria-label="Send message"
+                          disabled={
+                            isLoading || (!input.trim() && contentBlocks.length === 0)
+                          }
+                          size="icon-xs"
+                          type="submit"
+                        >
+                          <SendIcon className="size-4" />
+                        </InputGroupButton>
+                      )}
+                    </InputGroupAddon>
+                  </InputGroup>
+                </ButtonGroup>
+              </ButtonGroup>
             </div>
           </form>
         </div>
