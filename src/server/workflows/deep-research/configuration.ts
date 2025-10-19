@@ -52,6 +52,9 @@ const DEFAULT_RESEARCH_MODEL_MAX_TOKENS = 10_000;
 const DEFAULT_COMPRESSION_MODEL_MAX_TOKENS = 8192;
 const DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS = 10_000;
 
+const DEFAULT_CLARIFICATION_MODEL_MAX_TOKENS = 2048;
+const DEFAULT_RESEARCH_BRIEF_MODEL_MAX_TOKENS = 4096;
+
 const DEFAULT_FOLLOWUP_CONFIDENCE_THRESHOLD = 0.7;
 const DEFAULT_FOLLOWUP_MODEL_MAX_TOKENS = 8192;
 const DEFAULT_ROUTING_MODEL_MAX_TOKENS = 2048;
@@ -130,6 +133,18 @@ export const ConfigurationSchema = z.object({
   final_report_model_max_tokens: z
     .number()
     .default(DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS),
+
+  // Clarification Configuration
+  clarification_model: z.string().default("gemini-flash-latest"),
+  clarification_model_max_tokens: z
+    .number()
+    .default(DEFAULT_CLARIFICATION_MODEL_MAX_TOKENS),
+
+  // Research Brief Configuration
+  research_brief_model: z.string().default("gemini-flash-latest"),
+  research_brief_model_max_tokens: z
+    .number()
+    .default(DEFAULT_RESEARCH_BRIEF_MODEL_MAX_TOKENS),
 
   // MCP Configuration
   mcp_config: MCPConfigSchema.optional().nullable(),
@@ -284,9 +299,9 @@ export function createResearchBriefModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
 
   return createResearchLLM(
-    configuration.research_model,
+    configuration.research_brief_model,
     0, // Use 0 temperature for consistent research brief generation
-    configuration.research_model_max_tokens
+    configuration.research_brief_model_max_tokens
   );
 }
 
@@ -297,9 +312,9 @@ export function createClarificationModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
 
   return createResearchLLM(
-    configuration.research_model,
+    configuration.clarification_model,
     0, // Use 0 temperature for consistent clarification analysis
-    configuration.research_model_max_tokens
+    configuration.clarification_model_max_tokens
   );
 }
 

@@ -31,5 +31,7 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit",
     "source.organizeImports.biome": "explicit"
-  }
+  },
+  "chatgpt.openOnStartup": false,
+  "chatgpt.commentCodeLensEnabled": false
 }

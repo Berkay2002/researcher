@@ -40,7 +40,7 @@ const EXA_SEARCH_DESCRIPTION =
 const SUMMARIZATION_TIMEOUT_MS = 60_000; // 60 seconds
 const SOURCE_INDEX_OFFSET = 1; // Offset for 1-based indexing in output
 const SEPARATOR_LINE_LENGTH = 80; // Length of separator line in formatted output
-const DEFAULT_MAX_SEARCH_RESULTS = 5; // Default number of search results per query
+const DEFAULT_MAX_SEARCH_RESULTS = 10; // Default number of search results per query
 
 // ============================================================================
 // Date/Time Utilities
