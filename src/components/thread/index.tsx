@@ -4,14 +4,7 @@
 /** biome-ignore-all lint/style/useAtIndex: <Ignore> */
 
 import type { Checkpoint, Message } from "@langchain/langgraph-sdk";
-import {
-  ArrowDown,
-  LoaderCircle,
-  Plus,
-  SendIcon,
-  WrenchIcon,
-  XIcon,
-} from "lucide-react";
+import { ArrowDown, LoaderCircle, Plus, WrenchIcon, XIcon } from "lucide-react";
 import { parseAsBoolean, useQueryState } from "nuqs";
 import {
   type FormEvent,
@@ -117,6 +110,7 @@ export function Thread() {
   const [firstTokenReceived, setFirstTokenReceived] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const toolsVisible = !(hideToolCalls ?? false);
+  const [toolToggleHovered, setToolToggleHovered] = useState(false);
 
   const stream = useStreamContext();
   const messages = stream.messages;
@@ -325,7 +319,7 @@ export function Thread() {
             </>
           }
           contentClassName={cn(
-            "relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-6"
+            "relative z-10 mx-auto flex w-full max-w-3xl flex-col gap-4 px-6 py-6 pb-24"
           )}
           footer={
             <div className="sticky bottom-0">
@@ -363,21 +357,22 @@ export function Thread() {
                 onRemove={removeBlock}
               />
               <ButtonGroup className="w-full [--radius:9999rem]">
-                <ButtonGroup>
-                  <Button
-                    aria-label="Upload files"
-                    onClick={() => fileInputRef.current?.click()}
-                    size="icon"
-                    type="button"
-                    variant="outline"
-                  >
-                    <Plus className="size-4" />
-                  </Button>
-                </ButtonGroup>
-
                 <ButtonGroup className="flex-1">
-                  <InputGroup className="flex-1 bg-background">
+                  <InputGroup className="h-12 flex-1 bg-background">
+                    <InputGroupAddon align="inline-start">
+                      <Button
+                        aria-label="Upload files"
+                        className="size-10 hover:text-primary"
+                        onClick={() => fileInputRef.current?.click()}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <Plus className="size-5" />
+                      </Button>
+                    </InputGroupAddon>
                     <InputGroupInput
+                      className="h-full text-base"
                       onChange={(event) => setInput(event.target.value)}
                       onKeyDown={(event) => {
                         if (
@@ -397,7 +392,7 @@ export function Thread() {
                       type="text"
                       value={input}
                     />
-                    <InputGroupAddon align="inline-end">
+                    <InputGroupAddon align="inline-end" className="gap-2">
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <InputGroupButton
@@ -407,14 +402,28 @@ export function Thread() {
                                 : "Hide tool calls"
                             }
                             aria-pressed={toolsVisible}
-                            className="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
+                            className="size-10 hover:bg-transparent"
                             data-active={toolsVisible}
                             onClick={() =>
                               setHideToolCalls(!(hideToolCalls ?? false))
                             }
-                            size="icon-xs"
+                            onMouseEnter={() => setToolToggleHovered(true)}
+                            onMouseLeave={() => setToolToggleHovered(false)}
+                            size="icon-sm"
+                            type="button"
                           >
-                            <WrenchIcon className="size-4" />
+                            <WrenchIcon
+                              className={cn(
+                                "size-5 transition-colors",
+                                toolsVisible
+                                  ? toolToggleHovered
+                                    ? "text-muted-foreground"
+                                    : "text-primary"
+                                  : toolToggleHovered
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                              )}
+                            />
                           </InputGroupButton>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -427,28 +436,14 @@ export function Thread() {
                       {stream.isLoading ? (
                         <InputGroupButton
                           aria-label="Cancel streaming"
+                          className="size-10"
                           onClick={() => stream.stop()}
-                          size="icon-xs"
+                          size="icon-sm"
+                          type="button"
                         >
-                          <LoaderCircle className="size-4 animate-spin" />
+                          <LoaderCircle className="size-5 animate-spin" />
                         </InputGroupButton>
-                      ) : (
-                        <InputGroupButton
-                          aria-disabled={
-                            isLoading ||
-                            (!input.trim() && contentBlocks.length === 0)
-                          }
-                          aria-label="Send message"
-                          disabled={
-                            isLoading ||
-                            (!input.trim() && contentBlocks.length === 0)
-                          }
-                          size="icon-xs"
-                          type="submit"
-                        >
-                          <SendIcon className="size-4" />
-                        </InputGroupButton>
-                      )}
+                      ) : null}
                     </InputGroupAddon>
                   </InputGroup>
                 </ButtonGroup>
