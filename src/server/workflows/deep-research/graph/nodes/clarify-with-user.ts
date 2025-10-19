@@ -5,7 +5,11 @@
  */
 /** biome-ignore-all lint/style/useBlockStatements: <> */
 
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import {
+  AIMessage,
+  coerceMessageLikeToMessage,
+  HumanMessage,
+} from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { Command } from "@langchain/langgraph";
 import {
@@ -45,15 +49,21 @@ export async function clarifyWithUser(
     config
   ).withStructuredOutput(ClarifyWithUserSchema, {
     method: "jsonMode",
+    includeRaw: false,
   });
 
   // Step 3: Analyze whether clarification is needed
-  const messagesBuffer = messages
+  // Convert plain message objects to proper LangChain message instances
+  const convertedMessages = messages.map((msg) =>
+    coerceMessageLikeToMessage(msg)
+  );
+
+  const messagesBuffer = convertedMessages
     .map((msg) => {
       let type = "unknown";
       if (HumanMessage.isInstance(msg)) type = "human";
       else if (AIMessage.isInstance(msg)) type = "ai";
-      return `${type}: ${msg.content}`;
+      return `${type}: ${msg.text}`;
     })
     .join("\n");
 
@@ -65,22 +75,28 @@ export async function clarifyWithUser(
     new HumanMessage({ content: promptContent }),
   ]);
 
-  // Step 4: Route based on clarification analysis
   if (response.need_clarification) {
+    // Step 4: Route based on clarification analysis
     // End with clarifying question for user
+    const questionMessage = new AIMessage({ content: response.question });
     return new Command({
       goto: "__end__",
       update: {
-        messages: [new AIMessage({ content: response.question })],
+        messages: [questionMessage],
       },
     });
   }
 
   // Proceed to research with verification message
+  const verificationMessage = new AIMessage({
+    content: response.verification,
+  });
+  // biome-ignore lint/suspicious/noConsole: <Needed for debugging>
+  console.log("Returning verification message:", verificationMessage.content);
   return new Command({
     goto: "write_research_brief",
     update: {
-      messages: [new AIMessage({ content: response.verification })],
+      messages: [verificationMessage],
     },
   });
 }
