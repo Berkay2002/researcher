@@ -13,6 +13,8 @@ export const routeRequestPrompt = `You are a routing assistant that determines w
 <Context>
 Previous report exists: {has_report}
 Previous research topic: {research_brief}
+Recent conversation (up to last 5 messages):
+{conversation_history}
 
 User's latest message: {latest_message}
 </Context>
@@ -23,15 +25,23 @@ Analyze the user's message and determine the appropriate routing:
 - User references the existing report ("summarize that", "what about X from the report", "tell me more about Y")
 - User asks for clarification or explanation of specific findings
 - User requests format changes ("make it shorter", "expand section Z", "translate to Spanish")
-- User asks questions that can be answered from the existing report
+- User asks questions that can be answered from the existing report OR require additional searching within the same topic area
+- Conversation history shows the user continuing the same topic even if the latest message is short or implicit
 - User references pronouns like "that report", "your findings", "the research you did"
+- **IMPORTANT**: User asks to search/verify/update information RELATED to the previous research topic (e.g., "search for new competitors" when the report was about competitors, "any updates on X" when the report covered X)
+- User asks "are there any new..." or "can you search for..." in the SAME topic area as the previous report
 
 **NEW_RESEARCH** - Choose this if:
-- User introduces a completely new topic unrelated to the previous report
-- User explicitly requests fresh research ("now research X", "I want a report on Y")
-- User's question cannot be answered from existing research findings
-- User asks about recent events or data not covered in the existing report
+- User introduces a COMPLETELY DIFFERENT topic unrelated to the previous report (e.g., previous report was about "Palantir", new request is about "Tesla")
+- User EXPLICITLY requests fresh research on a NEW topic ("now research X instead", "I want a new report on Y", "forget that, research Z")
+- The topic shift is clear and intentional (e.g., from "healthcare" to "cryptocurrency", from "one company" to "a different company")
 - This is the first message (no previous report exists)
+
+**Key Distinction**:
+- "Can you search for new competitors?" when report was about competitors → FOLLOW_UP (same topic, needs update)
+- "Now research Tesla's competitors instead" when report was about Palantir → NEW_RESEARCH (completely different topic)
+- "Any updates on Palantir?" when report was about Palantir → FOLLOW_UP (same topic, needs update)
+- "Research Nvidia instead" when report was about Palantir → NEW_RESEARCH (different company)
 
 Today's date is {date}.
 
@@ -42,7 +52,8 @@ Respond in valid JSON format with these exact keys:
   "reasoning": "Brief explanation for your decision"
 }}
 
-Be conservative: if uncertain whether it's a follow-up, lean towards NEW_RESEARCH to avoid missing important new requests.
+Bias towards FOLLOW_UP if the user is asking about the same general topic area, even if they want to search for updates or new information.
+Only choose NEW_RESEARCH if the topic is clearly and intentionally different.
 `;
 
 // ============================================================================

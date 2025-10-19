@@ -6,6 +6,7 @@
  */
 
 import {
+  AIMessage,
   coerceMessageLikeToMessage,
   HumanMessage,
 } from "@langchain/core/messages";
@@ -28,6 +29,8 @@ export async function routeRequest(
   state: AgentState,
   config?: RunnableConfig
 ): Promise<Partial<AgentState>> {
+  const RECENT_MESSAGE_WINDOW = 5;
+
   const configuration = getConfiguration(config);
 
   // If routing is disabled, always route to new research
@@ -67,6 +70,28 @@ export async function routeRequest(
   // Use .text property which handles message content correctly
   const latestMessageContent = latestHumanMessage.text;
 
+  // Build conversation context (last few messages for better routing decisions)
+  // This helps the router understand if the user is continuing a conversation
+  const recentMessages = convertedMessages
+    .slice(-RECENT_MESSAGE_WINDOW) // Get last messages for context
+    .map((msg) => {
+      let type = "unknown";
+      if (HumanMessage.isInstance(msg)) {
+        type = "human";
+      } else if (AIMessage.isInstance(msg)) {
+        type = "ai";
+      }
+
+      const text =
+        msg.text ??
+        (typeof msg.content === "string"
+          ? msg.content
+          : JSON.stringify(msg.content));
+
+      return `${type}: ${text}`;
+    })
+    .join("\n");
+
   // Prepare the routing model with structured output
   const routingModel = createRoutingModel(config).withStructuredOutput(
     RouteDecisionSchema,
@@ -76,10 +101,14 @@ export async function routeRequest(
     }
   );
 
-  // Build the routing prompt
+  // Build the routing prompt with conversation context
   const promptContent = routeRequestPrompt
     .replace("{has_report}", state.final_report ? "Yes" : "No")
     .replace("{research_brief}", state.research_brief || "None")
+    .replace(
+      "{conversation_history}",
+      recentMessages.length > 0 ? recentMessages : "None"
+    )
     .replace("{latest_message}", latestMessageContent)
     .replace("{date}", getTodayStr());
 
