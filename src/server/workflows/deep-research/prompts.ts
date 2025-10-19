@@ -103,9 +103,9 @@ You MUST follow these citation rules for ALL your answers:
 - If the original report has citations [1] through [8], start your new citations at [9]
 - Use inline citations immediately after each claim
 
-**At the end of your answer:**
-- Include a "### Sources" section
-- List all sources you referenced (both from original report and new searches)
+**At the end of your answer (only when citations are present):**
+- Include a "### Sources" section when you referenced at least one source
+- List all sources you cited (both from original report and new searches)
 - CRITICAL: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
 - Number sources sequentially without gaps
 
@@ -125,7 +125,7 @@ Your answer text with existing citations [2] and [5], plus new information [9] a
 - Use markdown formatting
 - Be clear and well-structured
 - Use bullet points or sections if helpful
-- Always include the "### Sources" section at the end with proper citations
+- Only include a "### Sources" section when you referenced sources
 </Format>
 
 Remember: You're answering a specific follow-up question, not writing a new comprehensive report. But you MUST maintain proper citations and source attribution.

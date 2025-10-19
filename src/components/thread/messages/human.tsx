@@ -106,7 +106,7 @@ export function HumanMessage({
           )}
           {/* Render text if present, otherwise fallback to file/image name */}
           {contentString ? (
-            <div className="w-fit max-w-[70%] rounded-3xl bg-secondary px-5 py-3 text-foreground shadow-sm">
+            <div className="w-fit max-w-[70%] overflow-hidden rounded-xl border bg-secondary px-5 py-3 text-foreground shadow-sm">
               <p className="whitespace-pre-wrap text-sm">{contentString}</p>
             </div>
           ) : null}

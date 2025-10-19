@@ -11,10 +11,12 @@ import {
   PanelFooter,
   PanelHeader,
 } from "@/app/(components)/app-shell";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -126,23 +128,24 @@ export default function ThreadHistory() {
               <ThreadList threads={threads} />
             )}
           </PanelContent>
-          <PanelFooter className="text-center">
-            <p className="text-muted-foreground text-xs">
-              {threads.length} thread{threads.length !== 1 ? "s" : ""}
-            </p>
+          <PanelFooter className="flex justify-center">
+            <ThemeToggle />
           </PanelFooter>
         </>
       ) : (
-        <Button
-          aria-label="Show threads"
-          className="size-9 rounded-lg hover:bg-accent/60"
-          onClick={() => setChatHistoryOpen(true)}
-          size="icon"
-          type="button"
-          variant="ghost"
-        >
-          <PanelLeftOpenIcon className="size-5" />
-        </Button>
+        <div className="flex h-full flex-1 flex-col items-center gap-4">
+          <Button
+            aria-label="Show threads"
+            className="size-9 rounded-lg hover:bg-accent/60"
+            onClick={() => setChatHistoryOpen(true)}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <PanelLeftOpenIcon className="size-5" />
+          </Button>
+          <ThemeToggle className="mt-auto mb-4" collapsed />
+        </div>
       )}
 
       {/* Mobile Sheet */}
@@ -166,6 +169,9 @@ export default function ThreadHistory() {
                 threads={threads}
               />
             )}
+            <SheetFooter className="flex-row justify-center">
+              <ThemeToggle />
+            </SheetFooter>
           </SheetContent>
         </Sheet>
       </div>
