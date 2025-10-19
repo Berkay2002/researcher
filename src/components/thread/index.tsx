@@ -33,7 +33,12 @@ import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from "../ui/input-group";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "../ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
   ArtifactContent,
@@ -380,18 +385,26 @@ export function Thread() {
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <InputGroupButton
+                            aria-label={
+                              hideToolCalls
+                                ? "Show tool calls"
+                                : "Hide tool calls"
+                            }
                             aria-pressed={toolsVisible}
-                            aria-label={hideToolCalls ? "Show tool calls" : "Hide tool calls"}
                             className="data-[active=true]:bg-accent data-[active=true]:text-accent-foreground"
                             data-active={toolsVisible}
-                            onClick={() => setHideToolCalls(!(hideToolCalls ?? false))}
+                            onClick={() =>
+                              setHideToolCalls(!(hideToolCalls ?? false))
+                            }
                             size="icon-xs"
                           >
                             <WrenchIcon className="size-4" />
                           </InputGroupButton>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+                          {hideToolCalls
+                            ? "Show tool calls"
+                            : "Hide tool calls"}
                         </TooltipContent>
                       </Tooltip>
 
@@ -406,11 +419,13 @@ export function Thread() {
                       ) : (
                         <InputGroupButton
                           aria-disabled={
-                            isLoading || (!input.trim() && contentBlocks.length === 0)
+                            isLoading ||
+                            (!input.trim() && contentBlocks.length === 0)
                           }
                           aria-label="Send message"
                           disabled={
-                            isLoading || (!input.trim() && contentBlocks.length === 0)
+                            isLoading ||
+                            (!input.trim() && contentBlocks.length === 0)
                           }
                           size="icon-xs"
                           type="submit"
