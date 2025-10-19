@@ -336,7 +336,7 @@ export function Thread() {
       </StickToBottom>
 
       {/* Prompt Input */}
-      <div className="flex-shrink-0 border-t bg-background p-4">
+      <div className="flex-shrink-0 bg-transparent px-4 pb-3">
         <div className="mx-auto w-full max-w-3xl" ref={dropRef}>
           <form
             className={cn(
@@ -376,6 +376,19 @@ export function Thread() {
                   <InputGroup className="flex-1">
                     <InputGroupInput
                       onChange={(event) => setInput(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          !event.shiftKey &&
+                          !event.metaKey &&
+                          !event.nativeEvent.isComposing
+                        ) {
+                          event.preventDefault();
+                          const el = event.target as HTMLElement | undefined;
+                          const form = el?.closest("form");
+                          form?.requestSubmit();
+                        }
+                      }}
                       onPaste={handlePaste}
                       placeholder="Send a message..."
                       type="text"
