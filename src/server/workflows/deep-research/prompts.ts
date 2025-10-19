@@ -5,6 +5,122 @@
  */
 
 // ============================================================================
+// Request Routing Prompts
+// ============================================================================
+
+export const routeRequestPrompt = `You are a routing assistant that determines whether a user's message is a follow-up question about an existing research report or a request for new research.
+
+<Context>
+Previous report exists: {has_report}
+Previous research topic: {research_brief}
+
+User's latest message: {latest_message}
+</Context>
+
+Analyze the user's message and determine the appropriate routing:
+
+**FOLLOW_UP** - Choose this if:
+- User references the existing report ("summarize that", "what about X from the report", "tell me more about Y")
+- User asks for clarification or explanation of specific findings
+- User requests format changes ("make it shorter", "expand section Z", "translate to Spanish")
+- User asks questions that can be answered from the existing report
+- User references pronouns like "that report", "your findings", "the research you did"
+
+**NEW_RESEARCH** - Choose this if:
+- User introduces a completely new topic unrelated to the previous report
+- User explicitly requests fresh research ("now research X", "I want a report on Y")
+- User's question cannot be answered from existing research findings
+- User asks about recent events or data not covered in the existing report
+- This is the first message (no previous report exists)
+
+Today's date is {date}.
+
+Respond in valid JSON format with these exact keys:
+{{
+  "decision": "FOLLOW_UP" | "NEW_RESEARCH",
+  "confidence": 0.0-1.0,
+  "reasoning": "Brief explanation for your decision"
+}}
+
+Be conservative: if uncertain whether it's a follow-up, lean towards NEW_RESEARCH to avoid missing important new requests.
+`;
+
+// ============================================================================
+// Follow-up Question Handler Prompts
+// ============================================================================
+
+export const answerFollowupPrompt = `You are a research assistant answering follow-up questions about a previously generated research report.
+
+<Previous Research>
+Research topic: {research_brief}
+
+Full report:
+{final_report}
+</Previous Research>
+
+<User's Follow-up Question>
+{latest_message}
+</User's Follow-up Question>
+
+Today's date is {date}.
+
+<Your Task>
+Answer the user's follow-up question based on the existing research report above. You have access to search tools if you need to:
+1. Verify information in the report
+2. Get updated information (if the report is outdated)
+3. Find additional context to better answer the question
+
+<Guidelines>
+1. Primarily use information from the existing report
+2. Use search tools sparingly and only when necessary
+3. Clearly indicate when you're adding new information beyond the original report
+4. If the question requires extensive new research beyond the scope of the existing report, acknowledge this limitation
+5. Maintain the same language as the user's message
+6. Be concise but thorough in your answer
+7. Reference sources from the original report when applicable
+</Guidelines>
+
+<Citation Rules - CRITICAL>
+You MUST follow these citation rules for ALL your answers:
+
+**When referencing information from the original report:**
+- Use the same citation numbers that appear in the original report
+- Example: If the report says "Palantir grew revenue by 22% [5]", continue using [5] for that source
+
+**When adding NEW information from search tools:**
+- Assign new citation numbers continuing from where the original report left off
+- If the original report has citations [1] through [8], start your new citations at [9]
+- Use inline citations immediately after each claim
+
+**At the end of your answer:**
+- Include a "### Sources" section
+- List all sources you referenced (both from original report and new searches)
+- CRITICAL: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
+- Number sources sequentially without gaps
+
+**Example:**
+If the original report has sources [1]-[8], and you use sources [2], [5] from it, plus add 2 new sources:
+
+Your answer text with existing citations [2] and [5], plus new information [9] and [10].
+
+### Sources
+- [2] Original Source Title: https://example.com
+- [5] Another Original Source: https://example.com
+- [9] New Source from Search: https://newsource.com
+- [10] Another New Source: https://newsource2.com
+</Citation Rules>
+
+<Format>
+- Use markdown formatting
+- Be clear and well-structured
+- Use bullet points or sections if helpful
+- Always include the "### Sources" section at the end with proper citations
+</Format>
+
+Remember: You're answering a specific follow-up question, not writing a new comprehensive report. But you MUST maintain proper citations and source attribution.
+`;
+
+// ============================================================================
 // User Clarification Prompts
 // ============================================================================
 
@@ -240,9 +356,15 @@ The report should be structured like this:
 - Assign each unique URL a single citation number in your text
 - End with ### Sources that lists each source with corresponding numbers
 - IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
-- Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
+- IMPORTANT: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
+- Example format (use markdown list):
+  - [1] Source Title: URL
+  - [2] Source Title: URL
+
+  OR
+
+  1. [1] Source Title: URL
+  2. [2] Source Title: URL
 </Citation Rules>
 
 Critical Reminder: It is extremely important that any information that is even remotely relevant to the user's research topic is preserved verbatim (e.g. don't rewrite it, don't summarize it, don't paraphrase it).
@@ -332,10 +454,15 @@ Format the report in clear markdown with proper structure and include source ref
 - Assign each unique URL a single citation number in your text
 - End with ### Sources that lists each source with corresponding numbers
 - IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
-- Each source should be a separate line item in a list, so that in markdown it is rendered as a list.
-- Example format:
-  [1] Source Title: URL
-  [2] Source Title: URL
+- CRITICAL: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
+- Example format (use markdown list):
+  - [1] Source Title: URL
+  - [2] Source Title: URL
+
+  OR
+
+  1. [1] Source Title: URL
+  2. [2] Source Title: URL
 - Citations are extremely important. Make sure to include these, and pay a lot of attention to getting these right. Users will often use these citations to look into more information.
 </Citation Rules>
 `;

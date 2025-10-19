@@ -73,6 +73,27 @@ export const ResearchQuestionSchema = z.object({
 
 export type ResearchQuestion = z.infer<typeof ResearchQuestionSchema>;
 
+/**
+ * Routing decision for follow-up vs new research
+ */
+export const RouteDecisionSchema = z.object({
+  decision: z
+    .enum(["NEW_RESEARCH", "FOLLOW_UP"])
+    .describe(
+      "Whether this is a new research request or a follow-up question about existing research"
+    ),
+  confidence: z
+    .number()
+    .min(0)
+    .max(1)
+    .describe("Confidence score for this routing decision (0-1)"),
+  reasoning: z
+    .string()
+    .describe("Brief explanation for why this routing decision was made"),
+});
+
+export type RouteDecision = z.infer<typeof RouteDecisionSchema>;
+
 // ============================================================================
 // State Reducer Functions
 // ============================================================================
@@ -142,6 +163,11 @@ export const AgentStateAnnotation = Annotation.Root({
   }),
 
   final_report: Annotation<string | null>({
+    reducer: (_, next) => next,
+    default: () => null,
+  }),
+
+  routing_decision: Annotation<"NEW_RESEARCH" | "FOLLOW_UP" | null>({
     reducer: (_, next) => next,
     default: () => null,
   }),

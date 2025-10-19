@@ -52,6 +52,10 @@ const DEFAULT_RESEARCH_MODEL_MAX_TOKENS = 10_000;
 const DEFAULT_COMPRESSION_MODEL_MAX_TOKENS = 8192;
 const DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS = 10_000;
 
+const DEFAULT_FOLLOWUP_CONFIDENCE_THRESHOLD = 0.7;
+const DEFAULT_FOLLOWUP_MODEL_MAX_TOKENS = 8192;
+const DEFAULT_ROUTING_MODEL_MAX_TOKENS = 2048;
+
 // ============================================================================
 // MCP Configuration
 // ============================================================================
@@ -139,6 +143,22 @@ export const ConfigurationSchema = z.object({
   fallback_models: z
     .array(z.string())
     .default(["gemini-flash-latest", "gemini-2.5-pro"]),
+
+  // Follow-up Routing Configuration
+  enable_followup_routing: z.boolean().default(true),
+  followup_confidence_threshold: z
+    .number()
+    .min(0)
+    .max(1)
+    .default(DEFAULT_FOLLOWUP_CONFIDENCE_THRESHOLD)
+    .describe(
+      "Minimum confidence score (0-1) required for automatic routing. Below this, user will be asked to clarify."
+    ),
+  routing_model: z.string().default("gemini-flash-latest"),
+  followup_model: z.string().default("gemini-flash-latest"),
+  followup_model_max_tokens: z
+    .number()
+    .default(DEFAULT_FOLLOWUP_MODEL_MAX_TOKENS),
 });
 
 export type Configuration = z.infer<typeof ConfigurationSchema>;
@@ -307,5 +327,32 @@ export function createSummarizationModel(config?: RunnableConfig) {
     configuration.summarization_model,
     0, // Use 0 temperature for consistent summarization
     configuration.summarization_model_max_tokens
+  );
+}
+
+/**
+ * Create routing model instance from configuration
+ */
+export function createRoutingModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+
+  return createResearchLLM(
+    configuration.routing_model,
+    0, // Use 0 temperature for consistent routing decisions
+    DEFAULT_ROUTING_MODEL_MAX_TOKENS
+  );
+}
+
+/**
+ * Create follow-up model instance from configuration
+ */
+export function createFollowupModel(config?: RunnableConfig) {
+  const configuration = getConfiguration(config);
+  const FOLLOWUP_TEMPERATURE = 0.3;
+
+  return createResearchLLM(
+    configuration.followup_model,
+    FOLLOWUP_TEMPERATURE,
+    configuration.followup_model_max_tokens
   );
 }
