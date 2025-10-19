@@ -1,4 +1,5 @@
 /** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+/** biome-ignore-all lint/style/noNestedTernary: <Ignore> */
 /** biome-ignore-all lint/complexity/noUselessFragments: <Ignore> */
 /** biome-ignore-all lint/style/useShorthandAssign: <Ignore> */
 /** biome-ignore-all lint/style/useAtIndex: <Ignore> */
@@ -24,13 +25,13 @@ import {
 } from "@/lib/ensure-tool-responses";
 import { cn } from "@/lib/utils";
 import { useStreamContext } from "@/providers/Stream";
+import { AutoResizeTextarea } from "../ui/auto-resize-textarea";
 import { Button } from "../ui/button";
 import { ButtonGroup } from "../ui/button-group";
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
-  InputGroupInput,
 } from "../ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import {
@@ -83,6 +84,7 @@ function ScrollToBottom(props: { className?: string }) {
   );
 }
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <Ignore>
 export function Thread() {
   const [artifactContext] = useArtifactContext();
   const [artifactOpen, closeArtifact] = useArtifactOpen();
@@ -356,9 +358,105 @@ export function Thread() {
                 blocks={contentBlocks}
                 onRemove={removeBlock}
               />
-              <ButtonGroup className="w-full [--radius:9999rem]">
+              <div
+                className={cn(
+                  "flex w-full items-end rounded-xl border border-input bg-background px-3 py-2 shadow-sm transition-[border-color,box-shadow]",
+                  "focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/40"
+                )}
+              >
+                <div className="flex flex-1 items-end gap-2">
+                  <Button
+                    aria-label="Upload files"
+                    className="size-10 shrink-0 rounded-lg hover:text-primary"
+                    onClick={() => fileInputRef.current?.click()}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Plus className="size-5" />
+                  </Button>
+
+                  <AutoResizeTextarea
+                    aria-label="Message input"
+                    className="flex-1 resize-none rounded-lg border border-transparent px-3 py-1.5 text-base leading-6"
+                    maxRows={8}
+                    minRows={1}
+                    onChange={(event) => setInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.metaKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        const el = event.target as HTMLElement | undefined;
+                        const form = el?.closest("form");
+                        form?.requestSubmit();
+                      }
+                    }}
+                    onPaste={handlePaste}
+                    placeholder="Send a message..."
+                    value={input}
+                  />
+                </div>
+
+                <div className="ml-2 flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        aria-label={
+                          hideToolCalls ? "Show tool calls" : "Hide tool calls"
+                        }
+                        aria-pressed={toolsVisible}
+                        className="size-10 rounded-lg hover:text-primary"
+                        data-active={toolsVisible}
+                        onClick={() =>
+                          setHideToolCalls(!(hideToolCalls ?? false))
+                        }
+                        onMouseEnter={() => setToolToggleHovered(true)}
+                        onMouseLeave={() => setToolToggleHovered(false)}
+                        size="icon"
+                        type="button"
+                        variant="ghost"
+                      >
+                        <WrenchIcon
+                          className={cn(
+                            "size-5 transition-colors",
+                            toolsVisible
+                              ? toolToggleHovered
+                                ? "text-muted-foreground"
+                                : "text-primary"
+                              : toolToggleHovered
+                                ? "text-primary"
+                                : "text-muted-foreground"
+                          )}
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {hideToolCalls ? "Show tool calls" : "Hide tool calls"}
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {stream.isLoading ? (
+                    <Button
+                      aria-label="Cancel streaming"
+                      className="size-10 rounded-lg"
+                      onClick={() => stream.stop()}
+                      size="icon"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <LoaderCircle className="size-5 animate-spin" />
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+              {/* Original button group retained for reference */}
+              <ButtonGroup className="hidden w-full [--radius:9999rem]">
                 <ButtonGroup className="flex-1">
-                  <InputGroup className="h-12 flex-1 bg-background">
+                  <InputGroup className="h-auto min-h-12 flex-1 items-start bg-background py-2">
                     <InputGroupAddon align="inline-start">
                       <Button
                         aria-label="Upload files"
@@ -371,8 +469,11 @@ export function Thread() {
                         <Plus className="size-5" />
                       </Button>
                     </InputGroupAddon>
-                    <InputGroupInput
-                      className="h-full text-base"
+                    <AutoResizeTextarea
+                      aria-label="Message input"
+                      className="text-base leading-6"
+                      maxRows={8}
+                      minRows={1}
                       onChange={(event) => setInput(event.target.value)}
                       onKeyDown={(event) => {
                         if (
@@ -389,7 +490,6 @@ export function Thread() {
                       }}
                       onPaste={handlePaste}
                       placeholder="Send a message..."
-                      type="text"
                       value={input}
                     />
                     <InputGroupAddon align="inline-end" className="gap-2">
