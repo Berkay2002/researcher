@@ -91,11 +91,21 @@ export async function finalReportGeneration(
 
     // Return successful report generation
     const lastMessage = response.messages?.at(-1);
-    const finalReportContent =
-      lastMessage?.content || "Report generation completed.";
+    let finalReportContent =
+      String(lastMessage?.content) || "Report generation completed.";
+
+    // Step 9: Append structured sources section with pristine URLs
+    if (state.sources && state.sources.length > 0) {
+      finalReportContent += "\n\n### Sources\n\n";
+
+      for (const [index, source] of state.sources.entries()) {
+        const citationNum = index + 1;
+        finalReportContent += `- [${citationNum}] ${source.title}: ${source.url}\n`;
+      }
+    }
 
     return {
-      final_report: String(finalReportContent),
+      final_report: finalReportContent,
       messages: response.messages || [
         new AIMessage({ content: finalReportContent }),
       ],

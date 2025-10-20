@@ -7,7 +7,7 @@
 /** biome-ignore-all lint/style/useBlockStatements: <> */
 
 import type { BaseMessage } from "@langchain/core/messages";
-import { AIMessage, HumanMessage } from "@langchain/core/messages";
+import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { createCompressionModel } from "../../../../configuration";
 import {
@@ -15,11 +15,11 @@ import {
   compressResearchSystemPrompt,
 } from "../../../../prompts";
 import { getTodayStr } from "../../../../utils";
-import type { ResearcherState } from "../../../state";
+import type { ResearcherState, SourceMetadata } from "../../../state";
 
-// Regex patterns for extracting sources from compressed research
-const SOURCES_SECTION_REGEX = /###?\s*Sources[\s\S]*/i;
-const SOURCE_LINE_REGEX = /^\[\d+\]/; // Lines starting with [1], [2], etc.
+// Regex patterns for extracting sources from tool messages
+const SOURCE_HEADER_REGEX = /---\s*SOURCE\s+(\d+):\s*(.+?)\s*---/gi;
+const URL_LINE_REGEX = /^URL:\s*(.+)$/im;
 
 /**
  * Compress research findings into a clean, comprehensive format
@@ -30,10 +30,47 @@ export async function compressResearch(
 ): Promise<Partial<ResearcherState>> {
   const { researcher_messages } = state;
 
-  // Configure compression model
+  // Step 1: Extract sources from tool messages BEFORE compression
+  const sources: SourceMetadata[] = [];
+
+  for (const msg of researcher_messages) {
+    if (ToolMessage.isInstance(msg)) {
+      const content = String(msg.content);
+
+      // Extract all sources from this tool message
+      // Format: --- SOURCE 1: Title ---\nURL: https://...\n
+
+      // Reset regex state
+      SOURCE_HEADER_REGEX.lastIndex = 0;
+
+      let match = SOURCE_HEADER_REGEX.exec(content);
+      while (match !== null) {
+        const title = match[2]?.trim();
+
+        // Find the URL line after this source header
+        const startPos = match.index + match[0].length;
+        const remainingContent = content.slice(startPos);
+        const urlMatch = remainingContent.match(URL_LINE_REGEX);
+
+        if (urlMatch?.[1]) {
+          const url = urlMatch[1].trim();
+
+          // Add source with pristine URL
+          sources.push({
+            url,
+            title: title || "Untitled Source",
+          });
+        }
+
+        match = SOURCE_HEADER_REGEX.exec(content);
+      }
+    }
+  }
+
+  // Step 2: Configure compression model
   const compressionModel = createCompressionModel(config);
 
-  // Build compression prompt
+  // Step 3: Build compression prompt
   const systemPrompt = compressResearchSystemPrompt.replace(
     "{date}",
     getTodayStr()
@@ -62,29 +99,16 @@ export async function compressResearch(
     new HumanMessage({ content: compressResearchSimpleHumanMessage }),
   ];
 
-  // Invoke compression model
+  // Step 4: Invoke compression model (only compresses text, not sources)
   const response = await compressionModel.invoke(messages);
 
   // Extract compressed research
   const compressedResearch = String(response.content);
 
-  // Extract sources/citations from the compressed research
-  // Sources are typically listed at the end in a "Sources" section
-  const rawNotes: string[] = [];
-
-  // Try to extract individual sources from the compressed research
-  const sourcesMatch = compressedResearch.match(SOURCES_SECTION_REGEX);
-  if (sourcesMatch) {
-    const sourcesSection = sourcesMatch[0];
-    // Extract each source line
-    const sourceLines = sourcesSection
-      .split("\n")
-      .filter((line) => line.trim().match(SOURCE_LINE_REGEX) !== null);
-    rawNotes.push(...sourceLines);
-  }
-
+  // Step 5: Return compressed text AND pristine sources
   return {
     compressed_research: compressedResearch,
-    raw_notes: rawNotes,
+    sources, // Pristine sources extracted before LLM processing
+    raw_notes: [], // Keep empty, sources now tracked separately
   };
 }
