@@ -8,6 +8,7 @@ import * as Icons from "lucide-react";
 import {
   ChevronRight,
   FolderPlus,
+  MessageCircle,
   MoreVertical,
   MoreVerticalIcon,
   PanelLeftCloseIcon,
@@ -52,6 +53,7 @@ import { cn } from "@/lib/utils";
 import { useThreads } from "@/providers/Thread";
 import { PanelContent, PanelFooter, PanelHeader } from "../app-shell";
 import { getContentString } from "../utils";
+import { HistoryModal } from "./history-modal";
 import ProjectModal, { type Project } from "./project-modal";
 import { KbdInputGroup } from "./search-kbd";
 import { SearchModal } from "./search-modal";
@@ -195,7 +197,7 @@ function ThreadCard({
       <div
         className={cn(
           // Softer card surface + hover affordances
-          "group flex items-center justify-between gap-2",
+          "group flex items-center gap-2",
           "rounded-lg px-3 py-2",
           "transition-all duration-200",
           // Better focus ring
@@ -207,62 +209,59 @@ function ThreadCard({
         )}
       >
         <span
-          className="truncate font-medium text-foreground text-sm"
+          className="min-w-0 flex-1 truncate font-medium text-foreground text-sm"
           ref={titleRef}
           title={isTitleTruncated ? itemText : undefined}
         >
           {itemText}
         </span>
-        {onToggleFavorite && (
-          <button
-            aria-label={isFavorite ? "Unfavorite" : "Favorite"}
-            className={cn(
-              "flex h-8 w-8 items-center justify-center",
-              "rounded-lg border border-transparent text-muted-foreground transition-colors",
-              "hover:bg-muted/50 hover:text-foreground"
-            )}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onToggleFavorite?.(thread.thread_id);
-            }}
-            type="button"
-          >
-            <StarIcon
-              className={cn(
-                "size-4",
-                isFavorite && "fill-yellow-400 text-yellow-400"
-              )}
-            />
-          </button>
-        )}
-        {onDelete && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                aria-label="Thread actions"
-                className={cn(
-                  "flex h-8 w-8 items-center justify-center",
-                  "rounded-lg text-muted-foreground",
-                  "border border-transparent transition-colors",
-                  "hover:bg-muted/50 hover:text-foreground"
+        <div className="flex shrink-0 items-center gap-1">
+          {(onDelete || onToggleFavorite) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  aria-label="Thread actions"
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center",
+                    "rounded-lg text-muted-foreground",
+                    "border border-transparent transition-colors",
+                    "hover:bg-muted/50 hover:text-foreground"
+                  )}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                  }}
+                  type="button"
+                >
+                  <MoreVerticalIcon className="size-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onToggleFavorite && (
+                  <DropdownMenuItem
+                    onSelect={(event) => {
+                      event.preventDefault();
+                      onToggleFavorite(thread.thread_id);
+                    }}
+                  >
+                    <StarIcon
+                      className={cn(
+                        "mr-2 size-4",
+                        isFavorite && "fill-yellow-400 text-yellow-400"
+                      )}
+                    />
+                    {isFavorite ? "Unfavorite" : "Favorite"}
+                  </DropdownMenuItem>
                 )}
-                onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }}
-                type="button"
-              >
-                <MoreVerticalIcon className="size-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={(event) => handleDelete(event)}>
-                Delete thread
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+                {onDelete && (
+                  <DropdownMenuItem onSelect={(event) => handleDelete(event)}>
+                    Delete thread
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
     </Link>
   );
@@ -392,8 +391,14 @@ export default function ThreadHistory() {
     parseAsBoolean.withDefault(true)
   );
 
-  const { getThreads, threads, setThreads, threadsLoading, setThreadsLoading } =
-    useThreads();
+  const {
+    getThreads,
+    threads,
+    setThreads,
+    threadsLoading,
+    setThreadsLoading,
+    deleteThread,
+  } = useThreads();
 
   // Thread ID state for navigation (setting to null starts a new chat)
   const [_threadId, setThreadId] = useQueryState("threadId");
@@ -403,6 +408,7 @@ export default function ThreadHistory() {
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [isProjectsExpanded, setIsProjectsExpanded] = useState(true);
 
@@ -449,16 +455,14 @@ export default function ThreadHistory() {
 
   // Handle thread deletion
   const handleDeleteThread = useCallback(
-    (threadId: string) => {
+    async (threadId: string) => {
       try {
-        // Call API to delete thread (you may need to implement this)
-        // For now, just remove from local state
-        setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+        await deleteThread(threadId);
       } catch (err) {
         console.error("Error deleting thread:", err);
       }
     },
-    [setThreads]
+    [deleteThread]
   );
 
   const handleFocusSearch = useCallback(() => {
@@ -494,6 +498,19 @@ export default function ThreadHistory() {
       return next;
     });
   }, []);
+
+  const handleDeleteThreadsBulk = useCallback(
+    async (threadIds: string[]) => {
+      try {
+        for (const threadId of threadIds) {
+          await deleteThread(threadId);
+        }
+      } catch (err) {
+        console.error("Error deleting threads in bulk:", err);
+      }
+    },
+    [deleteThread]
+  );
 
   const handleDeleteProject = useCallback((projectId: string) => {
     setProjects((prev) => {
@@ -665,7 +682,7 @@ export default function ThreadHistory() {
             New Chat
           </Button>
         </div>
-        <div className="mt-2">
+        <div className="mt-1">
           {projects.length === 0 ? (
             <Button
               className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
@@ -751,6 +768,19 @@ export default function ThreadHistory() {
               </CollapsibleContent>
             </Collapsible>
           )}
+
+          {/* Chats Button */}
+          <div className="mt-1">
+            <Button
+              className="h-9 w-full justify-start rounded-md bg-transparent px-3 transition hover:bg-muted/40"
+              onClick={() => setIsHistoryModalOpen(true)}
+              type="button"
+              variant="ghost"
+            >
+              <MessageCircle className="size-4" />
+              Chats
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -790,6 +820,30 @@ export default function ThreadHistory() {
         onCreate={handleCreateProject}
         onOpenChange={setIsProjectModalOpen}
         open={isProjectModalOpen}
+      />
+      <HistoryModal
+        getThreadTitle={(thread) => {
+          let title = thread.thread_id;
+          if (
+            typeof thread.values === "object" &&
+            thread.values &&
+            "messages" in thread.values &&
+            Array.isArray(thread.values.messages) &&
+            thread.values.messages?.length > 0
+          ) {
+            const firstMessage = thread.values.messages[0];
+            title = getContentString(firstMessage.content);
+          }
+          return title;
+        }}
+        onDeleteThreads={handleDeleteThreadsBulk}
+        onOpenChange={setIsHistoryModalOpen}
+        onSelectThread={(threadId) => {
+          setThreadId(threadId);
+          setIsHistoryModalOpen(false);
+        }}
+        open={isHistoryModalOpen}
+        threads={threads}
       />
       {searchModal}
 

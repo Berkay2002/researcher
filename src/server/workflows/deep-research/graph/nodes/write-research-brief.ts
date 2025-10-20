@@ -29,7 +29,7 @@ export async function writeResearchBrief(
   const researchModel = createResearchBriefModel(config).withStructuredOutput(
     ResearchQuestionSchema,
     {
-      method: "jsonMode",
+      method: "functionCalling",
     }
   );
 

@@ -221,4 +221,12 @@
     @apply bg-background text-foreground;
     letter-spacing: var(--tracking-normal);
   }
+
+  /* Clamp Radix ScrollArea viewport so long, nowrap rows can't widen it */
+  [data-radix-scroll-area-viewport] {
+    overflow-x: hidden !important;
+    max-width: 100%;
+    /* keeps width stable when the vertical scrollbar appears (Windows) */
+    scrollbar-gutter: stable;
+  }
 }

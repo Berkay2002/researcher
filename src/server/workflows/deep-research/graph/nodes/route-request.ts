@@ -96,7 +96,7 @@ export async function routeRequest(
   const routingModel = createRoutingModel(config).withStructuredOutput(
     RouteDecisionSchema,
     {
-      method: "jsonMode",
+      method: "functionCalling",
       includeRaw: false,
     }
   );

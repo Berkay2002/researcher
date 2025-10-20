@@ -48,7 +48,7 @@ export async function clarifyWithUser(
   const clarificationModel = createClarificationModel(
     config
   ).withStructuredOutput(ClarifyWithUserSchema, {
-    method: "jsonMode",
+    method: "functionCalling",
     includeRaw: false,
   });
 

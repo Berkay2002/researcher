@@ -1,3 +1,6 @@
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+/** biome-ignore-all lint/nursery/noShadow: <Ignore> */
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
 import type { Thread } from "@langchain/langgraph-sdk";
 import { useQueryState } from "nuqs";
 import {
@@ -19,6 +22,7 @@ interface ThreadContextType {
   setThreads: Dispatch<SetStateAction<Thread[]>>;
   threadsLoading: boolean;
   setThreadsLoading: Dispatch<SetStateAction<boolean>>;
+  deleteThread: (threadId: string) => Promise<void>;
 }
 
 const ThreadContext = createContext<ThreadContextType | undefined>(undefined);
@@ -52,12 +56,30 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     return threads;
   }, [apiUrl, assistantId]);
 
+  const deleteThread = useCallback(
+    async (threadId: string): Promise<void> => {
+      if (!apiUrl) {
+        throw new Error("API URL is not set");
+      }
+
+      const client = createClient(apiUrl, getApiKey() ?? undefined);
+
+      // Delete from LangGraph SDK
+      await client.threads.delete(threadId);
+
+      // Update local state
+      setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+    },
+    [apiUrl]
+  );
+
   const value = {
     getThreads,
     threads,
     setThreads,
     threadsLoading,
     setThreadsLoading,
+    deleteThread,
   };
 
   return (
