@@ -50,7 +50,7 @@ export function AppShell({
       {leftPanel && (
         <aside
           className={cn(
-            "hidden flex-shrink-0 border-r bg-muted/30 lg:flex",
+            "hidden shrink-0 border-r bg-muted/30 lg:flex",
             leftPanelCollapsed ? "w-16" : "w-64 xl:w-80"
           )}
         >
@@ -76,7 +76,7 @@ export function AppShell({
       {showRightPanel && (
         <aside
           className={cn(
-            "hidden flex-shrink-0 border-l bg-muted/30 lg:flex",
+            "hidden shrink-0 border-l bg-muted/30 lg:flex",
             rightPanelCollapsed ? "w-16" : "w-80 xl:w-96" // 320px on lg, 384px on xl
           )}
         >

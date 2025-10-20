@@ -1,5 +1,7 @@
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
 "use client";
 
+import type { Message } from "@langchain/langgraph-sdk";
 import {
   FilterIcon,
   PanelRightCloseIcon,
@@ -10,6 +12,7 @@ import {
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { PanelContent, PanelHeader } from "../app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,16 +25,24 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { getFaviconUrl } from "@/lib/utils/favicon";
-import type { CitationData, SourceCardData } from "@/types/ui";
-import { PanelContent, PanelHeader } from "./app-shell";
+import { useStreamContext } from "@/providers/Stream";
+import type { SourceMetadata } from "@/server/workflows/deep-research/graph/state";
 import { SourceCard } from "./source-card";
 
 /**
- * Sources Panel Props
+ * Citation data derived from message content
+ * Used for the Citations tab display
+ */
+type DerivedCitation = {
+  id: string;
+  text: string;
+  sources: string[];
+};
+
+/**
+ * Sources Panel Props (migrated to LangGraph SDK patterns)
  */
 export type SourcesPanelProps = {
-  sources: SourceCardData[];
-  citations?: CitationData[];
   onTogglePin?: (url: string) => void;
   className?: string;
   onSidebarOpenChange?: (open: boolean) => void;
@@ -41,20 +52,72 @@ export type SourcesPanelProps = {
 };
 
 /**
- * Sources Panel Component
+ * Extract citations from message content
+ * Parses [1], [2], etc. from messages and maps them to sources
+ */
+function extractCitationsFromMessages(
+  messages: Array<{ content: string | unknown }>,
+  sources: SourceMetadata[]
+): DerivedCitation[] {
+  const citations: DerivedCitation[] = [];
+  const citationMap = new Map<number, Set<string>>();
+
+  // Parse all messages for citation numbers
+  for (const message of messages) {
+    const content = typeof message.content === "string" ? message.content : "";
+    const citationRegex = /\[(?:Source\s+)?(\d+)\]/gi;
+
+    const matches = content.matchAll(citationRegex);
+    for (const match of matches) {
+      const sourceNum = Number.parseInt(match[1], 10);
+      const sourceIndex = sourceNum - 1; // Convert to 0-based index
+
+      if (sourceIndex >= 0 && sourceIndex < sources.length) {
+        if (!citationMap.has(sourceNum)) {
+          citationMap.set(sourceNum, new Set());
+        }
+        citationMap.get(sourceNum)?.add(sources[sourceIndex].url);
+      }
+    }
+  }
+
+  // Build citation objects
+  for (const [citationNum, urls] of citationMap.entries()) {
+    const sourceIndex = citationNum - 1;
+    const source = sources[sourceIndex];
+    if (source) {
+      citations.push({
+        id: `citation-${citationNum}`,
+        text: source.title,
+        sources: Array.from(urls),
+      });
+    }
+  }
+
+  return citations.sort((a, b) => {
+    const numA = Number.parseInt(a.id.replace("citation-", ""), 10);
+    const numB = Number.parseInt(b.id.replace("citation-", ""), 10);
+    return numA - numB;
+  });
+}
+
+/**
+ * Sources Panel Component (MIGRATED to LangGraph SDK)
  *
  * Right panel displaying sources with filtering:
  * - Search by title/host
  * - Filter by domain
  * - Show pinned only
  * - Real-time updates as sources arrive
+ *
+ * MIGRATION CHANGES:
+ * - Now uses SourceMetadata[] from useStreamContext().state.sources
+ * - Derives citations from messages instead of separate CitationData prop
+ * - No longer depends on deprecated ui.ts types
  */
 const FAVICON_SIZE = 16;
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: <It is fine>
 export function SourcesPanel({
-  sources,
-  citations,
   onTogglePin,
   className,
   onSidebarOpenChange,
@@ -66,11 +129,40 @@ export function SourcesPanel({
   const [domainFilter, setDomainFilter] = useState<string>("all");
   const [showPinnedOnly, setShowPinnedOnly] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [pinnedSources, setPinnedSources] = useState<Set<string>>(new Set());
   const sourceRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Get sources and messages from stream context
+  const stream = useStreamContext();
+  const sources =
+    (stream.values?.sources as SourceMetadata[] | undefined) ?? [];
+  const messages = (stream.values?.messages as Message[] | undefined) ?? [];
+
+  // Derive citations from messages and sources
+  const citations = useMemo(
+    () => extractCitationsFromMessages(messages, sources),
+    [messages, sources]
+  );
 
   const handleToggleSidebar = useCallback(() => {
     onSidebarOpenChange?.(!isSidebarOpen);
   }, [isSidebarOpen, onSidebarOpenChange]);
+
+  const handleTogglePin = useCallback(
+    (url: string) => {
+      setPinnedSources((prev) => {
+        const next = new Set(prev);
+        if (next.has(url)) {
+          next.delete(url);
+        } else {
+          next.add(url);
+        }
+        return next;
+      });
+      onTogglePin?.(url);
+    },
+    [onTogglePin]
+  );
 
   // Scroll to specific source when requested
   useEffect(() => {
@@ -91,7 +183,10 @@ export function SourcesPanel({
     }
   }, [scrollToSourceIndex]);
 
-  const pinnedCount = sources.filter((s) => s.isPinned).length;
+  const pinnedCount = Array.from(pinnedSources).filter((url) =>
+    sources.some((s: SourceMetadata) => s.url === url)
+  ).length;
+
   const clearFilters = () => {
     setSearchQuery("");
     setDomainFilter("all");
@@ -100,7 +195,15 @@ export function SourcesPanel({
 
   // Extract unique domains from sources
   const uniqueDomains = useMemo(() => {
-    const domains = new Set(sources.map((source) => source.host));
+    const domains = new Set(
+      sources.map((source: SourceMetadata) => {
+        try {
+          return new URL(source.url).hostname;
+        } catch {
+          return source.url;
+        }
+      })
+    );
     return Array.from(domains).sort();
   }, [sources]);
 
@@ -111,26 +214,42 @@ export function SourcesPanel({
     // Search filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (source) =>
+      filtered = filtered.filter((source: SourceMetadata) => {
+        const host = (() => {
+          try {
+            return new URL(source.url).hostname;
+          } catch {
+            return source.url;
+          }
+        })();
+        return (
           source.title.toLowerCase().includes(query) ||
-          source.host.toLowerCase().includes(query) ||
-          source.snippet.toLowerCase().includes(query)
-      );
+          host.toLowerCase().includes(query) ||
+          source.query?.toLowerCase().includes(query)
+        );
+      });
     }
 
     // Domain filter
     if (domainFilter !== "all") {
-      filtered = filtered.filter((source) => source.host === domainFilter);
+      filtered = filtered.filter((source: SourceMetadata) => {
+        try {
+          return new URL(source.url).hostname === domainFilter;
+        } catch {
+          return source.url === domainFilter;
+        }
+      });
     }
 
     // Pinned filter
     if (showPinnedOnly) {
-      filtered = filtered.filter((source) => source.isPinned);
+      filtered = filtered.filter((source: SourceMetadata) =>
+        pinnedSources.has(source.url)
+      );
     }
 
     return filtered;
-  }, [sources, searchQuery, domainFilter, showPinnedOnly]);
+  }, [sources, searchQuery, domainFilter, showPinnedOnly, pinnedSources]);
 
   // Count of active filters
   const activeFilterCount = useMemo(() => {
@@ -244,7 +363,7 @@ export function SourcesPanel({
             {sources.length} Sources
           </TabsTrigger>
           <TabsTrigger className="flex-1" value="citations">
-            {citations?.length || 0} Citations
+            {citations.length} Citations
           </TabsTrigger>
         </TabsList>
 
@@ -292,7 +411,7 @@ export function SourcesPanel({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All domains</SelectItem>
-                    {uniqueDomains.map((domain) => (
+                    {uniqueDomains.map((domain: string) => (
                       <SelectItem key={domain} value={domain}>
                         {domain}
                       </SelectItem>
@@ -339,9 +458,9 @@ export function SourcesPanel({
                 )}
               </div>
             ) : (
-              filteredSources.map((source, index) => (
+              filteredSources.map((source: SourceMetadata, index: number) => (
                 <div
-                  key={source.id}
+                  key={source.url}
                   ref={(el) => {
                     if (el) {
                       sourceRefs.current.set(index, el);
@@ -350,7 +469,11 @@ export function SourcesPanel({
                     }
                   }}
                 >
-                  <SourceCard onTogglePin={onTogglePin} source={source} />
+                  <SourceCard
+                    isPinned={pinnedSources.has(source.url)}
+                    onTogglePin={handleTogglePin}
+                    source={source}
+                  />
                 </div>
               ))
             )}

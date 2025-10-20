@@ -20,7 +20,7 @@ import {
   createAgent,
   toolCallLimitMiddleware,
 } from "langchain";
-import { createSearchTools } from "@/server/agents/react/tools/search";
+import { createSearchTools } from "@/server/shared/tools/search";
 import { createFollowupModel, getConfiguration } from "../../configuration";
 import { answerFollowupPrompt } from "../../prompts";
 import { getTodayStr } from "../../utils";

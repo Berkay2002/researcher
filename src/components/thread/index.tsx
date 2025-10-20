@@ -21,7 +21,7 @@ import {
 import { toast } from "sonner";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { v4 as uuidv4 } from "uuid";
-import { AppShell } from "@/app/(components)/app-shell";
+import { AppShell } from "./app-shell";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import {
   DO_NOT_RENDER_ID_PREFIX,

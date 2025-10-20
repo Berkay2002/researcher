@@ -138,7 +138,7 @@ const COLOR_CLASSES: Record<
   pink: { icon: "text-pink-500", ring: "ring-pink-500/50", dot: "bg-pink-500" },
 };
 
-// Quick-pick “premade projects” (your former “Project Icons” row)
+// Quick-pick "premade projects" (your former "Project Icons" row)
 const EXAMPLES: Array<{
   name: string;
   icon: (typeof ICON_OPTIONS)[number];
@@ -311,7 +311,7 @@ export default function ProjectModal({
                   </div>
 
                   <div className="mt-3 text-muted-foreground text-xs">
-                    Icon is optional. If you skip this, we’ll use a general
+                    Icon is optional. If you skip this, we'll use a general
                     default.
                   </div>
                 </PopoverContent>
