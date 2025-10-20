@@ -20,28 +20,25 @@ export const Message = ({ className, from, ...props }: MessageProps) => (
   />
 );
 
-const messageContentVariants = cva(
-  "flex flex-col text-sm leading-relaxed",
-  {
-    variants: {
-      variant: {
-        default: [
-          "group-[.is-user]:max-w-[70%] group-[.is-user]:rounded-3xl group-[.is-user]:bg-primary group-[.is-user]:px-5 group-[.is-user]:py-3 group-[.is-user]:text-primary-foreground group-[.is-user]:shadow-sm",
-          "group-[.is-user]:ml-auto",
-          "group-[.is-assistant]:w-full group-[.is-assistant]:max-w-full group-[.is-assistant]:rounded-none group-[.is-assistant]:bg-transparent group-[.is-assistant]:px-0 group-[.is-assistant]:py-0",
-        ],
-        flat: [
-          "group-[.is-user]:max-w-[70%] group-[.is-user]:rounded-3xl group-[.is-user]:bg-secondary group-[.is-user]:px-5 group-[.is-user]:py-3 group-[.is-user]:text-foreground group-[.is-user]:shadow-sm",
-          "group-[.is-user]:ml-auto",
-          "group-[.is-assistant]:w-full group-[.is-assistant]:max-w-full group-[.is-assistant]:bg-transparent group-[.is-assistant]:px-0 group-[.is-assistant]:py-0",
-        ],
-      },
+const messageContentVariants = cva("flex flex-col text-sm leading-relaxed", {
+  variants: {
+    variant: {
+      default: [
+        "group-[.is-user]:max-w-[70%] group-[.is-user]:rounded-3xl group-[.is-user]:bg-primary group-[.is-user]:px-5 group-[.is-user]:py-3 group-[.is-user]:text-primary-foreground group-[.is-user]:shadow-sm",
+        "group-[.is-user]:ml-auto",
+        "group-[.is-assistant]:w-full group-[.is-assistant]:max-w-full group-[.is-assistant]:rounded-none group-[.is-assistant]:bg-transparent group-[.is-assistant]:px-0 group-[.is-assistant]:py-0",
+      ],
+      flat: [
+        "group-[.is-user]:max-w-[70%] group-[.is-user]:rounded-3xl group-[.is-user]:bg-secondary group-[.is-user]:px-5 group-[.is-user]:py-3 group-[.is-user]:text-foreground group-[.is-user]:shadow-sm",
+        "group-[.is-user]:ml-auto",
+        "group-[.is-assistant]:w-full group-[.is-assistant]:max-w-full group-[.is-assistant]:bg-transparent group-[.is-assistant]:px-0 group-[.is-assistant]:py-0",
+      ],
     },
-    defaultVariants: {
-      variant: "default",
-    },
-  }
-);
+  },
+  defaultVariants: {
+    variant: "default",
+  },
+});
 
 export type MessageContentProps = HTMLAttributes<HTMLDivElement> &
   VariantProps<typeof messageContentVariants>;

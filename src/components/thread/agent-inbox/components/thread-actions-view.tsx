@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
 import type { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 import { useQueryState } from "nuqs";
 import { toast } from "sonner";
