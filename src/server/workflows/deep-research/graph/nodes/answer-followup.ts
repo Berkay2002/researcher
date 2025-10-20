@@ -10,6 +10,7 @@ import {
   AIMessage,
   coerceMessageLikeToMessage,
   HumanMessage,
+  ToolMessage,
 } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import type { AgentMiddleware } from "langchain";
@@ -23,11 +24,13 @@ import { createSearchTools } from "@/server/agents/react/tools/search";
 import { createFollowupModel, getConfiguration } from "../../configuration";
 import { answerFollowupPrompt } from "../../prompts";
 import { getTodayStr } from "../../utils";
-import type { AgentState } from "../state";
+import type { AgentState, SourceMetadata } from "../state";
 
-// Regex patterns for citation extraction (defined at top level for performance)
+// Regex patterns for citation extraction and source parsing
 const CITATION_NUMBER_REGEX = /\[(\d+)\]/g;
 const SOURCES_SECTION_REGEX = /###\s*Sources\s*([\s\S]*?)$/i;
+const SOURCE_HEADER_REGEX = /---\s*SOURCE\s+(\d+):\s*(.+?)\s*---/gi;
+const URL_LINE_REGEX = /^URL:\s*(.+)$/im;
 
 /**
  * Extract citation information from the final report
@@ -62,6 +65,46 @@ function extractCitationsFromReport(finalReport: string | null): {
     maxCitationNumber: maxNumber,
     citationList,
   };
+}
+
+/**
+ * Extract sources from tool messages (for NEW searches in follow-ups)
+ * Returns array of SourceMetadata with pristine URLs
+ */
+function extractSourcesFromToolMessages(messages: unknown[]): SourceMetadata[] {
+  const sources: SourceMetadata[] = [];
+
+  for (const msg of messages) {
+    if (ToolMessage.isInstance(msg)) {
+      const content = String(msg.content);
+
+      // Extract sources from: --- SOURCE 1: Title ---\nURL: https://...
+      SOURCE_HEADER_REGEX.lastIndex = 0;
+
+      let match = SOURCE_HEADER_REGEX.exec(content);
+      while (match !== null) {
+        const title = match[2]?.trim();
+
+        // Find the URL line after this source header
+        const startPos = match.index + match[0].length;
+        const remainingContent = content.slice(startPos);
+        const urlMatch = remainingContent.match(URL_LINE_REGEX);
+
+        if (urlMatch?.[1]) {
+          const url = urlMatch[1].trim();
+
+          sources.push({
+            url,
+            title: title || "Untitled Source",
+          });
+        }
+
+        match = SOURCE_HEADER_REGEX.exec(content);
+      }
+    }
+  }
+
+  return sources;
 }
 
 /**
@@ -180,17 +223,46 @@ ${existingCitations.citationList}
   // Invoke the agent
   const response = await agent.invoke({ messages: agentMessages }, config);
 
+  // Extract sources from tool messages (NEW searches in this follow-up)
+  const newSources = extractSourcesFromToolMessages(response.messages);
+
   // Extract the final AI message from the response
   const aiMessages = response.messages.filter((msg) =>
     AIMessage.isInstance(msg)
   );
-  const finalMessage =
+  let finalMessage =
     aiMessages.length > 0
       ? // biome-ignore lint/style/noNonNullAssertion: Length check guarantees this exists
         aiMessages.at(-1)!
       : new AIMessage({
           content: "I was unable to answer your follow-up question.",
         });
+
+  // If there are NEW sources from searches, append them with pristine URLs
+  if (newSources.length > 0) {
+    let content = String(finalMessage.content);
+
+    // Remove any LLM-generated Sources section
+    content = content.replace(SOURCES_SECTION_REGEX, "").trim();
+
+    // Append structured sources section
+    content += "\n\n### Sources\n\n";
+
+    // Start numbering from where original report left off
+    const startNum = existingCitations.maxCitationNumber + 1;
+
+    for (const [index, source] of newSources.entries()) {
+      const citationNum = startNum + index;
+      content += `- [${citationNum}] ${source.title}: ${source.url}\n`;
+    }
+
+    // Create new message with updated content
+    finalMessage = new AIMessage({
+      content,
+      additional_kwargs: finalMessage.additional_kwargs,
+      response_metadata: finalMessage.response_metadata,
+    });
+  }
 
   // Return the answer without modifying research state
   return {

@@ -74,6 +74,15 @@ export const ResearchQuestionSchema = z.object({
 export type ResearchQuestion = z.infer<typeof ResearchQuestionSchema>;
 
 /**
+ * Source metadata for tracking URLs and citations
+ */
+export type SourceMetadata = {
+  url: string;
+  title: string;
+  query?: string;
+};
+
+/**
  * Routing decision for follow-up vs new research
  */
 export const RouteDecisionSchema = z.object({
@@ -157,6 +166,11 @@ export const AgentStateAnnotation = Annotation.Root({
     default: () => [],
   }),
 
+  sources: Annotation<SourceMetadata[]>({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
+    default: () => [],
+  }),
+
   notes: Annotation<string[]>({
     reducer: overrideReducer,
     default: () => [],
@@ -201,6 +215,11 @@ export const SupervisorStateAnnotation = Annotation.Root({
     reducer: overrideReducer,
     default: () => [],
   }),
+
+  sources: Annotation<SourceMetadata[]>({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
+    default: () => [],
+  }),
 });
 
 export type SupervisorState = typeof SupervisorStateAnnotation.State;
@@ -231,6 +250,11 @@ export const ResearcherStateAnnotation = Annotation.Root({
     reducer: overrideReducer,
     default: () => [],
   }),
+
+  sources: Annotation<SourceMetadata[]>({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
+    default: () => [],
+  }),
 });
 
 export type ResearcherState = typeof ResearcherStateAnnotation.State;
@@ -245,6 +269,11 @@ export const ResearcherOutputStateAnnotation = Annotation.Root({
 
   raw_notes: Annotation<string[]>({
     reducer: overrideReducer,
+    default: () => [],
+  }),
+
+  sources: Annotation<SourceMetadata[]>({
+    reducer: (prev, next) => [...(prev ?? []), ...next],
     default: () => [],
   }),
 });

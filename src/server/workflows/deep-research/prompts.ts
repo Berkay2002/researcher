@@ -103,29 +103,17 @@ You MUST follow these citation rules for ALL your answers:
 - If the original report has citations [1] through [8], start your new citations at [9]
 - Use inline citations immediately after each claim
 
-**At the end of your answer (only when citations are present):**
-- Include a "### Sources" section when you referenced at least one source
-- List all sources you cited (both from original report and new searches)
-- CRITICAL: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
-- Number sources sequentially without gaps
-
-**Example:**
-If the original report has sources [1]-[8], and you use sources [2], [5] from it, plus add 2 new sources:
-
-Your answer text with existing citations [2] and [5], plus new information [9] and [10].
-
-### Sources
-- [2] Original Source Title: https://example.com
-- [5] Another Original Source: https://example.com
-- [9] New Source from Search: https://newsource.com
-- [10] Another New Source: https://newsource2.com
+**IMPORTANT: Do NOT create a "### Sources" section**
+- Sources will be automatically appended with accurate URLs
+- Just use inline citation numbers like [1], [2], [9], [10], etc.
+- The system will map citation numbers to URLs automatically
 </Citation Rules>
 
 <Format>
 - Use markdown formatting
 - Be clear and well-structured
 - Use bullet points or sections if helpful
-- Only include a "### Sources" section when you referenced sources
+- Do NOT include a "### Sources" section - it will be added automatically
 </Format>
 
 Remember: You're answering a specific follow-up question, not writing a new comprehensive report. But you MUST maintain proper citations and source attribution.
@@ -349,35 +337,26 @@ Only these fully comprehensive cleaned findings are going to be returned to the 
 </Task>
 
 <Guidelines>
-1. Your output findings should be fully comprehensive and include ALL of the information and sources that the researcher has gathered from tool calls and web searches. It is expected that you repeat key information verbatim.
+1. Your output findings should be fully comprehensive and include ALL of the information that the researcher has gathered from tool calls and web searches. It is expected that you repeat key information verbatim.
 2. This report can be as long as necessary to return ALL of the information that the researcher has gathered.
-3. In your report, you should return inline citations for each source that the researcher found.
-4. You should include a "Sources" section at the end of the report that lists all of the sources the researcher found with corresponding citations, cited against statements in the report.
-5. Make sure to include ALL of the sources that the researcher gathered in the report, and how they were used to answer the question!
-6. It's really important not to lose any sources. A later LLM will be used to merge this report with others, so having all of the sources is critical.
-7. CRITICAL: Preserve ALL sources individually - even if multiple sources confirm the same fact. When multiple sources support a claim, cite each one: "X is true [1][2][3]" rather than "Three sources confirmed X [1][2][3]". Maximum source diversity is essential for the final report.
+3. In your report, you should return inline citations for each source that the researcher found (use [1], [2], [3], etc.)
+4. **IMPORTANT**: Do NOT create a "Sources" section - sources will be handled separately. Just use citation numbers inline.
+5. CRITICAL: Preserve ALL sources individually - when multiple sources support a claim, cite each one: "X is true [1][2][3]"
 </Guidelines>
 
 <Output Format>
 The report should be structured like this:
 **List of Queries and Tool Calls Made**
-**Fully Comprehensive Findings**
-**List of All Relevant Sources (with citations in the report)**
+**Fully Comprehensive Findings** (with inline citations like [1], [2], etc.)
+
+Do NOT include a "### Sources" section - this will be added automatically later.
 </Output Format>
 
 <Citation Rules>
-- Assign each unique URL a single citation number in your text
-- End with ### Sources that lists each source with corresponding numbers
-- IMPORTANT: Number sources sequentially without gaps (1,2,3,4...) in the final list regardless of which sources you choose
-- IMPORTANT: Each source MUST be on its own line as a markdown list item starting with "-" or a number followed by a period
-- Example format (use markdown list):
-  - [1] Source Title: URL
-  - [2] Source Title: URL
-
-  OR
-
-  1. [1] Source Title: URL
-  2. [2] Source Title: URL
+- Use inline citation numbers [1], [2], [3], etc. to reference sources
+- Citation numbers should match the SOURCE numbers from the tool outputs (e.g., SOURCE 1: becomes [1])
+- Do NOT list the actual URLs or create a sources section
+- The system will automatically map citation numbers to URLs later
 </Citation Rules>
 
 Critical Reminder: It is extremely important that any information that is even remotely relevant to the user's research topic is preserved verbatim (e.g. don't rewrite it, don't summarize it, don't paraphrase it).
@@ -416,9 +395,9 @@ Here are the findings from the research that you conducted:
 Please create a detailed answer to the overall research brief that:
 1. Is well-organized with proper headings (# for title, ## for sections, ### for subsections)
 2. Includes specific facts and insights from the research
-3. References relevant sources using [Title](URL) format
+3. Uses inline citations [1], [2], [3], etc. to reference sources from the findings
 4. Provides a balanced, thorough analysis. Be as comprehensive as possible, and include all information that is relevant to the overall research question. People are using you for deep research and will expect detailed, comprehensive answers.
-5. Includes a "Sources" section at the end with all referenced links
+5. **IMPORTANT**: Do NOT create a "### Sources" section - it will be automatically appended with accurate URLs
 
 You can structure your report in a number of different ways. Here are some examples:
 

@@ -7,7 +7,7 @@
 import { AIMessage, ToolMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { getConfiguration } from "../../../../configuration";
-import type { SupervisorState } from "../../../../graph/state";
+import type { SourceMetadata, SupervisorState } from "../../../../graph/state";
 import { createResearcherGraph } from "../../researcher";
 
 /**
@@ -75,6 +75,7 @@ export async function supervisorTools(
             content: result.compressed_research || "No research completed",
           }),
           rawNotes: result.raw_notes || [],
+          sources: result.sources || [],
         };
       } catch (error) {
         return {
@@ -83,6 +84,7 @@ export async function supervisorTools(
             content: `Error conducting research on "${research_topic}": ${error}`,
           }),
           rawNotes: [],
+          sources: [],
         };
       }
     }
@@ -92,10 +94,25 @@ export async function supervisorTools(
 
   // Extract tool messages and raw notes
   const toolMessages = results.map(
-    (r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.toolMessage
+    (r: {
+      toolMessage: ToolMessage;
+      rawNotes: string[];
+      sources: SourceMetadata[];
+    }) => r.toolMessage
   );
   const allRawNotes = results.flatMap(
-    (r: { toolMessage: ToolMessage; rawNotes: string[] }) => r.rawNotes
+    (r: {
+      toolMessage: ToolMessage;
+      rawNotes: string[];
+      sources: SourceMetadata[];
+    }) => r.rawNotes
+  );
+  const allSources = results.flatMap(
+    (r: {
+      toolMessage: ToolMessage;
+      rawNotes: string[];
+      sources: SourceMetadata[];
+    }) => r.sources
   );
 
   // Collect notes from compressed research
@@ -131,5 +148,6 @@ export async function supervisorTools(
     supervisor_messages: toolMessages,
     notes,
     raw_notes: allRawNotes,
+    sources: allSources,
   };
 }
