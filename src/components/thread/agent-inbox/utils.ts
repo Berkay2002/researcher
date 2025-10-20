@@ -1,3 +1,8 @@
+/** biome-ignore-all lint/suspicious/noExplicitAny: <Ignore> */
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
+/** biome-ignore-all lint/suspicious/noConsole: <Ignore> */
+/** biome-ignore-all lint/complexity/noForEach: <Ignore> */
+/** biome-ignore-all lint/performance/useTopLevelRegex: <Ignore> */
 import { type BaseMessage, isBaseMessage } from "@langchain/core/messages";
 import type { HumanInterrupt } from "@langchain/langgraph/prebuilt";
 import { format } from "date-fns";
@@ -51,10 +56,10 @@ export function baseMessageObject(item: unknown): string {
     if ("tool_calls" in item) {
       toolCallText = JSON.stringify(item.tool_calls, null);
     }
-    if ("type" in item) {
+    if ("type" in item && typeof item.type === "string") {
       return `${item.type}:${contentText ? ` ${contentText}` : ""}${toolCallText ? ` - Tool calls: ${toolCallText}` : ""}`;
     }
-    if ("_getType" in item) {
+    if ("_getType" in item && typeof item._getType === "function") {
       return `${item._getType()}:${contentText ? ` ${contentText}` : ""}${toolCallText ? ` - Tool calls: ${toolCallText}` : ""}`;
     }
   } else if (

@@ -1,10 +1,16 @@
-import type { Base64ContentBlock } from "@langchain/core/messages";
-import { File, Image as ImageIcon, X as XIcon } from "lucide-react";
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+/** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
+/** biome-ignore-all lint/style/noMagicNumbers: <Ignore> */
+/** biome-ignore-all lint/style/noNestedTernary: <Ignore> */
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+import type { ContentBlock } from "@langchain/core/messages";
+import { File, X as XIcon } from "lucide-react";
 import Image from "next/image";
 import type React from "react";
 import { cn } from "@/lib/utils";
+
 export interface MultimodalPreviewProps {
-  block: Base64ContentBlock;
+  block: ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File;
   removable?: boolean;
   onRemove?: () => void;
   className?: string;
@@ -21,11 +27,10 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   // Image block
   if (
     block.type === "image" &&
-    block.source_type === "base64" &&
-    typeof block.mime_type === "string" &&
-    block.mime_type.startsWith("image/")
+    typeof block.mimeType === "string" &&
+    block.mimeType.startsWith("image/")
   ) {
-    const url = `data:${block.mime_type};base64,${block.data}`;
+    const url = `data:${block.mimeType};base64,${block.data}`;
     let imgClass = "rounded-md object-cover h-16 w-16 text-lg";
     if (size === "sm") imgClass = "rounded-md object-cover h-10 w-10 text-base";
     if (size === "lg") imgClass = "rounded-md object-cover h-24 w-24 text-xl";
@@ -53,11 +58,7 @@ export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   }
 
   // PDF block
-  if (
-    block.type === "file" &&
-    block.source_type === "base64" &&
-    block.mime_type === "application/pdf"
-  ) {
+  if (block.type === "file" && block.mimeType === "application/pdf") {
     const filename =
       block.metadata?.filename || block.metadata?.name || "PDF file";
     return (

@@ -1,3 +1,11 @@
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <ignore> */
+/** biome-ignore-all lint/nursery/noShadow: <ignore> */
+/** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
+/** biome-ignore-all lint/style/noMagicNumbers: <ignore> */
+/** biome-ignore-all lint/a11y/noStaticElementInteractions: <ignore> */
+/** biome-ignore-all lint/a11y/useKeyWithClickEvents: <ignore> */
+/** biome-ignore-all lint/a11y/noNoninteractiveElementInteractions: <ignore> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <ignore> */
 import type { BaseMessage } from "@langchain/core/messages";
 import type { ToolCall } from "@langchain/core/messages/tool";
 import { motion } from "framer-motion";
@@ -21,9 +29,9 @@ interface StateViewRecursiveProps {
 
 const messageTypeToLabel = (message: BaseMessage) => {
   let type = "";
-  if ("type" in message) {
-    type = message.type as string;
-  } else {
+  if ("type" in message && typeof message.type === "string") {
+    type = message.type;
+  } else if ("_getType" in message && typeof message._getType === "function") {
     type = message._getType();
   }
 

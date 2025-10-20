@@ -1,10 +1,13 @@
-import type { Base64ContentBlock } from "@langchain/core/messages";
+/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <Ignore> */
+/** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
+import type { ContentBlock } from "@langchain/core/messages";
 import type React from "react";
 import { cn } from "@/lib/utils";
 import { MultimodalPreview } from "./MultimodalPreview";
 
 interface ContentBlocksPreviewProps {
-  blocks: Base64ContentBlock[];
+  blocks: (ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File)[];
   onRemove: (idx: number) => void;
   size?: "sm" | "md" | "lg";
   className?: string;

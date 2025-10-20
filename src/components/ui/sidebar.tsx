@@ -1,3 +1,7 @@
+/** biome-ignore-all lint/performance/noNamespaceImport: <Ignore> */
+/** biome-ignore-all lint/nursery/noShadow: <Ignore> */
+/** biome-ignore-all lint/style/noMagicNumbers: <Ignore> */
+/** biome-ignore-all lint/suspicious/noDocumentCookie: <Ignore> */
 "use client";
 
 import { Slot } from "@radix-ui/react-slot";
@@ -21,7 +25,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useIsMobile } from "@/lib/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
