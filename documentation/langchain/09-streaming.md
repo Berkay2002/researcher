@@ -1,10 +1,12 @@
 # Streaming
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 LangChain implements a streaming system to surface real-time updates.
 
@@ -27,8 +29,8 @@ To stream agent progress, use the [`stream()`](https://langchain-ai.github.io/la
 
 For example, if you have an agent that calls a tool once, you should see the following updates:
 
-* **LLM node**: AI message with tool call requests
-* **Tool node**: Tool message with execution result
+* **LLM node**: [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) with tool call requests
+* **Tool node**: @\[`ToolMessage`] with execution result
 * **LLM node**: Final AI response
 
 ```typescript  theme={null}

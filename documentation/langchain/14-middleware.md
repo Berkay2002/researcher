@@ -2,11 +2,13 @@
 
 > Control and customize agent execution at every step
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 Middleware provides a way to more tightly control what happens inside the agent.
 
@@ -42,7 +44,7 @@ Middleware exposes hooks before and after each of those steps:
   </Card>
 </CardGroup>
 
-Add middleware by passing it to `create_agent`:
+Add middleware by passing it to @\[`create_agent`]:
 
 ```typescript  theme={null}
 import {
@@ -92,14 +94,29 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter                | Description                                  | Default                               |
-  | ------------------------ | -------------------------------------------- | ------------------------------------- |
-  | `model`                  | Model for generating summaries               | Required                              |
-  | `maxTokensBeforeSummary` | Token threshold for triggering summarization | -                                     |
-  | `messagesToKeep`         | Recent messages to preserve                  | `20`                                  |
-  | `tokenCounter`           | Custom token counting function               | Character-based                       |
-  | `summaryPrompt`          | Custom prompt template                       | Built-in                              |
-  | `summaryPrefix`          | Prefix for summary messages                  | `"## Previous conversation summary:"` |
+  <ParamField body="model" type="string" required>
+    Model for generating summaries
+  </ParamField>
+
+  <ParamField body="maxTokensBeforeSummary" type="number">
+    Token threshold for triggering summarization
+  </ParamField>
+
+  <ParamField body="messagesToKeep" type="number" default="20">
+    Recent messages to preserve
+  </ParamField>
+
+  <ParamField body="tokenCounter" type="function">
+    Custom token counting function. Defaults to character-based counting.
+  </ParamField>
+
+  <ParamField body="summaryPrompt" type="string">
+    Custom prompt template. Uses built-in template if not specified.
+  </ParamField>
+
+  <ParamField body="summaryPrefix" type="string" default="## Previous conversation summary:">
+    Prefix for summary messages
+  </ParamField>
 </Accordion>
 
 ### Human-in-the-loop
@@ -138,15 +155,23 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter     | Description                               | Default  |
-  | ------------- | ----------------------------------------- | -------- |
-  | `interruptOn` | Mapping of tool names to approval configs | Required |
+  <ParamField body="interruptOn" type="object" required>
+    Mapping of tool names to approval configs
+  </ParamField>
 
   **Tool approval config options:**
 
-  * `allowAccept`: Whether approval is allowed | `false`
-  * `allowEdit`: Whether editing is allowed | `false`
-  * `allowRespond`: Whether responding/rejection is allowed | `false`
+  <ParamField body="allowAccept" type="boolean" default="false">
+    Whether approval is allowed
+  </ParamField>
+
+  <ParamField body="allowEdit" type="boolean" default="false">
+    Whether editing is allowed
+  </ParamField>
+
+  <ParamField body="allowRespond" type="boolean" default="false">
+    Whether responding/rejection is allowed
+  </ParamField>
 </Accordion>
 
 <Note>
@@ -168,7 +193,7 @@ Reduce costs by caching repetitive prompt prefixes with Anthropic models.
 </Tip>
 
 <Info>
-  Learn more about [Anthropic Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching#cache-limitations) strategies and limitations.
+  Learn more about [Anthropic Prompt Caching](https://docs.claude.com/en/docs/build-with-claude/prompt-caching#cache-limitations) strategies and limitations.
 </Info>
 
 ```typescript  theme={null}
@@ -198,9 +223,9 @@ const result = await agent.invoke({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter | Description                     | Default |
-  | --------- | ------------------------------- | ------- |
-  | `ttl`     | Time to live (`"5m"` or `"1h"`) | `"5m"`  |
+  <ParamField body="ttl" type="string" default="5m">
+    Time to live for cached content. Valid values: `"5m"` or `"1h"`
+  </ParamField>
 </Accordion>
 
 ### Model call limit
@@ -232,11 +257,17 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter      | Description                                 | Default                |
-  | -------------- | ------------------------------------------- | ---------------------- |
-  | `threadLimit`  | Max calls across all runs in thread         | `undefined` (no limit) |
-  | `runLimit`     | Max calls per single invocation             | `undefined` (no limit) |
-  | `exitBehavior` | `"end"` (graceful) or `"error"` (exception) | `"end"`                |
+  <ParamField body="threadLimit" type="number">
+    Maximum model calls across all runs in a thread. Defaults to no limit.
+  </ParamField>
+
+  <ParamField body="runLimit" type="number">
+    Maximum model calls per single invocation. Defaults to no limit.
+  </ParamField>
+
+  <ParamField body="exitBehavior" type="string" default="end">
+    Behavior when limit is reached. Options: `"end"` (graceful termination) or `"error"` (throw exception)
+  </ParamField>
 </Accordion>
 
 ### Tool call limit
@@ -272,12 +303,21 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter      | Description                                      | Default                |
-  | -------------- | ------------------------------------------------ | ---------------------- |
-  | `toolName`     | Specific tool to limit (`undefined` = all tools) | `undefined`            |
-  | `threadLimit`  | Max calls across all runs in thread              | `undefined` (no limit) |
-  | `runLimit`     | Max calls per single invocation                  | `undefined` (no limit) |
-  | `exitBehavior` | `"end"` (graceful) or `"error"` (exception)      | `"end"`                |
+  <ParamField body="toolName" type="string">
+    Specific tool to limit. If not provided, limits apply to all tools.
+  </ParamField>
+
+  <ParamField body="threadLimit" type="number">
+    Maximum tool calls across all runs in a thread. Defaults to no limit.
+  </ParamField>
+
+  <ParamField body="runLimit" type="number">
+    Maximum tool calls per single invocation. Defaults to no limit.
+  </ParamField>
+
+  <ParamField body="exitBehavior" type="string" default="end">
+    Behavior when limit is reached. Options: `"end"` (graceful termination) or `"error"` (throw exception)
+  </ParamField>
 </Accordion>
 
 ### Model fallback
@@ -310,13 +350,17 @@ const agent = createAgent({
 <Accordion title="Configuration options">
   The middleware accepts a variable number of string arguments representing fallback models in order:
 
-  ```typescript  theme={null}
-  modelFallbackMiddleware(
-    "first-fallback-model",
-    "second-fallback-model",
-    // ... more models
-  )
-  ```
+  <ParamField body="...models" type="string[]" required>
+    One or more fallback model strings to try in order when the primary model fails
+
+    ```typescript  theme={null}
+    modelFallbackMiddleware(
+      "first-fallback-model",
+      "second-fallback-model",
+      // ... more models
+    )
+    ```
+  </ParamField>
 </Accordion>
 
 ### PII detection
@@ -361,29 +405,34 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter            | Description                                                            | Default                     |
-  | -------------------- | ---------------------------------------------------------------------- | --------------------------- |
-  | `piiType`            | Type of PII to detect (built-in or custom)                             | Required                    |
-  | `strategy`           | How to handle detected PII (`"block"`, `"redact"`, `"mask"`, `"hash"`) | `"redact"`                  |
-  | `detector`           | Custom detector regex pattern                                          | `undefined` (uses built-in) |
-  | `applyToInput`       | Check user messages before model call                                  | `true`                      |
-  | `applyToOutput`      | Check AI messages after model call                                     | `false`                     |
-  | `applyToToolResults` | Check tool result messages after execution                             | `false`                     |
+  <ParamField body="piiType" type="string" required>
+    Type of PII to detect. Can be a built-in type (`email`, `credit_card`, `ip`, `mac_address`, `url`) or a custom type name.
+  </ParamField>
 
-  **Built-in PII types:**
+  <ParamField body="strategy" type="string" default="redact">
+    How to handle detected PII. Options:
 
-  * `email` - Email addresses
-  * `credit_card` - Credit card numbers (Luhn validated)
-  * `ip` - IP addresses
-  * `mac_address` - MAC addresses
-  * `url` - URLs
+    * `"block"` - Throw error when detected
+    * `"redact"` - Replace with `[REDACTED_TYPE]`
+    * `"mask"` - Partially mask (e.g., `****-****-****-1234`)
+    * `"hash"` - Replace with deterministic hash
+  </ParamField>
 
-  **Strategies:**
+  <ParamField body="detector" type="RegExp">
+    Custom detector regex pattern. If not provided, uses built-in detector for the PII type.
+  </ParamField>
 
-  * `block` - Raise exception when detected
-  * `redact` - Replace with `[REDACTED_TYPE]`
-  * `mask` - Partially mask (e.g., `****-****-****-1234`)
-  * `hash` - Replace with deterministic hash
+  <ParamField body="applyToInput" type="boolean" default="true">
+    Check user messages before model call
+  </ParamField>
+
+  <ParamField body="applyToOutput" type="boolean" default="false">
+    Check AI messages after model call
+  </ParamField>
+
+  <ParamField body="applyToToolResults" type="boolean" default="false">
+    Check tool result messages after execution
+  </ParamField>
 </Accordion>
 
 ### Planning
@@ -395,13 +444,14 @@ Add todo list management capabilities for complex multi-step tasks.
 </Note>
 
 ```typescript  theme={null}
-import { createAgent, HumanMessage } from "langchain";
-import { planningMiddleware } from "langchain/agents/middleware";
+import { createAgent, HumanMessage, todoListMiddleware } from "langchain";
 
 const agent = createAgent({
   model: "openai:gpt-4o",
-  tools: [...],
-  middleware: [planningMiddleware()],
+  tools: [
+    /* ... */
+  ],
+  middleware: [todoListMiddleware()] as const,
 });
 
 const result = await agent.invoke({
@@ -443,11 +493,17 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter       | Description                       | Default                 |
-  | --------------- | --------------------------------- | ----------------------- |
-  | `model`         | Model for tool selection (string) | Uses agent's main model |
-  | `maxTools`      | Maximum number of tools to select | `undefined` (no limit)  |
-  | `alwaysInclude` | Tool names to always include      | `undefined`             |
+  <ParamField body="model" type="string">
+    Model for tool selection. Defaults to the agent's main model.
+  </ParamField>
+
+  <ParamField body="maxTools" type="number">
+    Maximum number of tools to select. Defaults to no limit.
+  </ParamField>
+
+  <ParamField body="alwaysInclude" type="string[]">
+    Array of tool names to always include in the selection
+  </ParamField>
 </Accordion>
 
 ### Context editing
@@ -479,13 +535,15 @@ const agent = createAgent({
 ```
 
 <Accordion title="Configuration options">
-  | Parameter | Description                                | Default                     |
-  | --------- | ------------------------------------------ | --------------------------- |
-  | `edits`   | Array of `ContextEdit` strategies to apply | `[new ClearToolUsesEdit()]` |
+  <ParamField body="edits" type="ContextEdit[]" default="[new ClearToolUsesEdit()]">
+    Array of `ContextEdit` strategies to apply
+  </ParamField>
 
-  **`ClearToolUsesEdit` options:**
+  **@\[`ClearToolUsesEdit`] options:**
 
-  * `maxTokens`: Token count that triggers the edit (default: `1000`)
+  <ParamField body="maxTokens" type="number" default="1000">
+    Token count that triggers the edit
+  </ParamField>
 </Accordion>
 
 ## Custom middleware
@@ -814,15 +872,15 @@ const conditionalMiddleware = createMiddleware({
 
 ### Best practices
 
-1. **Keep middleware focused** - Each middleware should do one thing well
-2. **Handle errors gracefully** - Don't let middleware errors crash the agent
+1. Keep middleware focused - each should do one thing well
+2. Handle errors gracefully - don't let middleware errors crash the agent
 3. **Use appropriate hook types**:
    * Node-style for sequential logic (logging, validation)
    * Wrap-style for control flow (retry, fallback, caching)
-4. **Document state requirements** - Clearly document any custom state properties
-5. **Test middleware independently** - Unit test middleware before integrating
-6. **Consider execution order** - Place critical middleware first in the list
-7. **Use built-in middleware when possible** - Don't reinvent the wheel
+4. Clearly document any custom state properties
+5. Unit test middleware independently before integrating
+6. Consider execution order - place critical middleware first in the list
+7. Use built-in middleware when possible, don't reinvent the wheel :)
 
 ## Examples
 
@@ -927,6 +985,12 @@ const agent = createAgent({
   * Middleware selects the relevant subset per request
   * Use `contextSchema` for configuration requirements
 </Expandable>
+
+## Additional resources
+
+* [Middleware API reference](https://reference.langchain.com/python/langchain/middleware/) - Complete guide to custom middleware
+* [Human-in-the-loop](/oss/javascript/langchain/human-in-the-loop) - Add human review for sensitive operations
+* [Testing agents](/oss/javascript/langchain/test) - Strategies for testing safety mechanisms
 
 ***
 

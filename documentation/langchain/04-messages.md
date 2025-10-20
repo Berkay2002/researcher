@@ -1,17 +1,19 @@
 # Messages
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 Messages are the fundamental unit of context for models in LangChain. They represent the input and output of models, carrying both the content and metadata needed to represent the state of a conversation when interacting with an LLM.
 
 Messages are objects that contain:
 
 * <Icon icon="user" size={16} /> [**Role**](#message-types) - Identifies the message type (e.g. `system`, `user`)
-* <Icon icon="folder-closed" size={16} /> [**Content**](#content) - Represents the actual content of the message (like text, images, audio, documents, etc.)
+* <Icon icon="folder-closed" size={16} /> [**Content**](#message-content) - Represents the actual content of the message (like text, images, audio, documents, etc.)
 * <Icon icon="tag" size={16} /> [**Metadata**](#message-metadata) - Optional fields such as response information, message IDs, and token usage
 
 LangChain provides a standard message type that works across all model providers, ensuring consistent behavior regardless of the model being called.
@@ -89,7 +91,7 @@ const response = await model.invoke(messages);
 
 ### System Message
 
-A `SystemMessage` represent an initial set of instructions that primes the model's behavior. You can use a system message to set the tone, define the model's role, and establish guidelines for responses.
+A @\[`SystemMessage`] represent an initial set of instructions that primes the model's behavior. You can use a system message to set the tone, define the model's role, and establish guidelines for responses.
 
 ```typescript Basic instructions theme={null}
 import { SystemMessage, HumanMessage, AIMessage } from "langchain";
@@ -123,7 +125,7 @@ const response = await model.invoke(messages);
 
 ### Human Message
 
-A `HumanMessage` represents user input and interactions. They can contain text, images, audio, files, and any other amount of multimodal [content](#content).
+A @\[`HumanMessage`] represents user input and interactions. They can contain text, images, audio, files, and any other amount of multimodal [content](#message-content).
 
 #### Text content
 
@@ -148,23 +150,23 @@ const humanMsg = new HumanMessage({
 ```
 
 <Note>
-  The `name` field behavior varies by provider - some use it for user identification, others ignore it. To check, refer to the model provider's [reference](https://v03.api.js.langchain.com/index.html).
+  The `name` field behavior varies by provider - some use it for user identification, others ignore it. To check, refer to the model provider's [reference](https://reference.langchain.com/python/integrations/).
 </Note>
 
 ***
 
 ### AI Message
 
-An `AIMessage` represents the output of a model invocation. They can include multimodal data, tool calls, and provider-specific metadata that you can later access.
+An [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) represents the output of a model invocation. They can include multimodal data, tool calls, and provider-specific metadata that you can later access.
 
 ```typescript  theme={null}
 const response = await model.invoke("Explain AI");
 console.log(typeof response);  // AIMessage
 ```
 
-`AIMessage` objects are returned by the model when calling it, which contains all of the associated metadata in the response. However, that doesn't mean that's the only place they can be created/ modified from.
+[`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) objects are returned by the model when calling it, which contains all of the associated metadata in the response.
 
-Providers weight/contextualize types of messages differently, which means it is sometimes helpful to create a new `AIMessage` object and insert it into the message history as if it came from the model.
+Providers weigh/contextualize types of messages differently, which means it is sometimes helpful to manually create a new [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) object and insert it into the message history as if it came from the model.
 
 ```typescript  theme={null}
 import { AIMessage, SystemMessage, HumanMessage } from "langchain";
@@ -191,7 +193,7 @@ const response = await model.invoke(messages);
   </ParamField>
 
   <ParamField path="content_blocks" type="ContentBlock.Standard[]">
-    The standardized content blocks of the message. (See [content](#content))
+    The standardized content blocks of the message. (See [content](#message-content))
   </ParamField>
 
   <ParamField path="tool_calls" type="ToolCall[] | None">
@@ -203,7 +205,7 @@ const response = await model.invoke(messages);
   </ParamField>
 
   <ParamField path="usage_metadata" type="UsageMetadata | None">
-    The usage metadata of the message, which can contain token counts when available.
+    The usage metadata of the message, which can contain token counts when available. See [reference](https://reference.langchain.com/javascript/types/_langchain_core.messages.UsageMetadata.html).
   </ParamField>
 
   <ParamField path="response_metadata" type="ResponseMetadata | None">
@@ -213,7 +215,7 @@ const response = await model.invoke(messages);
 
 #### Tool calls
 
-When models make [tool calls](/oss/javascript/langchain/models#tool-calling), they're included in the AI message:
+When models make [tool calls](/oss/javascript/langchain/models#tool-calling), they're included in the [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html):
 
 ```typescript  theme={null}
 const modelWithTools = model.bindTools([getWeather]);
@@ -226,11 +228,11 @@ for (const toolCall of response.tool_calls) {
 }
 ```
 
-Other structured data, such as reasoning or citations, can also appear in message [content](/oss/javascript/langchain/messages#content).
+Other structured data, such as reasoning or citations, can also appear in message [content](/oss/javascript/langchain/messages#message-content).
 
 #### Token usage
 
-An `AIMessage` can hold token counts and other usage metadata in its `usage_metadata` field:
+An [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) can hold token counts and other usage metadata in its [`usage_metadata`](https://reference.langchain.com/javascript/types/_langchain_core.messages.UsageMetadata.html) field:
 
 ```typescript  theme={null}
 import { initChatModel } from "langchain";
@@ -255,11 +257,11 @@ console.log(response.usage_metadata);
 }
 ```
 
-See [UsageMetadata](https://reference.langchain.com/javascript/types/_langchain_core.messages.UsageMetadata.html) for details.
+See [`UsageMetadata`](https://reference.langchain.com/javascript/types/_langchain_core.messages.UsageMetadata.html) for details.
 
 #### Streaming and chunks
 
-During streaming, you'll receive `AIMessageChunk` objects that can be combined into a full message:
+During streaming, you'll receive [`AIMessageChunk`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessageChunk.html) objects that can be combined into a full message object:
 
 <CodeGroup>
   ```typescript  theme={null}
@@ -285,7 +287,7 @@ During streaming, you'll receive `AIMessageChunk` objects that can be combined i
 
 For models that support [tool calling](/oss/javascript/langchain/models#tool-calling), AI messages can contain tool calls. Tool messages are used to pass the results of a single tool execution back to the model.
 
-[Tools](/oss/javascript/langchain/tools) can generate ToolMessages directly. Below, we show a simple example. Read more in the [tools guide](/oss/javascript/langchain/tools).
+[Tools](/oss/javascript/langchain/tools) can generate @\[`ToolMessage`] objects directly. Below, we show a simple example. Read more in the [tools guide](/oss/javascript/langchain/tools).
 
 ```typescript  theme={null}
 import { AIMessage, ToolMessage } from "langchain";
@@ -319,7 +321,7 @@ const response = await model.invoke(messages);  // Model processes the result
   </ParamField>
 
   <ParamField path="tool_call_id" type="string" required>
-    The ID of the tool call that this message is responding to. (this must match the ID of the tool call in the AI message)
+    The ID of the tool call that this message is responding to. (this must match the ID of the tool call in the [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html))
   </ParamField>
 
   <ParamField path="name" type="string" required>
@@ -357,13 +359,13 @@ const response = await model.invoke(messages);  // Model processes the result
 
 ***
 
-## Content
+## Message content
 
 You can think of a message's content as the payload of data that gets sent to the model. Messages have a `content` attribute that is loosely-typed, supporting strings and lists of untyped objects (e.g., dictionaries). This allows support for provider-native structures directly in LangChain chat models, such as [multimodal](#multimodal) content and other data.
 
 Separately, LangChain provides dedicated content types for text, reasoning, citations, multi-modal data, server-side tool calls, and other message content. See [content blocks](#standard-content-blocks) below.
 
-LangChain chat models accept message content in the `.content` attribute, and can contain:
+LangChain chat models accept message content in the `content` attribute, and can contain:
 
 1. A string
 2. A list of content blocks in a provider-native format
@@ -452,7 +454,7 @@ Message objects implement a `contentBlocks` property that will lazily parse the 
   </Tab>
 </Tabs>
 
-See the [integrations guides](/oss/javascript/integrations/providers) to get started with the
+See the [integrations guides](/oss/javascript/integrations/providers/overview) to get started with the
 inference provider of your choice.
 
 <Note>
@@ -594,7 +596,7 @@ it as output. Below we show short examples of input messages featuring multimoda
 </CodeGroup>
 
 <Warning>
-  Not all models support all file types. Check the model provider's [reference](https://v03.api.js.langchain.com/index.html) for supported formats and size limits.
+  Not all models support all file types. Check the model provider's [reference](https://reference.langchain.com/python/integrations/) for supported formats and size limits.
 </Warning>
 
 ### Content block reference
@@ -941,11 +943,11 @@ Content blocks are represented (either when creating a message or accessing the 
       **Usage:** For experimental or provider-unique features
     </Accordion>
 
-    Additional provider-specific content types may be found within the [reference documentation](/oss/javascript/integrations/providers) of each model provider.
+    Additional provider-specific content types may be found within the [reference documentation](/oss/javascript/integrations/providers/overview) of each model provider.
   </Accordion>
 </AccordionGroup>
 
-Each of these content blocks mentioned above are indvidually addressable as types when importing the `ContentBlock` type.
+Each of these content blocks mentioned above are indvidually addressable as types when importing the @\[`ContentBlock`] type.
 
 ```typescript  theme={null}
 import { ContentBlock } from "langchain";
@@ -964,13 +966,17 @@ const imageBlock: ContentBlock.Multimodal.Image = {
 }
 ```
 
+<Tip>
+  View the canonical type definitions in the @\[API reference]\[langchain.messages].
+</Tip>
+
 <Info>
-  Content blocks were introduced as a new property on messages in LangChain v1 to standardize content formats across providers while maintaining backward compatibility with existing code. Content blocks are not a replacement for the `content` property, but rather a new property that can be used to access the content of a message in a standardized format.
+  Content blocks were introduced as a new property on messages in LangChain v1 to standardize content formats across providers while maintaining backward compatibility with existing code. Content blocks are not a replacement for the @\[`content`]\[BaseMessage(content)] property, but rather a new property that can be used to access the content of a message in a standardized format.
 </Info>
 
 ## Use with chat models
 
-[Chat models](/oss/javascript/langchain/models) accept a sequence of message objects as input and return an `AIMessage` as output. Interactions are often stateless, so that a simple conversational loop involves invoking a model with a growing list of messages.
+[Chat models](/oss/javascript/langchain/models) accept a sequence of message objects as input and return an [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) as output. Interactions are often stateless, so that a simple conversational loop involves invoking a model with a growing list of messages.
 
 Refer to the below guides to learn more:
 

@@ -1,10 +1,12 @@
 # Runtime
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 ## Overview
 

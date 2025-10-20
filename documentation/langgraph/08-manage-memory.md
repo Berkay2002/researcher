@@ -1,10 +1,12 @@
 # Add and manage memory
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangGraph v1.0**
 
-  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
-</Warning>
+  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
+
+  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 AI applications need [memory](/oss/javascript/concepts/memory) to share context across multiple interactions. In LangGraph, you can add two types of memory:
 
@@ -153,7 +155,7 @@ const graph = builder.compile({ store });
 In production, use a store backed by a database:
 
 ```typescript  theme={null}
-import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres";
+import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres/store";
 
 const DB_URI = "postgresql://postgres:postgres@localhost:5442/postgres?sslmode=disable";
 const store = PostgresStore.fromConnString(DB_URI);
@@ -174,7 +176,8 @@ const graph = builder.compile({ store });
   ```typescript  theme={null}
   import { ChatAnthropic } from "@langchain/anthropic";
   import { StateGraph, MessagesZodMeta, START, LangGraphRunnableConfig } from "@langchain/langgraph";
-  import { PostgresSaver, PostgresStore } from "@langchain/langgraph-checkpoint-postgres";
+  import { PostgresSaver } from "@langchain/langgraph-checkpoint-postgres";
+  import { PostgresStore } from "@langchain/langgraph-checkpoint-postgres/store";
   import { BaseMessage } from "@langchain/core/messages";
   import { registry } from "@langchain/langgraph/zod";
   import * as z from "zod";
@@ -293,54 +296,54 @@ const items = await store.search(["user_123", "memories"], {
   import * as z from "zod";
 
   const MessagesZodState = z.object({
-    messages: z
+      messages: z
       .array(z.custom<BaseMessage>())
       .register(registry, MessagesZodMeta),
   });
 
-  const llm = new ChatOpenAI({ model: "gpt-4o-mini" });
+  const model = new ChatOpenAI({ model: "gpt-4o-mini" });
 
   // Create store with semantic search enabled
   const embeddings = new OpenAIEmbeddings({ model: "text-embedding-3-small" });
   const store = new InMemoryStore({
-    index: {
+      index: {
       embeddings,
       dims: 1536,
-    }
+      }
   });
 
   await store.put(["user_123", "memories"], "1", { text: "I love pizza" });
   await store.put(["user_123", "memories"], "2", { text: "I am a plumber" });
 
   const chat = async (state: z.infer<typeof MessagesZodState>, config) => {
-    // Search based on user's last message
-    const items = await config.store.search(
+      // Search based on user's last message
+      const items = await config.store.search(
       ["user_123", "memories"],
       { query: state.messages.at(-1)?.content, limit: 2 }
-    );
-    const memories = items.map(item => item.value.text).join("\n");
-    const memoriesText = memories ? `## Memories of user\n${memories}` : "";
+      );
+      const memories = items.map(item => item.value.text).join("\n");
+      const memoriesText = memories ? `## Memories of user\n${memories}` : "";
 
-    const response = await llm.invoke([
+      const response = await model.invoke([
       { role: "system", content: `You are a helpful assistant.\n${memoriesText}` },
       ...state.messages,
-    ]);
+      ]);
 
-    return { messages: [response] };
+      return { messages: [response] };
   };
 
   const builder = new StateGraph(MessagesZodState)
-    .addNode("chat", chat)
-    .addEdge(START, "chat");
+      .addNode("chat", chat)
+      .addEdge(START, "chat");
   const graph = builder.compile({ store });
 
   for await (const [message, metadata] of await graph.stream(
-    { messages: [{ role: "user", content: "I'm hungry" }] },
-    { streamMode: "messages" }
+      { messages: [{ role: "user", content: "I'm hungry" }] },
+      { streamMode: "messages" }
   )) {
-    if (message.content) {
+      if (message.content) {
       console.log(message.content);
-    }
+      }
   }
   ```
 </Accordion>

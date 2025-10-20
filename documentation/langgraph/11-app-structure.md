@@ -1,10 +1,12 @@
 # Application structure
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangGraph v1.0**
 
-  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
-</Warning>
+  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
+
+  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 ## Overview
 

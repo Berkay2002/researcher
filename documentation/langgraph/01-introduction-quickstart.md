@@ -1,6 +1,12 @@
 # Quickstart
 
-<AlphaCalloutJS />
+<Tip>
+  **LangGraph v1.0**
+
+  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
+
+  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 This quickstart demonstrates how to build a calculator agent using the LangGraph Graph API or the Functional API.
 
@@ -19,15 +25,15 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
   <Tab title="Use the Graph API">
     ## 1. Define tools and model
 
-    In this example, we'll use the Claude 3.7 Sonnet model and define tools for addition, multiplication, and division.
+    In this example, we'll use the Claude Sonnet 4.5 model and define tools for addition, multiplication, and division.
 
     ```typescript  theme={null}
     import { ChatAnthropic } from "@langchain/anthropic";
     import { tool } from "@langchain/core/tools";
     import * as z from "zod";
 
-    const llm = new ChatAnthropic({
-      model: "claude-3-7-sonnet-latest",
+    const model = new ChatAnthropic({
+      model: "claude-sonnet-4-5",
       temperature: 0,
     });
 
@@ -66,7 +72,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       [divide.name]: divide,
     };
     const tools = Object.values(toolsByName);
-    const llmWithTools = llm.bindTools(tools);
+    const modelWithTools = model.bindTools(tools);
     ```
 
     ## 2. Define state
@@ -74,7 +80,9 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     The graph's state is used to store the messages and the number of LLM calls.
 
     <Tip>
-      State in LangGraph persists throughout the agent's execution. The `Annotated` type with `operator.add` ensures that new messages are appended to the existing list rather than replacing it.
+      State in LangGraph persists throughout the agent's execution.
+
+      The `Annotated` type with `operator.add` ensures that new messages are appended to the existing list rather than replacing it.
     </Tip>
 
     ```typescript  theme={null}
@@ -87,9 +95,8 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       messages: z
         .array(z.custom<BaseMessage>())
         .register(registry, MessagesZodMeta),
-      llmCalls: z.number().optional(),
+      modelCalls: z.number().optional(),
     });
-
     ```
 
     ## 3. Define model node
@@ -100,7 +107,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     import { SystemMessage } from "@langchain/core/messages";
     async function llmCall(state: z.infer<typeof MessagesState>) {
       return {
-        messages: await llmWithTools.invoke([
+        messages: await modelWithTools.invoke([
           new SystemMessage(
             "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
           ),
@@ -156,7 +163,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     ## 6. Build and compile the agent
 
-    The agent is built using the `StateGraph` class and compiled using the `compile` method.
+    The agent is built using the [`StateGraph`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.StateGraph.html) class and compiled using the @\[`compile`]\[StateGraph.compile] method.
 
     ```typescript  theme={null}
     const agent = new StateGraph(MessagesState)
@@ -182,13 +189,14 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     <Accordion title="Full code example">
       ```typescript  theme={null}
-      // Step 1: define tools and model
+      // Step 1: Define tools and model
+
       import { ChatAnthropic } from "@langchain/anthropic";
       import { tool } from "@langchain/core/tools";
       import * as z from "zod";
 
-      const llm = new ChatAnthropic({
-        model: "claude-3-7-sonnet-latest",
+      const model = new ChatAnthropic({
+        model: "claude-sonnet-4-5",
         temperature: 0,
       });
 
@@ -227,9 +235,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
         [divide.name]: divide,
       };
       const tools = Object.values(toolsByName);
-      const llmWithTools = llm.bindTools(tools);
+      const modelWithTools = model.bindTools(tools);
 
       // Step 2: Define state
+
       import { StateGraph, START, END } from "@langchain/langgraph";
       import { MessagesZodMeta } from "@langchain/langgraph";
       import { registry } from "@langchain/langgraph/zod";
@@ -243,10 +252,11 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       });
 
       // Step 3: Define model node
+
       import { SystemMessage } from "@langchain/core/messages";
       async function llmCall(state: z.infer<typeof MessagesState>) {
         return {
-          messages: await llmWithTools.invoke([
+          messages: await modelWithTools.invoke([
             new SystemMessage(
               "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
             ),
@@ -257,6 +267,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       }
 
       // Step 4: Define tool node
+
       import { isAIMessage, ToolMessage } from "@langchain/core/messages";
       async function toolNode(state: z.infer<typeof MessagesState>) {
         const lastMessage = state.messages.at(-1);
@@ -276,6 +287,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       }
 
       // Step 5: Define logic to determine whether to end
+
       async function shouldContinue(state: z.infer<typeof MessagesState>) {
         const lastMessage = state.messages.at(-1);
         if (lastMessage == null || !isAIMessage(lastMessage)) return END;
@@ -290,6 +302,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       }
 
       // Step 6: Build and compile the agent
+
       const agent = new StateGraph(MessagesState)
         .addNode("llmCall", llmCall)
         .addNode("toolNode", toolNode)
@@ -314,15 +327,15 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
   <Tab title="Use the Functional API">
     ## 1. Define tools and model
 
-    In this example, we'll use the Claude 3.7 Sonnet model and define tools for addition, multiplication, and division.
+    In this example, we'll use the Claude Sonnet 4.5 model and define tools for addition, multiplication, and division.
 
     ```typescript  theme={null}
     import { ChatAnthropic } from "@langchain/anthropic";
     import { tool } from "@langchain/core/tools";
     import * as z from "zod";
 
-    const llm = new ChatAnthropic({
-      model: "claude-3-7-sonnet-latest",
+    const model = new ChatAnthropic({
+      model: "claude-sonnet-4-5",
       temperature: 0,
     });
 
@@ -361,7 +374,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       [divide.name]: divide,
     };
     const tools = Object.values(toolsByName);
-    const llmWithTools = llm.bindTools(tools);
+    const modelWithTools = model.bindTools(tools);
 
     ```
 
@@ -370,14 +383,14 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     The model node is used to call the LLM and decide whether to call a tool or not.
 
     <Tip>
-      The `@task` decorator marks a function as a task that can be executed as part of the agent. Tasks can be called synchronously or asynchronously within your entrypoint function.
+      The @\[`@task`] decorator marks a function as a task that can be executed as part of the agent. Tasks can be called synchronously or asynchronously within your entrypoint function.
     </Tip>
 
     ```typescript  theme={null}
     import { task, entrypoint } from "@langchain/langgraph";
     import { SystemMessage } from "@langchain/core/messages";
-    const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
-      return llmWithTools.invoke([
+    const callmodel = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+      return modelWithTools.invoke([
         new SystemMessage(
           "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
         ),
@@ -400,7 +413,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     ## 4. Define agent
 
-    The agent is built using the `entrypoint` function.
+    The agent is built using the @\[`@entrypoint`] function.
 
     <Note>
       In the Functional API, instead of defining nodes and edges explicitly, you write standard control flow logic (loops, conditionals) within a single function.
@@ -409,20 +422,21 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     ```typescript  theme={null}
     import { addMessages } from "@langchain/langgraph";
     import { type BaseMessage, isAIMessage } from "@langchain/core/messages";
+
     const agent = entrypoint({ name: "agent" }, async (messages: BaseMessage[]) => {
-      let llmResponse = await callLlm(messages);
+      let modelResponse = await callLlm(messages);
 
       while (true) {
-        if (!llmResponse.tool_calls?.length) {
+        if (!modelResponse.tool_calls?.length) {
           break;
         }
 
         // Execute tools
         const toolResults = await Promise.all(
-          llmResponse.tool_calls.map((toolCall) => callTool(toolCall))
+          modelResponse.tool_calls.map((toolCall) => callTool(toolCall))
         );
-        messages = addMessages(messages, [llmResponse, ...toolResults]);
-        llmResponse = await callLlm(messages);
+        messages = addMessages(messages, [modelResponse, ...toolResults]);
+        modelResponse = await callLlm(messages);
       }
 
       return messages;
@@ -430,6 +444,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     // Invoke
     import { HumanMessage } from "@langchain/core/messages";
+
     const result = await agent.invoke([new HumanMessage("Add 3 and 4.")]);
 
     for (const message of result) {
@@ -441,13 +456,14 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
     <Accordion title="Full code example" icon="code">
       ```typescript  theme={null}
-      // Step 1: define tools and model
+      // Step 1: Define tools and model
+
       import { ChatAnthropic } from "@langchain/anthropic";
       import { tool } from "@langchain/core/tools";
       import * as z from "zod";
 
-      const llm = new ChatAnthropic({
-        model: "claude-3-7-sonnet-latest",
+      const model = new ChatAnthropic({
+        model: "claude-sonnet-4-5",
         temperature: 0,
       });
 
@@ -486,13 +502,14 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
         [divide.name]: divide,
       };
       const tools = Object.values(toolsByName);
-      const llmWithTools = llm.bindTools(tools);
+      const modelWithTools = model.bindTools(tools);
 
       // Step 2: Define model node
+
       import { task, entrypoint } from "@langchain/langgraph";
       import { SystemMessage } from "@langchain/core/messages";
-      const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
-        return llmWithTools.invoke([
+      const callmodel = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+        return modelWithTools.invoke([
           new SystemMessage(
             "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
           ),
@@ -500,30 +517,31 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
         ]);
       });
 
-      // Step 3: define tool node
+      // Step 3: Define tool node
+
       import type { ToolCall } from "@langchain/core/messages/tool";
       const callTool = task({ name: "callTool" }, async (toolCall: ToolCall) => {
         const tool = toolsByName[toolCall.name];
         return tool.invoke(toolCall);
       });
 
-      // Step 4: define agent
+      // Step 4: Define agent
       import { addMessages } from "@langchain/langgraph";
       import { type BaseMessage, isAIMessage } from "@langchain/core/messages";
       const agent = entrypoint({ name: "agent" }, async (messages: BaseMessage[]) => {
-        let llmResponse = await callLlm(messages);
+        let modelResponse = await callLlm(messages);
 
         while (true) {
-          if (!llmResponse.tool_calls?.length) {
+          if (!modelResponse.tool_calls?.length) {
             break;
           }
 
           // Execute tools
           const toolResults = await Promise.all(
-            llmResponse.tool_calls.map((toolCall) => callTool(toolCall))
+            modelResponse.tool_calls.map((toolCall) => callTool(toolCall))
           );
-          messages = addMessages(messages, [llmResponse, ...toolResults]);
-          llmResponse = await callLlm(messages);
+          messages = addMessages(messages, [modelResponse, ...toolResults]);
+          modelResponse = await callLlm(messages);
         }
 
         return messages;

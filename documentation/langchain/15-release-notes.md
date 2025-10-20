@@ -1,11 +1,5 @@
 # What's new in v1
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
-
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
-
 **LangChain v1 is a focused, production-ready foundation for building agents.** We've streamlined the framework around three core improvements:
 
 <CardGroup cols={1}>
@@ -26,19 +20,19 @@ To upgrade,
 
 <CodeGroup>
   ```bash npm theme={null}
-  npm install langchain@next @langchain/core@next
+  npm install langchain @langchain/core
   ```
 
   ```bash pnpm theme={null}
-  pnpm install langchain@next @langchain/core@next
+  pnpm install langchain @langchain/core
   ```
 
   ```bash yarn theme={null}
-  yarn add langchain@next @langchain/core@next
+  yarn add langchain @langchain/core
   ```
 
   ```bash bun theme={null}
-  bun add langchain@next @langchain/core@next
+  bun add langchain @langchain/core
   ```
 </CodeGroup>
 
@@ -46,13 +40,13 @@ For a complete list of changes, see the [migration guide](/oss/javascript/migrat
 
 ## `createAgent`
 
-`createAgent` is the standard way to build agents in LangChain 1.0. It provides a simpler interface than `createReactAgent` while offering greater customization potential by using middleware.
+`createAgent` is the standard way to build agents in LangChain 1.0. It provides a simpler interface than the prebuilt `createReactAgent` exported from LangGraph while offering greater customization potential by using middleware.
 
 ```ts  theme={null}
 import { createAgent } from "langchain";
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5-20250929",
+  model: "anthropic:claude-sonnet-4-5",
   tools: [getWeather],
   systemPrompt: "You are a helpful assistant.",
 });
@@ -97,12 +91,12 @@ import {
 } from "langchain";
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5-20250929",
+  model: "anthropic:claude-sonnet-4-5",
   tools: [readEmail, sendEmail],
   middleware: [
     piiRedactionMiddleware({ patterns: ["email", "phone", "ssn"] }),
     summarizationMiddleware({
-      model: "anthropic:claude-sonnet-4-5-20250929",
+      model: "anthropic:claude-sonnet-4-5",
       maxTokensBeforeSummary: 500,
     }),
     humanInTheLoopMiddleware({
@@ -159,7 +153,7 @@ const expertiseBasedToolMiddleware = createMiddleware({
 });
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5-20250929",
+  model: "anthropic:claude-sonnet-4-5",
   tools: [simpleSearch, advancedSearch, basicCalculator, dataAnalysis],
   middleware: [expertiseBasedToolMiddleware],
   contextSchema,
@@ -234,14 +228,14 @@ console.log(result.structuredResponse);
 ## Standard content blocks
 
 <Note>
-  1.0 Alpha releases are available for most packages. Only the following currently support new content blocks:
+  1.0 releases are available for most packages. Only the following currently support new content blocks:
 
   * `langchain`
   * `@langchain/core`
   * `@langchain/anthropic`
   * `@langchain/openai`
 
-  Broader support for content blocks will be rolled out during the alpha period and following stable release.
+  Broader support for content blocks is planned.
 </Note>
 
 ### Benefits
@@ -250,7 +244,7 @@ console.log(result.structuredResponse);
 * **Type safe**: Full type hints for all content block types
 * **Backward compatible**: Standard content can be [loaded lazily](/oss/javascript/langchain/messages#standard-content-blocks), so there are no associated breaking changes
 
-For more information, see our guide on [content blocks](/oss/javascript/langchain/messages#content)
+For more information, see our guide on [content blocks](/oss/javascript/langchain/messages#message-content)
 
 ***
 
@@ -320,7 +314,7 @@ Please report any issues discovered with 1.0 on [GitHub](https://github.com/lang
     Full agent documentation
   </Card>
 
-  <Card title="Message Content" icon="message" href="/oss/javascript/langchain/messages#content" arrow>
+  <Card title="Message Content" icon="message" href="/oss/javascript/langchain/messages#message-content" arrow>
     New content blocks API
   </Card>
 
@@ -328,7 +322,7 @@ Please report any issues discovered with 1.0 on [GitHub](https://github.com/lang
     How to migrate to LangChain v1
   </Card>
 
-  <Card title="GitHub" icon="github" href="https://github.com/langchain-ai/langchain">
+  <Card title="GitHub" icon="github" href="https://github.com/langchain-ai/langchainjs">
     Report issues or contribute
   </Card>
 </CardGroup>

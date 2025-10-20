@@ -1,7 +1,6 @@
 {
   "dependencies": ["."],
   "graphs": {
-    "react-agent": "./src/server/agents/react/agent.ts:createReactAgent",
     "deep-research": "./src/server/workflows/deep-research/graph/index.ts:getDeepResearchGraph"
   },
   "env": ".env.local"

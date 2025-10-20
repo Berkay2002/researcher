@@ -1,10 +1,12 @@
 # Human-in-the-loop
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 The Human-in-the-Loop (HITL) middleware lets you add human oversight to agent tool calls.
 When a model proposes an action that might require review — for example, writing to a file or executing SQL — the middleware can pause execution and wait for a decision.
@@ -38,9 +40,8 @@ To use HITL, add the middleware to the agent’s `middleware` list when creating
 You configure it with a mapping of tool actions to the decision types that are allowed for each action. The middleware will interrupt execution when a tool call matches an action in the mapping.
 
 ```ts  theme={null}
-import { createAgent } from "langchain";
+import { createAgent, humanInTheLoopMiddleware } from "langchain"; // [!code highlight]
 import { MemorySaver } from "@langchain/langgraph"; // [!code highlight]
-import { humanInTheLoopMiddleware } from "langchain/middleware"; // [!code highlight]
 
 const agent = createAgent({
     model: "openai:gpt-4o",
@@ -71,7 +72,7 @@ const agent = createAgent({
 
 <Info>
   You must configure a checkpointer to persist the graph state across interrupts.
-  In production, use a persistent checkpointer like @\[AsyncPostgresSaver]. For testing or prototyping, use @\[InMemorySaver].
+  In production, use a persistent checkpointer like @\[`AsyncPostgresSaver`]. For testing or prototyping, use @\[`InMemorySaver`].
 
   When invoking the agent, pass a `config` that includes the **thread ID** to associate execution with a conversation thread.
   See the [LangGraph interrupts documentation](/oss/javascript/langgraph/interrupts) for details.

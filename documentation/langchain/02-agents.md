@@ -1,12 +1,14 @@
 # Agents
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
 
-Agents combine language models with tools to create systems that can reason about tasks, decide which tools to use, and iteratively work towards solutions.
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
+
+Agents combine language models with [tools](/oss/javascript/langchain/tools) to create systems that can reason about tasks, decide which tools to use, and iteratively work towards solutions.
 
 `createAgent()` provides a production-ready agent implementation.
 
@@ -45,7 +47,7 @@ graph TD
 <Info>
   `createAgent()` builds a **graph**-based agent runtime using [LangGraph](/oss/javascript/langgraph/overview). A graph consists of nodes (steps) and edges (connections) that define how your agent processes information. The agent moves through this graph, executing nodes like the model node (which calls the model), the tools node (which executes tools), or middleware.
 
-  Learn more about the [graph API](/oss/javascript/langgraph/graph-api).
+  Learn more about the [Graph API](/oss/javascript/langgraph/graph-api).
 </Info>
 
 ## Core components
@@ -56,7 +58,9 @@ The [model](/oss/javascript/langchain/models) is the reasoning engine of your ag
 
 #### Static model
 
-Static models are configured once when creating the agent and remain unchanged throughout execution. This is the most common and straightforward approach. To initialize a static model from a <Tooltip tip="A string that follows the format `provider:model` (e.g. openai:gpt-5)">model identifier string</Tooltip>:
+Static models are configured once when creating the agent and remain unchanged throughout execution. This is the most common and straightforward approach.
+
+To initialize a static model from a <Tooltip tip="A string that follows the format `provider:model` (e.g. openai:gpt-5)" cta="See mappings" href="https://reference.langchain.com/python/langchain/models/#langchain.chat_models.init_chat_model(model_provider)">model identifier string</Tooltip>:
 
 ```ts wrap theme={null}
 import { createAgent } from "langchain";
@@ -86,7 +90,7 @@ const agent = createAgent({
 });
 ```
 
-Model instances give you complete control over configuration. Use them when you need to set specific parameters like temperature, max tokens, timeouts, or configure API keys, base URLs, and other provider-specific settings. Refer to the [API reference](/oss/javascript/integrations/providers/) to see available params and methods on your model.
+Model instances give you complete control over configuration. Use them when you need to set specific parameters like `temperature`, `max_tokens`, `timeouts`, or configure API keys, `base_url`, and other provider-specific settings. Refer to the [API reference](/oss/javascript/integrations/providers/) to see available params and methods on your model.
 
 #### Dynamic model
 
@@ -94,7 +98,7 @@ Dynamic models are selected at <Tooltip tip="The execution environment of your a
 
 To use a dynamic model, create middleware with `wrapModelCall` that modifies the model in the request:
 
-```ts wrap theme={null}
+```ts  theme={null}
 import { ChatOpenAI } from "@langchain/openai";
 import { createAgent, createMiddleware } from "langchain";
 
@@ -137,6 +141,8 @@ Tools give agents the ability to take actions. Agents go beyond simple model-onl
 * Tool retry logic and error handling
 * State persistence across tool calls
 
+For more information, see [Tools](/oss/javascript/langchain/tools).
+
 #### Defining tools
 
 Pass a list of tools to the agent.
@@ -177,34 +183,40 @@ If an empty tool list is provided, the agent will consist of a single LLM node w
 
 #### Tool error handling
 
-```ts wrap theme={null}
-import { ToolNode, ToolMessage } from "langchain";
+To customize how tool errors are handled, use the `wrapToolCall` hook in a custom middleware:
 
-const toolNode = new ToolNode(
-  [search, calculate],
-  {
-    handleToolErrors: (error, toolCall) => {
+```ts wrap theme={null}
+import { createAgent, createMiddleware, ToolMessage } from "langchain";
+
+const handleToolErrors = createMiddleware({
+  name: "HandleToolErrors",
+  wrapToolCall: (request, handler) => {
+    try {
+      return handler(request);
+    } catch (error) {
+      // Return a custom error message to the model
       return new ToolMessage({
-        content: "Please check your input and try again.",
-        tool_call_id: toolCall.id
+        content: `Tool error: Please check your input and try again. (${error})`,
+        tool_call_id: request.toolCall.id!,
       });
     }
-  }
-);
+  },
+});
 
 const agent = createAgent({
   model: "openai:gpt-4o",
-  tools: toolNode,
-})
+  tools: [
+    /* ... */
+  ],
+  middleware: [handleToolErrors] as const,
+});
 ```
 
-<Tip>
-  Learn more about tools in [tools](/oss/javascript/langchain/tools).
-</Tip>
+The agent will return a @\[`ToolMessage`] with the custom error message when a tool fails.
 
 #### Tool use in the ReAct loop
 
-Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between brief reasoning steps with targeted tool calls and feeding the resulting observations into subsequent decisions until they can deliver a final answer.
+Agents follow the ReAct ("Reasoning + Acting") pattern, alternating between brief reasoning steps with targeted tool calls and feeding the resulting observations into subsequent decisions until they can deliver a final answer.
 
 <Accordion title="Example of ReAct loop">
   Prompt: Identify the current most popular wireless headphones and verify availability.
@@ -267,7 +279,7 @@ Agents follow the ReAct (*Reasoning* + *Acting*) pattern, alternating between br
 
 ### System prompt
 
-You can shape how your agent approaches tasks by providing a prompt. The `system_prompt` parameter can be provided as a string:
+You can shape how your agent approaches tasks by providing a prompt. The @\[`system_prompt`] parameter can be provided as a string:
 
 ```ts wrap theme={null}
 const agent = createAgent({
@@ -277,7 +289,7 @@ const agent = createAgent({
 });
 ```
 
-When no `system_prompt` is provided, the agent will infer its task from the messages directly.
+When no @\[`system_prompt`] is provided, the agent will infer its task from the messages directly.
 
 #### Dynamic system prompt
 
@@ -285,8 +297,7 @@ For more advanced use cases where you need to modify the system prompt based on 
 
 ```typescript wrap theme={null}
 import * as z from "zod";
-import { createAgent } from "langchain";
-import { dynamicSystemPromptMiddleware } from "langchain/middleware";
+import { createAgent, dynamicSystemPromptMiddleware } from "langchain";
 
 const contextSchema = z.object({
   userRole: z.enum(["expert", "beginner"]),
@@ -324,7 +335,7 @@ const result = await agent.invoke(
 
 ## Invocation
 
-You can invoke an agent by passing an update to its [state](/oss/javascript/langgraph/graph-api#state). All agents include a [sequence of messages](/oss/javascript/langgraph/use-graph-api#messagesstate) in their state; to invoke the agent, pass a new message:
+You can invoke an agent by passing an update to its [`State`](/oss/javascript/langgraph/graph-api#state). All agents include a [sequence of messages](/oss/javascript/langgraph/use-graph-api#messagesstate) in their state; to invoke the agent, pass a new message:
 
 ```typescript  theme={null}
 await agent.invoke({
@@ -407,9 +418,9 @@ const CustomAgentState = createAgent({
 
 ### Streaming
 
-We've seen how the agent can be called with `.invoke` to get a final response. If the agent executes multiple steps, this may take a while. To show intermediate progress, we can stream back messages as they occur.
+We've seen how the agent can be called with `invoke` to get a final response. If the agent executes multiple steps, this may take a while. To show intermediate progress, we can stream back messages as they occur.
 
-```ts wrap theme={null}
+```ts  theme={null}
 const stream = await agent.stream(
   {
     messages: [{

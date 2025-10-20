@@ -1,10 +1,12 @@
 # Quickstart
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 This quickstart takes you from a simple setup to a fully functional AI agent in just a few minutes.
 
@@ -28,7 +30,7 @@ const getWeather = tool(
 );
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5-20250929",
+  model: "anthropic:claude-sonnet-4-5",
   tools: [getWeather],
 });
 
@@ -141,7 +143,7 @@ Let's walk through each step:
     import { initChatModel } from "langchain";
 
     const model = await initChatModel(
-      "anthropic:claude-sonnet-4-5-20250929",
+      "anthropic:claude-sonnet-4-5",
       { temperature: 0.5, timeout: 10, maxTokens: 1000 }
     );
     ```
@@ -182,7 +184,7 @@ Let's walk through each step:
     import { createAgent } from "langchain";
 
     const agent = createAgent({
-      model: "anthropic:claude-sonnet-4-5-20250929",
+      model: "anthropic:claude-sonnet-4-5",
       prompt: systemPrompt,
       tools: [getUserLocation, getWeather],
       responseFormat,
@@ -221,8 +223,7 @@ Let's walk through each step:
 
 <Expandable title="Full example code">
   ```ts  theme={null}
-  import { createAgent, tool } from "langchain";
-  import { initChatModel } from "langchain/chat_models";
+  import { createAgent, tool, initChatModel } from "langchain";
   import { MemorySaver, type Runtime } from "@langchain/langgraph";
   import * as z from "zod";
 
@@ -262,7 +263,7 @@ Let's walk through each step:
 
   // Configure model
   const model = await initChatModel(
-    "anthropic:claude-sonnet-4-5-20250929",
+    "anthropic:claude-sonnet-4-5",
     { temperature: 0 }
   );
 
@@ -277,7 +278,7 @@ Let's walk through each step:
 
   // Create agent
   const agent = createAgent({
-    model: "anthropic:claude-sonnet-4-5-20250929",
+    model: "anthropic:claude-sonnet-4-5",
     prompt: systemPrompt,
     tools: [getUserLocation, getWeather],
     responseFormat,

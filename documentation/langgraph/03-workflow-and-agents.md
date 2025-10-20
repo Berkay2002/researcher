@@ -1,5 +1,13 @@
 # Workflows and agents
 
+<Tip>
+  **LangGraph v1.0**
+
+  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
+
+  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
+
 This guide reviews common workflow and agent patterns.
 
 * Workflows have predetermined code paths and are designed to operate in a certain order.
@@ -17,19 +25,19 @@ To build a workflow or agent, you can use [any chat model](/oss/javascript/integ
 
 <CodeGroup>
   ```bash npm theme={null}
-  npm install @langchain/langgraph@next @langchain/core@next
+  npm install @langchain/langgraph @langchain/core
   ```
 
   ```bash pnpm theme={null}
-  pnpm add @langchain/langgraph@next @langchain/core@next
+  pnpm add @langchain/langgraph @langchain/core
   ```
 
   ```bash yarn theme={null}
-  yarn add @langchain/langgraph@next @langchain/core@next
+  yarn add @langchain/langgraph @langchain/core
   ```
 
   ```bash bun theme={null}
-  bun add @langchain/langgraph@next @langchain/core@next
+  bun add @langchain/langgraph @langchain/core
   ```
 </CodeGroup>
 
@@ -39,7 +47,7 @@ To build a workflow or agent, you can use [any chat model](/oss/javascript/integ
 import { ChatAnthropic } from "@langchain/anthropic";
 
 const llm = new ChatAnthropic({
-  model: "claude-3-5-sonnet-latest",
+  model: "claude-sonnet-4-5",
   apiKey: "<your_anthropic_key>"
 });
 ```

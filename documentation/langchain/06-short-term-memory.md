@@ -1,10 +1,12 @@
 # Short-term memory
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 ## Overview
 
@@ -43,7 +45,7 @@ import { MemorySaver } from "@langchain/langgraph";
 const checkpointer = new MemorySaver();
 
 const agent = createAgent({
-    model: "anthropic:claude-3-7-sonnet-latest",
+    model: "anthropic:claude-sonnet-4-5",
     tools: [],
     checkpointer,
 });
@@ -67,9 +69,9 @@ const checkpointer = PostgresSaver.fromConnString(DB_URI);
 
 ## Customizing agent memory
 
-By default, agents use `AgentState` to manage short term memory, specifically the conversation history via a `messages` key.
+By default, agents use @\[`AgentState`] to manage short term memory, specifically the conversation history via a `messages` key.
 
-You can extend `AgentState` to add additional fields. Custom state schemas are defined in middleware using the `state_schema` attribute.
+You can extend @\[`AgentState`] to add additional fields. Custom state schemas are passed to @\[`create_agent`] using the @\[`state_schema`] parameter.
 
 ```typescript  theme={null}
 import * as z from "zod";
@@ -299,7 +301,7 @@ console.log(finalResponse.messages.at(-1)?.content);
 // Your name is Bob!
 ```
 
-See [summarizationMiddleware](/oss/javascript/langchain/middleware#summarization) for more configuration options.
+See [`summarizationMiddleware`](/oss/javascript/langchain/middleware#summarization) for more configuration options.
 
 ## Access memory
 
@@ -309,9 +311,9 @@ You can access and modify the short-term memory (state) of an agent in several w
 
 #### Read short-term memory in a tool
 
-Access short term memory (state) in a tool by injecting the agent's state into the tool signature with the `InjectedState` annotation.
+Access short term memory (state) in a tool using the `ToolRuntime` parameter.
 
-This annotation hides the state from the tool signature (so the model doesn't see it), but the tool can access it.
+The `tool_runtime` parameter is hidden from the tool signature (so the model doesn't see it), but the tool can access the state through it.
 
 ```typescript  theme={null}
 import * as z from "zod";
@@ -504,7 +506,7 @@ for (const message of result.messages) {
 
 ### Before model
 
-Access short term memory (state) in `@before_model` middleware to process messages before model calls.
+Access short term memory (state) in @\[`@before_model`] middleware to process messages before model calls.
 
 ```mermaid  theme={null}
 %%{
@@ -559,7 +561,7 @@ const agent = createAgent({
 
 ### After model
 
-Access short term memory (state) in `@after_model` middleware to process messages after model calls.
+Access short term memory (state) in @\[`@after_model`] middleware to process messages after model calls.
 
 ```mermaid  theme={null}
 %%{

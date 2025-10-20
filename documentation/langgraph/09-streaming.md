@@ -1,10 +1,12 @@
 # Streaming
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangGraph v1.0**
 
-  For the latest stable version, see the current [LangGraph Python](https://langchain-ai.github.io/langgraph/) or [LangGraph JavaScript](https://langchain-ai.github.io/langgraphjs/) docs.
-</Warning>
+  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
+
+  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 LangGraph implements a streaming system to surface real-time updates. Streaming is crucial for enhancing the responsiveness of applications built on LLMs. By displaying output progressively, even before a complete response is ready, streaming significantly improves user experience (UX), particularly when dealing with the latency of LLMs.
 
@@ -264,15 +266,15 @@ const MyState = z.object({
   joke: z.string().default(""),
 });
 
-const llm = new ChatOpenAI({ model: "gpt-4o-mini" });
+const model = new ChatOpenAI({ model: "gpt-4o-mini" });
 
 const callModel = async (state: z.infer<typeof MyState>) => {
   // Call the LLM to generate a joke about a topic
   // Note that message events are emitted even when the LLM is run using .invoke rather than .stream
-  const llmResponse = await llm.invoke([
+  const modelResponse = await model.invoke([
     { role: "user", content: `Generate a joke about ${state.topic}` },
   ]);
-  return { joke: llmResponse.content };
+  return { joke: modelResponse.content };
 };
 
 const graph = new StateGraph(MyState)
@@ -300,13 +302,13 @@ You can associate `tags` with LLM invocations to filter the streamed tokens by L
 ```typescript  theme={null}
 import { ChatOpenAI } from "@langchain/openai";
 
-// llm1 is tagged with "joke"
-const llm1 = new ChatOpenAI({
+// model1 is tagged with "joke"
+const model1 = new ChatOpenAI({
   model: "gpt-4o-mini",
   tags: ['joke']
 });
-// llm2 is tagged with "poem"
-const llm2 = new ChatOpenAI({
+// model2 is tagged with "poem"
+const model2 = new ChatOpenAI({
   model: "gpt-4o-mini",
   tags: ['poem']
 });
@@ -657,7 +659,7 @@ for await (const chunk of await graph.stream(
     .compile();
   ```
 
-  Let's invoke the graph with an AI message that includes a tool call:
+  Let's invoke the graph with an [`AIMessage`](https://v03.api.js.langchain.com/classes/_langchain_core.messages_ai_message.AIMessage.html) that includes a tool call:
 
   ```typescript  theme={null}
   const inputs = {

@@ -1,10 +1,12 @@
 # Structured output
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 Structured output allows agents to return data in a specific, predictable format. Instead of parsing natural language responses, you get typed structured data.
 
@@ -315,7 +317,7 @@ Models can make mistakes when generating structured output via tool calling. Lan
 
 #### Multiple structured outputs error
 
-When a model incorrectly calls multiple structured output tools, the agent provides error feedback in a `ToolMessage` and prompts the model to retry:
+When a model incorrectly calls multiple structured output tools, the agent provides error feedback in a @\[`ToolMessage`] and prompts the model to retry:
 
 ```ts  theme={null}
 import * as z from "zod";

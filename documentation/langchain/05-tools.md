@@ -1,6 +1,12 @@
 # Tools
 
-<AlphaCalloutJS />
+<Tip>
+  **LangChain v1.0**
+
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 Many AI applications interact with users via natural language. However, some use cases require models to interface directly with external systems—such as APIs, databases, or file systems—using structured input.
 
@@ -41,26 +47,26 @@ const searchDatabase = tool(
   **Why this matters:** Tools are most powerful when they can access agent state, runtime context, and long-term memory. This enables tools to make context-aware decisions, personalize responses, and maintain information across conversations.
 </Info>
 
-Tools can access different types of data:
+Tools can access runtime information through the `ToolRuntime` parameter, which provides:
 
 * **State** - Mutable data that flows through execution (messages, counters, custom fields)
-* **Runtime** - Access to context, memory (store), and streaming capabilities via `get_runtime()`
+* **Context** - Immutable configuration like user IDs, session details, or application-specific configuration
+* **Store** - Persistent long-term memory across conversations
+* **Stream Writer** - Stream custom updates as tools execute
+* **Config** - RunnableConfig for the execution
+* **Tool Call ID** - ID of the current tool call
 
-### State
+### ToolRuntime
 
-Use `InjectedState` to access and modify the agent's state during execution. State includes messages, custom fields, and any data your tools need to track.
+Use `ToolRuntime` to access all runtime information in a single parameter. Simply add `runtime: ToolRuntime` to your tool signature, and it will be automatically injected without being exposed to the LLM.
 
 <Info>
-  **`InjectedState`**: An annotation that allows tools to access the current graph state without exposing it to the LLM. This lets tools read information like message history or custom state fields while keeping the tool's schema simple.
+  **`ToolRuntime`**: A unified parameter that provides tools access to state, context, store, streaming, config, and tool call ID. This replaces the older pattern of using separate @\[`InjectedState`], @\[`InjectedStore`], @\[`get_runtime`], and @\[`InjectedToolCallId`] annotations.
 </Info>
-
-### Runtime
-
-Use `get_runtime()` to access immutable configuration, context, memory (store), and streaming capabilities. The runtime provides access to data that persists across the agent's execution.
 
 #### Context
 
-Access immutable configuration and contextual data like user IDs, session details, or application-specific configuration.
+Access immutable configuration and contextual data like user IDs, session details, or application-specific configuration through `runtime.context`.
 
 Tools can access an agent's runtime context through the `config` parameter:
 
@@ -102,7 +108,7 @@ const result = await agent.invoke(
 
 #### Memory (Store)
 
-Access persistent data across conversations using the store. The store is accessed via `get_runtime().store` and allows you to save and retrieve user-specific or application-specific data.
+Access persistent data across conversations using the store. The store is accessed via `runtime.store` and allows you to save and retrieve user-specific or application-specific data.
 
 ```ts wrap expandable theme={null}
 import * as z from "zod";
@@ -179,7 +185,7 @@ console.log(result);
 
 #### Stream Writer
 
-Stream custom updates from tools as they execute using `get_runtime().stream_writer`. This is useful for providing real-time feedback to users about what a tool is doing.
+Stream custom updates from tools as they execute using `runtime.stream_writer`. This is useful for providing real-time feedback to users about what a tool is doing.
 
 ```ts wrap theme={null}
 import * as z from "zod";

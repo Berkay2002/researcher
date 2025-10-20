@@ -1,10 +1,12 @@
 # Multi-agent
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 **Multi-agent systems** break a complex application into multiple specialized agents that work together to solve problems.
 Instead of relying on a single agent to handle every step, **multi-agent architectures** allow you to compose smaller, focused agents into a coordinated workflow.
@@ -171,7 +173,7 @@ Two common strategies for shaping what the main agent receives back from a subag
   * A common failure mode is that the subagent performs tool calls or reasoning but does **not include the results** in its final message. Remind it that the controller (and user) only see the final output, so all relevant info must be included there.
 * **Custom output formatting** – adjust or enrich the subagent's response in code before handing it back to the main agent.
   * Example: pass specific state keys back to the main agent in addition to the final text.
-  * This requires wrapping the result in a `Command` (or equivalent structure) so you can merge custom state with the subagent’s response.
+  * This requires wrapping the result in a [`Command`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) (or equivalent structure) so you can merge custom state with the subagent’s response.
 
 ```typescript  theme={null}
 import { tool, ToolMessage } from "langchain";

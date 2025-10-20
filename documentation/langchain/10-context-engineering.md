@@ -1,10 +1,12 @@
 # Context engineering in agents
 
-<Warning>
-  **Alpha Notice:** These docs cover the [**v1-alpha**](/oss/javascript/releases/langchain-v1) release. Content is incomplete and subject to change.
+<Tip>
+  **LangChain v1.0**
 
-  For the latest stable version, see the v0 [LangChain Python](https://python.langchain.com/docs/introduction/) or [LangChain JavaScript](https://js.langchain.com/docs/introduction/) docs.
-</Warning>
+  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+
+  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
+</Tip>
 
 The hard part of building agents (or any LLM application) is making them reliable enough.
 While they may work for a prototype, they often mess up in more real world and widespread use cases.
@@ -93,7 +95,7 @@ Let's explore the concrete patterns LangChain provides for context engineering.
 
 #### Static instructions
 
-For fixed instructions that don't change, use the `system_prompt` parameter:
+For fixed instructions that don't change, use the @\[`system_prompt`] parameter:
 
 ```typescript  theme={null}
 import { createAgent } from "langchain";
@@ -107,7 +109,7 @@ const agent = createAgent({
 
 #### Dynamic instructions
 
-For instructions that depend on context (user profile, preferences, session data), use the `@dynamic_prompt` middleware:
+For instructions that depend on context (user profile, preferences, session data), use the @\[`@dynamic_prompt`] middleware:
 
 ```typescript  theme={null}
 import * as z from "zod";
@@ -189,7 +191,7 @@ const agent = createAgent({
 });
 ```
 
-For more sophisticated message management, use the built-in [SummarizationMiddleware](/oss/javascript/langchain/middleware#summarization) which automatically summarizes old messages when approaching token limits.
+For more sophisticated message management, use the built-in [`SummarizationMiddleware`](/oss/javascript/langchain/middleware#summarization) which automatically summarizes old messages when approaching token limits.
 
 See [Before model hook](/oss/javascript/langchain/agents#before-model-hook) for more examples.
 
@@ -244,7 +246,7 @@ const adaptiveModel = createMiddleware({
 
     if (messageCount > 20) {
       // Long conversation - use model with larger context window
-      model = initChatModel("anthropic:claude-sonnet-4-5-20250929");
+      model = initChatModel("anthropic:claude-sonnet-4-5");
     } else if (messageCount > 10) {
       // Medium conversation - use mid-tier model
       model = initChatModel("openai:gpt-4o");
@@ -265,7 +267,7 @@ See [Dynamic model](/oss/javascript/langchain/agents#dynamic-model) for more exa
 1. **Start simple** - Begin with static prompts and tools, add dynamics only when needed
 2. **Test incrementally** - Add one context engineering feature at a time
 3. **Monitor performance** - Track model calls, token usage, and latency
-4. **Use built-in middleware** - Leverage [SummarizationMiddleware](/oss/javascript/langchain/middleware#summarization), [LLMToolSelectorMiddleware](/oss/javascript/langchain/middleware#llm-tool-selector), etc.
+4. **Use built-in middleware** - Leverage [`SummarizationMiddleware`](/oss/javascript/langchain/middleware#summarization), [`LLMToolSelectorMiddleware`](/oss/javascript/langchain/middleware#llm-tool-selector), etc.
 5. **Document your context strategy** - Make it clear what context is being passed and why
 
 ## Related resources
