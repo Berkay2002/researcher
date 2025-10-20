@@ -306,7 +306,10 @@ export function HistoryModal({
         )}
 
         {/* Thread list */}
-        <ScrollArea className="min-h-0 flex-1" viewportClassName="overflow-x-hidden">
+        <ScrollArea
+          className="min-h-0 flex-1"
+          viewportClassName="overflow-x-hidden"
+        >
           <div className="min-w-0 space-y-6 px-6 pb-6">
             {filteredThreads.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
