@@ -12,7 +12,18 @@ import {
   CommandShortcut,
 } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
-import type { ThreadMetadata } from "@/types/ui";
+
+/**
+ * Metadata type for thread search
+ * Extracted from Thread for display purposes
+ */
+export type ThreadMetadata = {
+  threadId: string;
+  title?: string;
+  goal?: string;
+  createdAt: string;
+  updatedAt: string;
+};
 
 export type SearchModalProps = {
   open: boolean;

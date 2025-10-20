@@ -47,7 +47,26 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import type { ChatStatus, FileAttachment } from "@/types/ui";
+
+/**
+ * File attachment type for prompt input
+ */
+export type FileAttachment = {
+  id: string;
+  filename?: string;
+  mediaType?: string;
+  url?: string;
+};
+
+/**
+ * Chat status type
+ */
+export type ChatStatus =
+  | "idle"
+  | "pending"
+  | "streaming"
+  | "submitted"
+  | "error";
 
 type AttachmentsContext = {
   files: (FileAttachment & { id: string })[];
@@ -300,7 +319,6 @@ export const PromptInput = ({
         for (const file of capped) {
           next.push({
             id: nanoid(),
-            type: "file",
             url: URL.createObjectURL(file),
             mediaType: file.type,
             filename: file.name,
