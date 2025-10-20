@@ -105,9 +105,7 @@ export function SourceCard({
           )}
 
           {/* Domain URL */}
-          <p className="truncate text-muted-foreground/60 text-xs">
-            {domain}
-          </p>
+          <p className="truncate text-muted-foreground/60 text-xs">{domain}</p>
         </div>
 
         {/* Action buttons (visible on hover) */}

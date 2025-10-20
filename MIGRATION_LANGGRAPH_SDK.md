@@ -1,5 +1,118 @@
 # Migration to LangGraph SDK Patterns
 
+## Migration Status
+
+### ✅ Completed
+
+#### Phase 1: Source & Citation Components (COMPLETE)
+- ✅ **`source-card.tsx`** - Migrated to `src/components/thread/sources/source-card.tsx`
+  - Now uses `SourceMetadata` from `@/server/workflows/deep-research/graph/state`
+  - Removed dependency on deprecated `SourceCardData` type
+  - Simplified props to accept `isPinned` instead of embedding it in source data
+  
+- ✅ **`inline-citation-number.tsx`** - Migrated to `src/components/thread/sources/inline-citation-number.tsx`
+  - Simplified to just display citation numbers as badges
+  - Removed popover functionality (parent component handles citation data)
+  - No longer depends on deprecated `CitationData` type
+  
+- ✅ **`content-with-inline-citations.tsx`** - Migrated to `src/components/thread/sources/content-with-inline-citations.tsx`
+  - Now uses `SourceMetadata[]` from graph state
+  - Supports both `[Source X]` and `[X]` citation patterns
+  - Removed dependency on deprecated `SourceCardData` type
+  
+- ✅ **`report-sources-button.tsx`** - Migrated to `src/components/thread/sources/report-sources-button.tsx`
+  - Now uses `SourceMetadata[]` from graph state
+  - Simplified to show count and chevron icon
+  - Removed overlapping favicon display (kept simple count-based design)
+
+#### Phase 2: Message Components (COMPLETE)
+- ✅ **`research-message.tsx`** - Migrated to `src/components/thread/messages/research-message.tsx`
+  - Now uses `Message` type from `@langchain/langgraph-sdk`
+  - Uses `useStreamContext()` to access sources from graph state
+  - Removed dependency on deprecated `MessageData` and `CitationData` types
+  - Extracts citations dynamically from message content
+  
+- ✅ **`research-report-card.tsx`** - Migrated to `src/components/thread/messages/research-report-card.tsx`
+  - Uses `useStreamContext()` to derive sources from graph state
+  - No longer receives sources as props
+  - Removed dependency on deprecated `SourceCardData` type
+
+#### Infrastructure Updates
+- ✅ **`src/providers/Stream.tsx`** - Extended `StateType` to include graph state fields:
+  ```typescript
+  export type StateType = {
+    messages: Message[];
+    ui?: UIMessage[];
+    sources?: SourceMetadata[];           // ✅ ADDED
+    research_brief?: string | null;       // ✅ ADDED
+    final_report?: string | null;         // ✅ ADDED
+    notes?: string[];                     // ✅ ADDED
+    raw_notes?: string[];                 // ✅ ADDED
+    routing_decision?: "NEW_RESEARCH" | "FOLLOW_UP" | null;  // ✅ ADDED
+  };
+  ```
+
+### 🔄 In Progress / Pending
+
+#### Phase 3: Panel Components
+- ⏳ **`sources-panel.tsx`** - NOT YET MIGRATED
+  - Location: `src/app/(components)/sources-panel.tsx` (423 lines)
+  - Needs migration to: `src/components/thread/sources/sources-panel.tsx`
+  - Changes required:
+    - Remove `sources` prop, use `useStreamContext()` instead
+    - Update `SourceCardData[]` → `SourceMetadata[]`
+    - Derive pinned state from local component state (not in graph state)
+    - Update source filtering to work with `SourceMetadata` structure
+
+#### Phase 4: Thread Management Components
+- ⏳ **`thread-card.tsx`** - NOT YET MIGRATED
+  - Location: `src/app/(components)/thread-card.tsx`
+  - Status: May already be SDK-compatible, needs verification
+  - Uses deprecated `ThreadMetadata` type from `ui.ts`
+  
+- ⏳ **`thread-list.tsx`** - NOT YET MIGRATED
+  - Location: `src/app/(components)/thread-list.tsx`
+  - Uses deprecated `ThreadMetadata` type from `ui.ts`
+  
+- ⏳ **`thread-history-panel.tsx`** - NOT YET MIGRATED
+  - Location: `src/app/(components)/thread-history-panel.tsx`
+  - Uses custom `ThreadHistoryEntry` API and conversion utilities
+  - Needs to be refactored to use LangGraph SDK threads API directly
+
+#### Phase 5: Supporting Components
+- ⏳ **`app-shell.tsx`** - Needs review
+  - May use deprecated types, needs verification
+  
+- ⏳ **`research-status-bar.tsx`** - Needs review
+- ⏳ **`search-modal.tsx`** - Needs review
+- ⏳ **`project-modal.tsx`** - Needs review
+
+#### Phase 6: Import Updates & Cleanup
+- ❌ **Update imports** across application - NOT STARTED
+  - Need to update all files importing from `@/app/(components)/` to use new paths
+  - Files likely affected:
+    - `src/app/page.tsx`
+    - `src/components/thread/index.tsx`
+    - Any other page components
+    
+- ❌ **Remove deprecated code** - NOT STARTED
+  - Delete `src/types/ui.ts` after migration complete
+  - Delete `src/app/(components)/` folder after migration complete
+  - Remove type conversion utilities that are no longer needed
+
+### 📊 Progress Summary
+
+**Completed:** 8/15 components (53%)
+- ✅ 4 source components
+- ✅ 2 message components  
+- ✅ 1 infrastructure update (Stream provider)
+- ✅ 1 migration documentation
+
+**Remaining:** 7/15 components (47%)
+- ⏳ 1 large panel component (sources-panel)
+- ⏳ 3 thread management components
+- ⏳ 3 supporting components (need review)
+
 ## Overview
 This document outlines the migration from custom types (`ui.ts`) to LangGraph SDK patterns for all components in `src/app/(components)`.
 
@@ -222,16 +335,79 @@ function extractCitations(content: string, sources: SourceMetadata[]): Citation[
 
 ## Migration Checklist
 
-- [ ] Create new folder structure in `src/components/thread/`
-- [ ] Migrate source/citation components
-- [ ] Migrate message components
-- [ ] Migrate thread management components
-- [ ] Migrate panel components
+### Folder Structure
+- [x] Create `src/components/thread/sources/` folder
+- [x] Create `src/components/thread/messages/` folder (already existed)
+- [ ] Create `src/components/thread/panels/` folder (for sources-panel)
+- [ ] Decide on thread management components location
+
+### Component Migration
+- [x] Migrate `source-card.tsx`
+- [x] Migrate `inline-citation-number.tsx`
+- [x] Migrate `content-with-inline-citations.tsx`
+- [x] Migrate `report-sources-button.tsx`
+- [x] Migrate `research-message.tsx`
+- [x] Migrate `research-report-card.tsx`
+- [ ] Migrate `sources-panel.tsx` (large component, ~423 lines)
+- [ ] Review/migrate `thread-card.tsx`
+- [ ] Review/migrate `thread-list.tsx`
+- [ ] Review/migrate `thread-history-panel.tsx`
+- [ ] Review `app-shell.tsx` for deprecated type usage
+- [ ] Review other supporting components
+
+### Infrastructure Updates
+- [x] Update `StateType` in `src/providers/Stream.tsx`
+- [ ] Create index files for easier imports (`src/components/thread/sources/index.ts`)
+- [ ] Update TypeScript paths in `tsconfig.json` if needed
+
+### Code Cleanup
 - [ ] Update all imports across the application
-- [ ] Test with real LangGraph streaming data
-- [ ] Remove deprecated `ui.ts` file
-- [ ] Remove old `(components)` folder
-- [ ] Update documentation
+- [ ] Remove deprecated `src/types/ui.ts` file
+- [ ] Remove old `src/app/(components)/` folder
+- [ ] Remove type conversion utilities (if any remain)
+
+### Testing & Validation
+- [ ] Test source components with real graph data
+- [ ] Test message components with streaming
+- [ ] Test citation clicking and source panel interactions
+- [ ] Verify no TypeScript errors remain
+- [ ] Test responsive design and UI interactions
+- [ ] Performance testing with large source lists
+
+### Documentation
+- [x] Create migration guide (`MIGRATION_LANGGRAPH_SDK.md`)
+- [x] Document completed migrations
+- [ ] Update component documentation/comments
+- [ ] Update README if needed
+
+## Next Steps
+
+### Immediate Priority (Recommended Order)
+
+1. **Migrate `sources-panel.tsx`**
+   - This is the largest remaining component
+   - Critical for source browsing functionality
+   - Depends on completed source components
+
+2. **Review Thread Management Components**
+   - Check if `thread-card.tsx`, `thread-list.tsx` already use SDK
+   - These may be simpler than expected
+   - May just need type updates
+
+3. **Update Imports**
+   - Search for imports from `@/app/(components)/`
+   - Update to new paths in `@/components/thread/`
+   - Test after each update
+
+4. **Testing**
+   - Run the application with migrated components
+   - Test all user interactions
+   - Verify streaming data flows correctly
+
+5. **Cleanup**
+   - Remove deprecated `ui.ts`
+   - Remove old `(components)` folder
+   - Final verification
 
 ## References
 
