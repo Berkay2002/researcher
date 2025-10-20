@@ -244,7 +244,7 @@ export function getExaApiKey(): string | undefined {
  * @param modelName - The model name (e.g., "gemini-2.5-pro", "gemini-flash-latest")
  * @param temperature - The temperature for generation
  * @param maxTokens - Maximum tokens for output
- * @returns Configured ChatOpenAI instance with tracing
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createResearchLLM(
   modelName: string,
@@ -252,7 +252,7 @@ export function createResearchLLM(
   maxTokens?: number
 ) {
   return createLLM(modelName, temperature, {
-    maxTokens,
+    maxOutputTokens: maxTokens,
   });
 }
 

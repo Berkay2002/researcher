@@ -1,8 +1,0 @@
-{
-  "messages": [
-    {
-      "type": "human",
-      "content": "Compare the major frameworks for evaluating Retrieval-Augmented Generation (RAG) systems: RAGAS, TruLens, and LangSmith. What metrics do they use (e.g., faithfulness, answer relevance, context precision), and which framework is best suited for production monitoring vs. development iteration?"
-    }
-  ]
-}

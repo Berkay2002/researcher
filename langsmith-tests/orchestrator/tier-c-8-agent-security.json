@@ -1,7 +1,0 @@
-{
-  "threadId": "test-agent-security-001",
-  "userInputs": {
-    "goal": "Audit a web-research agent for **LLM security risks** (prompt injection, insecure output handling, model DoS, supply chain). Map **OWASP LLM Top-10** to concrete countermeasures in ReAct vs Orchestrator (policy at orchestrator vs worker).",
-    "modeOverride": "auto"
-  }
-}

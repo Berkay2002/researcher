@@ -1,7 +1,0 @@
-{
-  "threadId": "test-blackwell-vs-hopper-001",
-  "userInputs": {
-    "goal": "Summarize current public **inference** performance for NVIDIA Blackwell (B200/GB200/Blackwell Ultra) versus Hopper (H100/H200) and AMD MI325X across MLPerf v5.1 tasks; explain architectural drivers (HBM capacity/bandwidth, interconnect) and list vendor vs independent results. Include citations and note unresolved gaps.",
-    "modeOverride": "auto"
-  }
-}

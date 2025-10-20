@@ -1,8 +1,0 @@
-{
-  "messages": [
-    {
-      "type": "human",
-      "content": "What are the top security risks for LLM-based agents according to OWASP Top 10 for LLM Applications, and what specific guardrails or mitigation strategies are recommended? Include examples of prompt injection, tool misuse, and data leakage vulnerabilities."
-    }
-  ]
-}

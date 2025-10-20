@@ -1,10 +1,7 @@
-import { ChatOpenAI } from "@langchain/openai";
-import { LANGCHAIN_TRACING_V2, OPENAI_API_KEY } from "./env";
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
+import { GOOGLE_API_KEY, LANGCHAIN_TRACING_V2 } from "./env";
 
 // Constants for LLM configuration
-const GEMINI_BASE_URL =
-  process.env.GEMINI_BASE_URL ||
-  "https://generativelanguage.googleapis.com/v1beta/openai/";
 const DEFAULT_TEMPERATURE = 0.3;
 const QUALITY_TEMPERATURE = 0.1;
 
@@ -12,31 +9,28 @@ const QUALITY_TEMPERATURE = 0.1;
 const TRACING_ENABLED = LANGCHAIN_TRACING_V2 === "true";
 
 /**
- * Create a ChatOpenAI instance configured for Gemini OpenAI compatibility
+ * Create a ChatGoogleGenerativeAI instance configured for Gemini models
  *
  * @param model - The model name to use (e.g., "gemini-flash-latest", "gemini-2.5-pro")
  * @param temperature - The temperature for generation (default: 0.3)
- * @param options - Additional options for ChatOpenAI
- * @returns Configured ChatOpenAI instance
+ * @param options - Additional options for ChatGoogleGenerativeAI
+ * @returns Configured ChatGoogleGenerativeAI instance
  */
 export function createLLM(
   model: string,
   temperature: number = DEFAULT_TEMPERATURE,
   options: {
     streaming?: boolean;
-    maxTokens?: number;
+    maxOutputTokens?: number;
     [key: string]: unknown;
   } = {}
-): ChatOpenAI {
-  return new ChatOpenAI({
+): ChatGoogleGenerativeAI {
+  return new ChatGoogleGenerativeAI({
     model,
     temperature,
-    apiKey: OPENAI_API_KEY,
-    configuration: {
-      baseURL: GEMINI_BASE_URL,
-    },
-    // Disable stream_options to avoid token metadata conflicts
-    streamUsage: false,
+    apiKey: GOOGLE_API_KEY,
+    // Enable stream usage by default for better observability
+    streamUsage: true,
     // Add metadata for better tracing visibility
     tags: TRACING_ENABLED
       ? [`model:${model}`, `temperature:${temperature}`]
@@ -63,8 +57,10 @@ export const LLM_INSTANCES = {
  * Get an LLM instance by type
  *
  * @param type - The type of LLM to get
- * @returns ChatOpenAI instance
+ * @returns ChatGoogleGenerativeAI instance
  */
-export function getLLM(type: keyof typeof LLM_INSTANCES): ChatOpenAI {
+export function getLLM(
+  type: keyof typeof LLM_INSTANCES
+): ChatGoogleGenerativeAI {
   return LLM_INSTANCES[type];
 }

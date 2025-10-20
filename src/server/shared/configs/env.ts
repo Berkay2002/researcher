@@ -2,9 +2,8 @@ import { z } from "zod";
 
 // Environment variable schema for runtime validation
 const envSchema = z.object({
-  // LLM Provider - Using Gemini via OpenAI SDK compatibility
-  OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
-  GEMINI_API_KEY: z.string().optional(), // Optional, keeping for potential fallback
+  // LLM Provider - Using Gemini via native Google Generative AI SDK
+  GOOGLE_API_KEY: z.string().min(1, "Google API key is required"),
 
   // Search APIs
   TAVILY_API_KEY: z.string().min(1, "Tavily API key is required"),
@@ -42,8 +41,7 @@ export const env = validateEnv();
 
 // Export individual variables for convenience
 export const {
-  OPENAI_API_KEY,
-  GEMINI_API_KEY,
+  GOOGLE_API_KEY,
   TAVILY_API_KEY,
   EXA_API_KEY,
   REDIS_URL,

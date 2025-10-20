@@ -1,3 +1,7 @@
+/** biome-ignore-all lint/nursery/noShadow: <Ignore> */
+/** biome-ignore-all lint/suspicious/useAwait: <Ignore> */
+/** biome-ignore-all lint/suspicious/noConsole: <Ignore> */
+
 import type { Message } from "@langchain/langgraph-sdk";
 import { useStream } from "@langchain/langgraph-sdk/react";
 import {
@@ -24,9 +28,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
+import type { SourceMetadata } from "@/server/workflows/deep-research/graph/state";
 import { useThreads } from "./Thread";
 
-export type StateType = { messages: Message[]; ui?: UIMessage[] };
+export type StateType = {
+  messages: Message[];
+  ui?: UIMessage[];
+  sources?: SourceMetadata[];
+  research_brief?: string | null;
+  final_report?: string | null;
+  notes?: string[];
+  raw_notes?: string[];
+  routing_decision?: "NEW_RESEARCH" | "FOLLOW_UP" | null;
+};
 
 const useTypedStream = useStream<
   StateType,

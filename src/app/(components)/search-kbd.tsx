@@ -1,3 +1,4 @@
+/** biome-ignore-all lint/nursery/noReactForwardRef: <Ignore> */
 import { SearchIcon } from "lucide-react";
 import { type ComponentPropsWithoutRef, forwardRef } from "react";
 

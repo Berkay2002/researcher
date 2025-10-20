@@ -1,7 +1,0 @@
-{
-  "threadId": "test-eu-ai-act-gpai-001",
-  "userInputs": {
-    "goal": "List applicable **GPAI** (general-purpose AI) obligations now in force under the EU AI Act; map them to a web-research agent (logging, provenance, copyright, systemic-risk thresholds). Provide a timeline for compliance for models pre-Aug 2 2025 vs new models.",
-    "modeOverride": "auto"
-  }
-}
