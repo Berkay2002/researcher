@@ -12,7 +12,6 @@ import {
 import Image from "next/image";
 import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PanelContent, PanelHeader } from "../app-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { getFaviconUrl } from "@/lib/utils/favicon";
 import { useStreamContext } from "@/providers/Stream";
 import type { SourceMetadata } from "@/server/workflows/deep-research/graph/state";
+import { PanelContent, PanelHeader } from "../app-shell";
 import { SourceCard } from "./source-card";
 
 /**

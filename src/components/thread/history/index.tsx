@@ -26,14 +26,6 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  PanelContent,
-  PanelFooter,
-  PanelHeader,
-} from "../app-shell";
-import ProjectModal, { type Project } from "./project-modal";
-import { KbdInputGroup } from "./search-kbd";
-import { SearchModal } from "./search-modal";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +50,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { useThreads } from "@/providers/Thread";
+import { PanelContent, PanelFooter, PanelHeader } from "../app-shell";
 import { getContentString } from "../utils";
+import ProjectModal, { type Project } from "./project-modal";
+import { KbdInputGroup } from "./search-kbd";
+import { SearchModal } from "./search-modal";
 
 type ColorKey =
   | "gray"

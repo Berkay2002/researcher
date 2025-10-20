@@ -136,17 +136,13 @@ export function PanelHeader({
           )}
         </div>
         <div className="justify-self-center">{middle}</div>
-        <div className="flex justify-end gap-1">
-          {actions}
-        </div>
+        <div className="flex justify-end gap-1">{actions}</div>
       </div>
     );
   }
 
   return (
-    <div
-      className={cn("flex items-center border-b px-4 py-3", className)}
-    >
+    <div className={cn("flex items-center border-b px-4 py-3", className)}>
       <div className="min-w-0 flex-1">
         <h2 className="truncate font-semibold text-sm">{title}</h2>
         {subtitle && (
