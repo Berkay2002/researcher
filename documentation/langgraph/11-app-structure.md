@@ -1,13 +1,5 @@
 # Application structure
 
-<Tip>
-  **LangGraph v1.0**
-
-  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
-
-  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 ## Overview
 
 A LangGraph application consists of one or more graphs, a configuration file (`langgraph.json`), a file that specifies dependencies, and an optional `.env` file that specifies environment variables.
@@ -23,11 +15,11 @@ To deploy using the LangSmith, the following information should be provided:
 3. A file that specifies [dependencies](#dependencies) required to run the application.
 4. [Environment variables](#environment-variables) that are required for the application to run.
 
-## File Structure
+## File structure
 
 Below are examples of directory structures for applications:
 
-```plaintext  theme={null}
+```plaintext theme={null}
 my-app/
 ├── src # all project code lies within here
 │   ├── utils # optional utilities for your graph
@@ -46,7 +38,7 @@ my-app/
 
 <a id="configuration-file-concepts" />
 
-## Configuration File
+## Configuration file
 
 The `langgraph.json` file is a JSON file that specifies the dependencies, graphs, environment variables, and other settings required to deploy a LangGraph application.
 
@@ -58,11 +50,11 @@ See the [LangGraph configuration file reference](/langsmith/cli#configuration-fi
 
 ### Examples
 
-* The dependencies will be loaded from a dependency file in the local directory (e.g., `package.json`).
-* A single graph will be loaded from the file `./your_package/your_file.js` with the function `agent`.
-* The environment variable `OPENAI_API_KEY` is set inline.
+- The dependencies will be loaded from a dependency file in the local directory (e.g., `package.json`).
+- A single graph will be loaded from the file `./your_package/your_file.js` with the function `agent`.
+- The environment variable `OPENAI_API_KEY` is set inline.
 
-```json  theme={null}
+```json theme={null}
 {
   "dependencies": ["."],
   "graphs": {
@@ -92,14 +84,18 @@ Use the `graphs` key in the [LangGraph configuration file](#configuration-file-c
 
 You can specify one or more graphs in the configuration file. Each graph is identified by a name (which should be unique) and a path for either: (1) the compiled graph or (2) a function that makes a graph is defined.
 
-## Environment Variables
+## Environment variables
 
 If you're working with a deployed LangGraph application locally, you can configure environment variables in the `env` key of the [LangGraph configuration file](#configuration-file-concepts).
 
 For a production deployment, you will typically want to configure the environment variables in the deployment environment.
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/application-structure.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/application-structure.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

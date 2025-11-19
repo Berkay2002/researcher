@@ -2,28 +2,20 @@
 
 > Implement safety checks and content filtering for your agents
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 Guardrails help you build safe, compliant AI applications by validating and filtering content at key points in your agent's execution. They can detect sensitive information, enforce content policies, validate outputs, and prevent unsafe behaviors before they cause problems.
 
 Common use cases include:
 
-* Preventing PII leakage
-* Detecting and blocking prompt injection attacks
-* Blocking inappropriate or harmful content
-* Enforcing business rules and compliance requirements
-* Validating output quality and accuracy
+- Preventing PII leakage
+- Detecting and blocking prompt injection attacks
+- Blocking inappropriate or harmful content
+- Enforcing business rules and compliance requirements
+- Validating output quality and accuracy
 
 You can implement guardrails using [middleware](/oss/javascript/langchain/middleware) to intercept execution at strategic points - before the agent starts, after it completes, or around model and tool calls.
 
 <div style={{ display: "flex", justifyContent: "center" }}>
-  <img src="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=eb4404b137edec6f6f0c8ccb8323eaf1" alt="Middleware flow diagram showing hooks before and after model and tools" height="300" className="rounded-lg" data-og-width="500" data-og-height="560" data-path="oss/images/middleware_final.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=280&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=483413aa87cf93323b0f47c0dd5528e8 280w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=560&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=41b7dd647447978ff776edafe5f42499 560w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=840&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=e9b14e264f68345de08ae76f032c52d4 840w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1100&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=ec45e1932d1279b1beee4a4b016b473f 1100w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1650&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=3bca5ebf8aa56632b8a9826f7f112e57 1650w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=2500&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=437f141d1266f08a95f030c2804691d9 2500w" />
+  <img src="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=eb4404b137edec6f6f0c8ccb8323eaf1" alt="Middleware flow diagram" className="rounded-lg" data-og-width="500" width="500" data-og-height="560" height="560" data-path="oss/images/middleware_final.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=280&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=483413aa87cf93323b0f47c0dd5528e8 280w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=560&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=41b7dd647447978ff776edafe5f42499 560w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=840&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=e9b14e264f68345de08ae76f032c52d4 840w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1100&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=ec45e1932d1279b1beee4a4b016b473f 1100w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1650&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=3bca5ebf8aa56632b8a9826f7f112e57 1650w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=2500&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=437f141d1266f08a95f030c2804691d9 2500w" />
 </div>
 
 Guardrails can be implemented using two complementary approaches:
@@ -57,11 +49,11 @@ The PII middleware supports multiple strategies for handling detected PII:
 | `hash`   | Replace with deterministic hash         | `a8f5f167...`         |
 | `block`  | Raise exception when detected           | Error thrown          |
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createAgent, piiRedactionMiddleware } from "langchain";
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [customerServiceTool, emailTool],
   middleware: [
     // Redact emails in user input before sending to model
@@ -88,32 +80,36 @@ const agent = createAgent({
 
 // When user provides PII, it will be handled according to the strategy
 const result = await agent.invoke({
-  messages: [{
-    role: "user",
-    content: "My email is john.doe@example.com and card is 4532-1234-5678-9010"
-  }]
+  messages: [
+    {
+      role: "user",
+      content:
+        "My email is john.doe@example.com and card is 5105-1051-0510-5100",
+    },
+  ],
 });
 ```
 
 <Accordion title="Built-in PII types and configuration">
   **Built-in PII types:**
 
-  * `email` - Email addresses
-  * `credit_card` - Credit card numbers (Luhn validated)
-  * `ip` - IP addresses
-  * `mac_address` - MAC addresses
-  * `url` - URLs
+- `email` - Email addresses
+- `credit_card` - Credit card numbers (Luhn validated)
+- `ip` - IP addresses
+- `mac_address` - MAC addresses
+- `url` - URLs
 
-  **Configuration options:**
+**Configuration options:**
 
-  | Parameter            | Description                                                            | Default                     |
-  | -------------------- | ---------------------------------------------------------------------- | --------------------------- |
-  | `piiType`            | Type of PII to detect (built-in or custom)                             | Required                    |
-  | `strategy`           | How to handle detected PII (`"block"`, `"redact"`, `"mask"`, `"hash"`) | `"redact"`                  |
-  | `detector`           | Custom detector regex pattern                                          | `undefined` (uses built-in) |
-  | `applyToInput`       | Check user messages before model call                                  | `true`                      |
-  | `applyToOutput`      | Check AI messages after model call                                     | `false`                     |
-  | `applyToToolResults` | Check tool result messages after execution                             | `false`                     |
+| Parameter            | Description                                                            | Default                     |
+| -------------------- | ---------------------------------------------------------------------- | --------------------------- |
+| `piiType`            | Type of PII to detect (built-in or custom)                             | Required                    |
+| `strategy`           | How to handle detected PII (`"block"`, `"redact"`, `"mask"`, `"hash"`) | `"redact"`                  |
+| `detector`           | Custom detector regex pattern                                          | `undefined` (uses built-in) |
+| `applyToInput`       | Check user messages before model call                                  | `true`                      |
+| `applyToOutput`      | Check AI messages after model call                                     | `false`                     |
+| `applyToToolResults` | Check tool result messages after execution                             | `false`                     |
+
 </Accordion>
 
 See the [middleware documentation](/oss/javascript/langchain/middleware#pii-detection) for complete details on PII detection capabilities.
@@ -124,22 +120,26 @@ LangChain provides built-in middleware for requiring human approval before execu
 
 Human-in-the-loop middleware is helpful for cases such as financial transactions and transfers, deleting or modifying production data, sending communications to external parties, and any operation with significant business impact.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createAgent, humanInTheLoopMiddleware } from "langchain";
 import { MemorySaver, Command } from "@langchain/langgraph";
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [searchTool, sendEmailTool, deleteDatabaseTool],
   middleware: [
     humanInTheLoopMiddleware({
       interruptOn: {
         // Require approval for sensitive operations
         send_email: { allowAccept: true, allowEdit: true, allowRespond: true },
-        delete_database: { allowAccept: true, allowEdit: true, allowRespond: true },
+        delete_database: {
+          allowAccept: true,
+          allowEdit: true,
+          allowRespond: true,
+        },
         // Auto-approve safe operations
         search: false,
-      }
+      },
     }),
   ],
   checkpointer: new MemorySaver(),
@@ -156,7 +156,7 @@ let result = await agent.invoke(
 
 result = await agent.invoke(
   new Command({ resume: { decisions: [{ type: "approve" }] } }),
-  config  // Same thread ID to resume the paused conversation
+  config // Same thread ID to resume the paused conversation
 );
 ```
 
@@ -172,11 +172,11 @@ For more sophisticated guardrails, you can create custom middleware that runs be
 
 Use "before agent" hooks to validate requests once at the start of each invocation. This is useful for session-level checks like authentication, rate limiting, or blocking inappropriate requests before any processing begins.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createMiddleware, AIMessage } from "langchain";
 
 const contentFilterMiddleware = (bannedKeywords: string[]) => {
-  const keywords = bannedKeywords.map(kw => kw.toLowerCase());
+  const keywords = bannedKeywords.map((kw) => kw.toLowerCase());
 
   return createMiddleware({
     name: "ContentFilterMiddleware",
@@ -201,7 +201,7 @@ const contentFilterMiddleware = (bannedKeywords: string[]) => {
             messages: [
               new AIMessage(
                 "I cannot process requests containing inappropriate content. Please rephrase your request."
-              )
+              ),
             ],
             jumpTo: "end",
           };
@@ -217,16 +217,14 @@ const contentFilterMiddleware = (bannedKeywords: string[]) => {
 import { createAgent } from "langchain";
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [searchTool, calculatorTool],
-  middleware: [
-    contentFilterMiddleware(["hack", "exploit", "malware"]),
-  ],
+  middleware: [contentFilterMiddleware(["hack", "exploit", "malware"])],
 });
 
 // This request will be blocked before any processing
 const result = await agent.invoke({
-  messages: [{ role: "user", content: "How do I hack into a database?" }]
+  messages: [{ role: "user", content: "How do I hack into a database?" }],
 });
 ```
 
@@ -234,11 +232,11 @@ const result = await agent.invoke({
 
 Use "after agent" hooks to validate final outputs once before returning to the user. This is useful for model-based safety checks, quality validation, or final compliance scans on the complete agent response.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createMiddleware, AIMessage, initChatModel } from "langchain";
 
 const safetyGuardrailMiddleware = () => {
-  const safetyModel = initChatModel("openai:gpt-4o-mini");
+  const safetyModel = initChatModel("gpt-4o-mini");
 
   return createMiddleware({
     name: "SafetyGuardrailMiddleware",
@@ -260,7 +258,7 @@ const safetyGuardrailMiddleware = () => {
       Response: ${lastMessage.content.toString()}`;
 
       const result = await safetyModel.invoke([
-        { role: "user", content: safetyPrompt }
+        { role: "user", content: safetyPrompt },
       ]);
 
       if (result.content.toString().includes("UNSAFE")) {
@@ -268,7 +266,7 @@ const safetyGuardrailMiddleware = () => {
           messages: [
             new AIMessage(
               "I cannot provide that response. Please rephrase your request."
-            )
+            ),
           ],
           jumpTo: "end",
         };
@@ -283,13 +281,13 @@ const safetyGuardrailMiddleware = () => {
 import { createAgent } from "langchain";
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [searchTool, calculatorTool],
   middleware: [safetyGuardrailMiddleware()],
 });
 
 const result = await agent.invoke({
-  messages: [{ role: "user", content: "How do I make explosives?" }]
+  messages: [{ role: "user", content: "How do I make explosives?" }],
 });
 ```
 
@@ -297,11 +295,15 @@ const result = await agent.invoke({
 
 You can stack multiple guardrails by adding them to the middleware array. They execute in order, allowing you to build layered protection:
 
-```typescript  theme={null}
-import { createAgent, piiRedactionMiddleware, humanInTheLoopMiddleware } from "langchain";
+```typescript theme={null}
+import {
+  createAgent,
+  piiRedactionMiddleware,
+  humanInTheLoopMiddleware,
+} from "langchain";
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [searchTool, sendEmailTool],
   middleware: [
     // Layer 1: Deterministic input filter (before agent)
@@ -323,7 +325,7 @@ const agent = createAgent({
     humanInTheLoopMiddleware({
       interruptOn: {
         send_email: { allowAccept: true, allowEdit: true, allowRespond: true },
-      }
+      },
     }),
 
     // Layer 4: Model-based safety check (after agent)
@@ -334,13 +336,17 @@ const agent = createAgent({
 
 ## Additional resources
 
-* [Middleware documentation](/oss/javascript/langchain/middleware) - Complete guide to custom middleware
-* [Middleware API reference](https://reference.langchain.com/python/langchain/middleware/) - Complete guide to custom middleware
-* [Human-in-the-loop](/oss/javascript/langchain/human-in-the-loop) - Add human review for sensitive operations
-* [Testing agents](/oss/javascript/langchain/test) - Strategies for testing safety mechanisms
+- [Middleware documentation](/oss/javascript/langchain/middleware) - Complete guide to custom middleware
+- [Middleware API reference](https://reference.langchain.com/python/langchain/middleware/) - Complete guide to custom middleware
+- [Human-in-the-loop](/oss/javascript/langchain/human-in-the-loop) - Add human review for sensitive operations
+- [Testing agents](/oss/javascript/langchain/test) - Strategies for testing safety mechanisms
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/guardrails.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/guardrails.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

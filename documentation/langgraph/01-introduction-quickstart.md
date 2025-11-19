@@ -1,21 +1,11 @@
 # Quickstart
 
-<Tip>
-  **LangGraph v1.0**
-
-  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
-
-  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 This quickstart demonstrates how to build a calculator agent using the LangGraph Graph API or the Functional API.
 
-* [Use the Graph API](#use-the-graph-api) if you prefer to define your agent as a graph of nodes and edges.
-* [Use the Functional API](#use-the-functional-api) if you prefer to define your agent as a single function.
+- [Use the Graph API](#use-the-graph-api) if you prefer to define your agent as a graph of nodes and edges.
+- [Use the Functional API](#use-the-functional-api) if you prefer to define your agent as a single function.
 
-<Tip>
-  For conceptual information, see [Graph API overview](/oss/javascript/langgraph/graph-api) and [Functional API overview](/oss/javascript/langgraph/functional-api).
-</Tip>
+For conceptual information, see [Graph API overview](/oss/javascript/langgraph/graph-api) and [Functional API overview](/oss/javascript/langgraph/functional-api).
 
 <Info>
   For this example, you will need to set up a [Claude (Anthropic)](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
@@ -33,7 +23,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     import * as z from "zod";
 
     const model = new ChatAnthropic({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-5-20250929",
       temperature: 0,
     });
 
@@ -95,7 +85,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       messages: z
         .array(z.custom<BaseMessage>())
         .register(registry, MessagesZodMeta),
-      modelCalls: z.number().optional(),
+      llmCalls: z.number().optional(),
     });
     ```
 
@@ -185,6 +175,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     }
     ```
 
+    <Tip>
+      To learn how to trace your agent with LangSmith, see the [LangSmith documentation](/langsmith/trace-with-langgraph).
+    </Tip>
+
     Congratulations! You've built your first agent using the LangGraph Graph API.
 
     <Accordion title="Full code example">
@@ -196,7 +190,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       import * as z from "zod";
 
       const model = new ChatAnthropic({
-        model: "claude-sonnet-4-5",
+        model: "claude-sonnet-4-5-20250929",
         temperature: 0,
       });
 
@@ -322,6 +316,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       }
       ```
     </Accordion>
+
   </Tab>
 
   <Tab title="Use the Functional API">
@@ -335,7 +330,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     import * as z from "zod";
 
     const model = new ChatAnthropic({
-      model: "claude-sonnet-4-5",
+      model: "claude-sonnet-4-5-20250929",
       temperature: 0,
     });
 
@@ -389,7 +384,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     ```typescript  theme={null}
     import { task, entrypoint } from "@langchain/langgraph";
     import { SystemMessage } from "@langchain/core/messages";
-    const callmodel = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+    const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
       return modelWithTools.invoke([
         new SystemMessage(
           "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
@@ -452,6 +447,10 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
     }
     ```
 
+    <Tip>
+      To learn how to trace your agent with LangSmith, see the [LangSmith documentation](/langsmith/trace-with-langgraph).
+    </Tip>
+
     Congratulations! You've built your first agent using the LangGraph Functional API.
 
     <Accordion title="Full code example" icon="code">
@@ -463,7 +462,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       import * as z from "zod";
 
       const model = new ChatAnthropic({
-        model: "claude-sonnet-4-5",
+        model: "claude-sonnet-4-5-20250929",
         temperature: 0,
       });
 
@@ -508,7 +507,7 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
 
       import { task, entrypoint } from "@langchain/langgraph";
       import { SystemMessage } from "@langchain/core/messages";
-      const callmodel = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
+      const callLlm = task({ name: "callLlm" }, async (messages: BaseMessage[]) => {
         return modelWithTools.invoke([
           new SystemMessage(
             "You are a helpful assistant tasked with performing arithmetic on a set of inputs."
@@ -556,11 +555,16 @@ This quickstart demonstrates how to build a calculator agent using the LangGraph
       }
       ```
     </Accordion>
+
   </Tab>
 </Tabs>
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/quickstart.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/quickstart.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

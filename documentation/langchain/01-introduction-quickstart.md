@@ -1,36 +1,29 @@
 # Quickstart
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 This quickstart takes you from a simple setup to a fully functional AI agent in just a few minutes.
 
 ## Build a basic agent
 
 Start by creating a simple agent that can answer questions and call tools. The agent will use Claude Sonnet 4.5 as its language model, a basic weather function as a tool, and a simple prompt to guide its behavior.
 
-```ts  theme={null}
+<Info>
+  For this example, you will need to set up a [Claude (Anthropic)](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
+</Info>
+
+```ts theme={null}
 import { createAgent, tool } from "langchain";
 import * as z from "zod";
 
-const getWeather = tool(
-  (input) => `It's always sunny in ${input.city}!`,
-  {
-    name: "get_weather",
-    description: "Get the weather for a given city",
-    schema: z.object({
-      city: z.string().describe("The city to get the weather for"),
-    }),
-  }
-);
+const getWeather = tool((input) => `It's always sunny in ${input.city}!`, {
+  name: "get_weather",
+  description: "Get the weather for a given city",
+  schema: z.object({
+    city: z.string().describe("The city to get the weather for"),
+  }),
+});
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5",
+  model: "claude-sonnet-4-5-20250929",
   tools: [getWeather],
 });
 
@@ -41,9 +34,9 @@ console.log(
 );
 ```
 
-<Info>
-  For this example, you will need to set up a [Claude (Anthropic)](https://www.anthropic.com/) account and get an API key. Then, set the `ANTHROPIC_API_KEY` environment variable in your terminal.
-</Info>
+<Tip>
+  To learn how to trace your agent with LangSmith, see the [LangSmith documentation](/langsmith/trace-with-langchain).
+</Tip>
 
 ## Build a real-world agent
 
@@ -72,6 +65,7 @@ Let's walk through each step:
 
     If a user asks you for the weather, make sure you know the location. If you can tell from the question that they mean wherever they are, use the get_user_location tool to find their location.`;
     ```
+
   </Step>
 
   <Step title="Create tools">
@@ -134,6 +128,7 @@ Let's walk through each step:
         ```
       </Accordion>
     </Note>
+
   </Step>
 
   <Step title="Configure your model">
@@ -143,10 +138,11 @@ Let's walk through each step:
     import { initChatModel } from "langchain";
 
     const model = await initChatModel(
-      "anthropic:claude-sonnet-4-5",
+      "claude-sonnet-4-5-20250929",
       { temperature: 0.5, timeout: 10, maxTokens: 1000 }
     );
     ```
+
   </Step>
 
   <Step title="Define response format">
@@ -159,6 +155,7 @@ Let's walk through each step:
       weather_conditions: z.string().optional(),
     });
     ```
+
   </Step>
 
   <Step title="Add memory">
@@ -175,6 +172,7 @@ Let's walk through each step:
       In production, use a persistent checkpointer that saves to a database.
       See [Add and manage memory](/oss/javascript/langgraph/add-memory#manage-short-term-memory) for more details.
     </Info>
+
   </Step>
 
   <Step title="Create and run the agent">
@@ -184,8 +182,8 @@ Let's walk through each step:
     import { createAgent } from "langchain";
 
     const agent = createAgent({
-      model: "anthropic:claude-sonnet-4-5",
-      prompt: systemPrompt,
+      model: "claude-sonnet-4-5-20250929",
+      systemPrompt: systemPrompt,
       tools: [getUserLocation, getWeather],
       responseFormat,
       checkpointer,
@@ -218,6 +216,7 @@ Let's walk through each step:
     //   weather_conditions: undefined
     // }
     ```
+
   </Step>
 </Steps>
 
@@ -227,93 +226,98 @@ Let's walk through each step:
   import { MemorySaver, type Runtime } from "@langchain/langgraph";
   import * as z from "zod";
 
-  // Define system prompt
-  const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
+// Define system prompt
+const systemPrompt = `You are an expert weather forecaster, who speaks in puns.
 
-  You have access to two tools:
+You have access to two tools:
 
-  - get_weather_for_location: use this to get the weather for a specific location
-  - get_user_location: use this to get the user's location
+- get_weather_for_location: use this to get the weather for a specific location
+- get_user_location: use this to get the user's location
 
-  If a user asks you for the weather, make sure you know the location. If you can tell from the question that they mean wherever they are, use the get_user_location tool to find their location.`;
+If a user asks you for the weather, make sure you know the location. If you can tell from the question that they mean wherever they are, use the get_user_location tool to find their location.`;
 
-  // Define tools
-  const getWeather = tool(
-    ({ city }) => `It's always sunny in ${city}!`,
-    {
-      name: "get_weather_for_location",
-      description: "Get the weather for a given city",
-      schema: z.object({
-        city: z.string(),
-      }),
-    }
-  );
+// Define tools
+const getWeather = tool(
+({ city }) => `It's always sunny in ${city}!`,
+{
+name: "get_weather_for_location",
+description: "Get the weather for a given city",
+schema: z.object({
+city: z.string(),
+}),
+}
+);
 
-  const getUserLocation = tool(
-    (_, config: Runtime<{ user_id: string}>) => {
-      const { user_id } = config.context;
-      return user_id === "1" ? "Florida" : "SF";
-    },
-    {
-      name: "get_user_location",
-      description: "Retrieve user information based on user ID",
-      schema: z.object({}),
-    }
-  );
+const getUserLocation = tool(
+(\_, config: Runtime<{ user_id: string}>) => {
+const { user_id } = config.context;
+return user_id === "1" ? "Florida" : "SF";
+},
+{
+name: "get_user_location",
+description: "Retrieve user information based on user ID",
+schema: z.object({}),
+}
+);
 
-  // Configure model
-  const model = await initChatModel(
-    "anthropic:claude-sonnet-4-5",
-    { temperature: 0 }
-  );
+// Configure model
+const model = await initChatModel(
+"claude-sonnet-4-5-20250929",
+{ temperature: 0 }
+);
 
-  // Define response format
-  const responseFormat = z.object({
-    punny_response: z.string(),
-    weather_conditions: z.string().optional(),
-  });
+// Define response format
+const responseFormat = z.object({
+punny_response: z.string(),
+weather_conditions: z.string().optional(),
+});
 
-  // Set up memory
-  const checkpointer = new MemorySaver();
+// Set up memory
+const checkpointer = new MemorySaver();
 
-  // Create agent
-  const agent = createAgent({
-    model: "anthropic:claude-sonnet-4-5",
-    prompt: systemPrompt,
-    tools: [getUserLocation, getWeather],
-    responseFormat,
-    checkpointer,
-  });
+// Create agent
+const agent = createAgent({
+model: "claude-sonnet-4-5-20250929",
+systemPrompt: systemPrompt,
+tools: [getUserLocation, getWeather],
+responseFormat,
+checkpointer,
+});
 
-  // Run agent
-  // `thread_id` is a unique identifier for a given conversation.
-  const config = {
-    configurable: { thread_id: "1" },
-    context: { user_id: "1" },
-  };
+// Run agent
+// `thread_id` is a unique identifier for a given conversation.
+const config = {
+configurable: { thread_id: "1" },
+context: { user_id: "1" },
+};
 
-  const response = await agent.invoke(
-    { messages: [{ role: "user", content: "what is the weather outside?" }] },
-    config
-  );
-  console.log(response.structuredResponse);
-  // {
-  //   punny_response: "Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
-  //   weather_conditions: "It's always sunny in Florida!"
-  // }
+const response = await agent.invoke(
+{ messages: [{ role: "user", content: "what is the weather outside?" }] },
+config
+);
+console.log(response.structuredResponse);
+// {
+// punny_response: "Florida is still having a 'sun-derful' day! The sunshine is playing 'ray-dio' hits all day long! I'd say it's the perfect weather for some 'solar-bration'! If you were hoping for rain, I'm afraid that idea is all 'washed up' - the forecast remains 'clear-ly' brilliant!",
+// weather_conditions: "It's always sunny in Florida!"
+// }
 
-  // Note that we can continue the conversation using the same `thread_id`.
-  const thankYouResponse = await agent.invoke(
-    { messages: [{ role: "user", content: "thank you!" }] },
-    config
-  );
-  console.log(thankYouResponse.structuredResponse);
-  // {
-  //   punny_response: "You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
-  //   weather_conditions: undefined
-  // }
-  ```
+// Note that we can continue the conversation using the same `thread_id`.
+const thankYouResponse = await agent.invoke(
+{ messages: [{ role: "user", content: "thank you!" }] },
+config
+);
+console.log(thankYouResponse.structuredResponse);
+// {
+// punny_response: "You're 'thund-erfully' welcome! It's always a 'breeze' to help you stay 'current' with the weather. I'm just 'cloud'-ing around waiting to 'shower' you with more forecasts whenever you need them. Have a 'sun-sational' day in the Florida sunshine!",
+// weather_conditions: undefined
+// }
+
+```
 </Expandable>
+
+<Tip>
+To learn how to trace your agent with LangSmith, see the [LangSmith documentation](/langsmith/trace-with-langchain).
+</Tip>
 
 Congratulations! You now have an AI agent that can:
 
@@ -326,5 +330,10 @@ Congratulations! You now have an AI agent that can:
 ***
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/quickstart.mdx)
+[Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/quickstart.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+[Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>
+```

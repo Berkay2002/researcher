@@ -1,13 +1,5 @@
 # Durable execution
 
-<Tip>
-  **LangGraph v1.0**
-
-  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
-
-  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 **Durable execution** is a technique in which a process or workflow saves its progress at key points, allowing it to pause and later resume exactly where it left off. This is particularly useful in scenarios that require [human-in-the-loop](/oss/javascript/langgraph/interrupts), where users can inspect, validate, or modify the process before continuing, and in long-running tasks that might encounter interruptions or errors (e.g., calls to an LLM timing out). By preserving completed work, durable execution enables a process to resume without reprocessing previous steps -- even after a significant delay (e.g., a week later).
 
 LangGraph's built-in [persistence](/oss/javascript/langgraph/persistence) layer provides durable execution for workflows, ensuring that the state of each execution step is saved to a durable store. This capability guarantees that if a workflow is interrupted -- whether by a system failure or for [human-in-the-loop](/oss/javascript/langgraph/interrupts) interactions -- it can be resumed from its last recorded state.
@@ -35,9 +27,9 @@ As a result, when you are writing a workflow for durable execution, you must wra
 
 To ensure that your workflow is deterministic and can be consistently replayed, follow these guidelines:
 
-* **Avoid Repeating Work**: If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operations with side effects (e.g., logging, file writes, or network calls), wrap each operation in a separate **task**. This ensures that when the workflow is resumed, the operations are not repeated, and their results are retrieved from the persistence layer.
-* **Encapsulate Non-Deterministic Operations:** Wrap any code that might yield non-deterministic results (e.g., random number generation) inside **tasks** or **nodes**. This ensures that, upon resumption, the workflow follows the exact recorded sequence of steps with the same outcomes.
-* **Use Idempotent Operations**: When possible ensure that side effects (e.g., API calls, file writes) are idempotent. This means that if an operation is retried after a failure in the workflow, it will have the same effect as the first time it was executed. This is particularly important for operations that result in data writes. In the event that a **task** starts but fails to complete successfully, the workflow's resumption will re-run the **task**, relying on recorded outcomes to maintain consistency. Use idempotency keys or verify existing results to avoid unintended duplication, ensuring a smooth and predictable workflow execution.
+- **Avoid Repeating Work**: If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operations with side effects (e.g., logging, file writes, or network calls), wrap each operation in a separate **task**. This ensures that when the workflow is resumed, the operations are not repeated, and their results are retrieved from the persistence layer.
+- **Encapsulate Non-Deterministic Operations:** Wrap any code that might yield non-deterministic results (e.g., random number generation) inside **tasks** or **nodes**. This ensures that, upon resumption, the workflow follows the exact recorded sequence of steps with the same outcomes.
+- **Use Idempotent Operations**: When possible ensure that side effects (e.g., API calls, file writes) are idempotent. This means that if an operation is retried after a failure in the workflow, it will have the same effect as the first time it was executed. This is particularly important for operations that result in data writes. In the event that a **task** starts but fails to complete successfully, the workflow's resumption will re-run the **task**, relying on recorded outcomes to maintain consistency. Use idempotency keys or verify existing results to avoid unintended duplication, ensuring a smooth and predictable workflow execution.
 
 For some examples of pitfalls to avoid, see the [Common Pitfalls](/oss/javascript/langgraph/functional-api#common-pitfalls) section in the functional API, which shows
 how to structure your code using **tasks** to avoid these issues. The same principles apply to the [StateGraph (Graph API)](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.StateGraph.html).
@@ -46,9 +38,9 @@ how to structure your code using **tasks** to avoid these issues. The same princ
 
 LangGraph supports three durability modes that allow you to balance performance and data consistency based on your application's requirements. The durability modes, from least to most durable, are as follows:
 
-* [`"exit"`](#exit)
-* [`"async"`](#async)
-* [`"sync"`](#sync)
+- [`"exit"`](#exit)
+- [`"async"`](#async)
+- [`"sync"`](#sync)
 
 A higher durability mode adds more overhead to the workflow execution.
 
@@ -56,14 +48,14 @@ A higher durability mode adds more overhead to the workflow execution.
   **Added in v0.6.0**
   Use the `durability` parameter instead of `checkpoint_during` (deprecated in v0.6.0) for persistence policy management:
 
-  * `durability="async"` replaces `checkpoint_during=True`
-  * `durability="exit"` replaces `checkpoint_during=False`
+- `durability="async"` replaces `checkpoint_during=True`
+- `durability="exit"` replaces `checkpoint_during=False`
 
-  for persistence policy management, with the following mapping:
+for persistence policy management, with the following mapping:
 
-  * `checkpoint_during=True` -> `durability="async"`
-  * `checkpoint_during=False` -> `durability="exit"`
-</Tip>
+- `checkpoint_during=True` -> `durability="async"`
+- `checkpoint_during=False` -> `durability="exit"`
+  </Tip>
 
 ### `"exit"`
 
@@ -125,6 +117,7 @@ If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operati
     // Invoke the graph
     await graph.invoke({ url: "https://www.example.com" }, config);
     ```
+
   </Tab>
 
   <Tab title="With task">
@@ -174,6 +167,7 @@ If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operati
     // Invoke the graph
     await graph.invoke({ urls: ["https://www.example.com"] }, config);
     ```
+
   </Tab>
 </Tabs>
 
@@ -181,18 +175,22 @@ If a [node](/oss/javascript/langgraph/graph-api#nodes) contains multiple operati
 
 Once you have enabled durable execution in your workflow, you can resume execution for the following scenarios:
 
-* **Pausing and Resuming Workflows:** Use the [interrupt](https://langchain-ai.github.io/langgraphjs/reference/functions/langgraph.interrupt-2.html) function to pause a workflow at specific points and the [`Command`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) primitive to resume it with updated state. See [**Interrupts**](/oss/javascript/langgraph/interrupts) for more details.
-* **Recovering from Failures:** Automatically resume workflows from the last successful checkpoint after an exception (e.g., LLM provider outage). This involves executing the workflow with the same thread identifier by providing it with a `null` as the input value (see this [example](/oss/javascript/langgraph/use-functional-api#resuming-after-an-error) with the functional API).
+- **Pausing and Resuming Workflows:** Use the [interrupt](https://langchain-ai.github.io/langgraphjs/reference/functions/langgraph.interrupt-2.html) function to pause a workflow at specific points and the [`Command`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) primitive to resume it with updated state. See [**Interrupts**](/oss/javascript/langgraph/interrupts) for more details.
+- **Recovering from Failures:** Automatically resume workflows from the last successful checkpoint after an exception (e.g., LLM provider outage). This involves executing the workflow with the same thread identifier by providing it with a `null` as the input value (see this [example](/oss/javascript/langgraph/use-functional-api#resuming-after-an-error) with the functional API).
 
 ## Starting Points for Resuming Workflows
 
-* If you're using a [StateGraph (Graph API)](/oss/javascript/langgraph/graph-api), the starting point is the beginning of the [**node**](/oss/javascript/langgraph/graph-api#nodes) where execution stopped.
-* If you're making a subgraph call inside a node, the starting point will be the **parent** node that called the subgraph that was halted.
+- If you're using a [StateGraph (Graph API)](/oss/javascript/langgraph/graph-api), the starting point is the beginning of the [**node**](/oss/javascript/langgraph/graph-api#nodes) where execution stopped.
+- If you're making a subgraph call inside a node, the starting point will be the **parent** node that called the subgraph that was halted.
   Inside the subgraph, the starting point will be the specific [**node**](/oss/javascript/langgraph/graph-api#nodes) where execution stopped.
-* If you're using the Functional API, the starting point is the beginning of the [**entrypoint**](/oss/javascript/langgraph/functional-api#entrypoint) where execution stopped.
+- If you're using the Functional API, the starting point is the beginning of the [**entrypoint**](/oss/javascript/langgraph/functional-api#entrypoint) where execution stopped.
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/durable-execution.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/durable-execution.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

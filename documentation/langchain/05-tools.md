@@ -1,13 +1,5 @@
 # Tools
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 Many AI applications interact with users via natural language. However, some use cases require models to interface directly with external systems—such as APIs, databases, or file systems—using structured input.
 
 Tools are components that [agents](/oss/javascript/langchain/agents) call to perform actions. They extend model capabilities by letting them interact with the world through well-defined inputs and outputs. Tools encapsulate a callable function and its input schema. These can be passed to compatible [chat models](/oss/javascript/langchain/models), allowing the model to decide whether to invoke a tool and with what arguments. In these scenarios, tool calling enables models to generate requests that conform to a specified input schema.
@@ -15,7 +7,7 @@ Tools are components that [agents](/oss/javascript/langchain/agents) call to per
 <Note>
   **Server-side tool use**
 
-  Some chat models (e.g., [OpenAI](/oss/javascript/integrations/chat/openai), [Anthropic](/oss/javascript/integrations/chat/anthropic), and [Gemini](/oss/javascript/integrations/chat/google_generative_ai)) feature [built-in tools](/oss/javascript/langchain/models#server-side-tool-use) that are executed server-side, such as web search and code interpreters. Refer to the [provider overview](/oss/javascript/integrations/providers/overview) to learn how to access these tools with your specific chat model.
+Some chat models (e.g., [OpenAI](/oss/javascript/integrations/chat/openai), [Anthropic](/oss/javascript/integrations/chat/anthropic), and [Gemini](/oss/javascript/integrations/chat/google_generative_ai)) feature [built-in tools](/oss/javascript/langchain/models#server-side-tool-use) that are executed server-side, such as web search and code interpreters. Refer to the [provider overview](/oss/javascript/integrations/providers/overview) to learn how to access these tools with your specific chat model.
 </Note>
 
 ## Create tools
@@ -24,9 +16,9 @@ Tools are components that [agents](/oss/javascript/langchain/agents) call to per
 
 The simplest way to create a tool is by importing the `tool` function from the `langchain` package. You can use [zod](https://zod.dev/) to define the tool's input schema:
 
-```ts  theme={null}
-import * as z from "zod"
-import { tool } from "langchain"
+```ts theme={null}
+import * as z from "zod";
+import { tool } from "langchain";
 
 const searchDatabase = tool(
   ({ query, limit }) => `Found ${limit} results for '${query}'`,
@@ -45,39 +37,22 @@ const searchDatabase = tool(
 
 <Info>
   **Why this matters:** Tools are most powerful when they can access agent state, runtime context, and long-term memory. This enables tools to make context-aware decisions, personalize responses, and maintain information across conversations.
-</Info>
 
-Tools can access runtime information through the `ToolRuntime` parameter, which provides:
-
-* **State** - Mutable data that flows through execution (messages, counters, custom fields)
-* **Context** - Immutable configuration like user IDs, session details, or application-specific configuration
-* **Store** - Persistent long-term memory across conversations
-* **Stream Writer** - Stream custom updates as tools execute
-* **Config** - RunnableConfig for the execution
-* **Tool Call ID** - ID of the current tool call
-
-### ToolRuntime
-
-Use `ToolRuntime` to access all runtime information in a single parameter. Simply add `runtime: ToolRuntime` to your tool signature, and it will be automatically injected without being exposed to the LLM.
-
-<Info>
-  **`ToolRuntime`**: A unified parameter that provides tools access to state, context, store, streaming, config, and tool call ID. This replaces the older pattern of using separate @\[`InjectedState`], @\[`InjectedStore`], @\[`get_runtime`], and @\[`InjectedToolCallId`] annotations.
+The runtime context provides a structured way to supply runtime data, such as DB connections, user IDs, or config, into your tools. This avoids global state and keeps tools testable and reusable.
 </Info>
 
 #### Context
 
-Access immutable configuration and contextual data like user IDs, session details, or application-specific configuration through `runtime.context`.
-
 Tools can access an agent's runtime context through the `config` parameter:
 
-```ts wrap theme={null}
-import * as z from "zod"
-import { ChatOpenAI } from "@langchain/openai"
-import { createAgent } from "langchain"
+```ts theme={null}
+import * as z from "zod";
+import { ChatOpenAI } from "@langchain/openai";
+import { createAgent } from "langchain";
 
 const getUserName = tool(
   (_, config) => {
-    return config.context.user_name
+    return config.context.user_name;
   },
   {
     name: "get_user_name",
@@ -98,19 +73,19 @@ const agent = createAgent({
 
 const result = await agent.invoke(
   {
-    messages: [{ role: "user", content: "What is my name?" }]
+    messages: [{ role: "user", content: "What is my name?" }],
   },
   {
-    context: { user_name: "John Smith" }
+    context: { user_name: "John Smith" },
   }
 );
 ```
 
 #### Memory (Store)
 
-Access persistent data across conversations using the store. The store is accessed via `runtime.store` and allows you to save and retrieve user-specific or application-specific data.
+Access persistent data across conversations using the store. The store is accessed via `config.store` and allows you to save and retrieve user-specific or application-specific data.
 
-```ts wrap expandable theme={null}
+```ts expandable theme={null}
 import * as z from "zod";
 import { createAgent, tool } from "langchain";
 import { InMemoryStore } from "@langchain/langgraph";
@@ -164,7 +139,8 @@ await agent.invoke({
   messages: [
     {
       role: "user",
-      content: "Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev",
+      content:
+        "Save the following user: userid: abc123, name: Foo, age: 25, email: foo@langchain.dev",
     },
   ],
 });
@@ -185,9 +161,9 @@ console.log(result);
 
 #### Stream Writer
 
-Stream custom updates from tools as they execute using `runtime.stream_writer`. This is useful for providing real-time feedback to users about what a tool is doing.
+Stream custom updates from tools as they execute using `config.streamWriter`. This is useful for providing real-time feedback to users about what a tool is doing.
 
-```ts wrap theme={null}
+```ts theme={null}
 import * as z from "zod";
 import { tool } from "langchain";
 
@@ -211,8 +187,12 @@ const getWeather = tool(
 );
 ```
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/tools.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/tools.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

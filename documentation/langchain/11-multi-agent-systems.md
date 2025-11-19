@@ -1,45 +1,37 @@
 # Multi-agent
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 **Multi-agent systems** break a complex application into multiple specialized agents that work together to solve problems.
 Instead of relying on a single agent to handle every step, **multi-agent architectures** allow you to compose smaller, focused agents into a coordinated workflow.
 
 Multi-agent systems are useful when:
 
-* A single agent has too many tools and makes poor decisions about which to use.
-* Context or memory grows too large for one agent to track effectively.
-* Tasks require **specialization** (e.g., a planner, researcher, math expert).
+- A single agent has too many tools and makes poor decisions about which to use.
+- Context or memory grows too large for one agent to track effectively.
+- Tasks require **specialization** (e.g., a planner, researcher, math expert).
 
 ## Multi-agent patterns
 
 | Pattern                           | How it works                                                                                                                                                     | Control flow                                               | Example use case                                 |
 | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------ |
-| [**Tool Calling**](#tool-calling) | A **supervisor** agent calls other agents as *tools*. The “tool” agents don’t talk to the user directly — they just run their task and return results.           | Centralized: all routing passes through the calling agent. | Task orchestration, structured workflows.        |
+| [**Tool Calling**](#tool-calling) | A **supervisor** agent calls other agents as _tools_. The “tool” agents don’t talk to the user directly — they just run their task and return results.           | Centralized: all routing passes through the calling agent. | Task orchestration, structured workflows.        |
 | [**Handoffs**](#handoffs)         | The current agent decides to **transfer control** to another agent. The active agent changes, and the user may continue interacting directly with the new agent. | Decentralized: agents can change who is active.            | Multi-domain conversations, specialist takeover. |
 
 <Card title="Tutorial: Build a supervisor agent" icon="sitemap" href="/oss/javascript/langchain/supervisor" arrow cta="Learn more">
   Learn how to build a personal assistant using the supervisor pattern, where a central supervisor agent coordinates specialized worker agents.
   This tutorial demonstrates:
 
-  * Creating specialized sub-agents for different domains (calendar and email)
-  * Wrapping sub-agents as tools for centralized orchestration
-  * Adding human-in-the-loop review for sensitive actions
-</Card>
+- Creating specialized sub-agents for different domains (calendar and email)
+- Wrapping sub-agents as tools for centralized orchestration
+- Adding human-in-the-loop review for sensitive actions
+  </Card>
 
 ## Choosing a pattern
 
-| Question                                              | Tool Calling | Handoffs |
-| ----------------------------------------------------- | ------------ | -------- |
-| Need centralized control over workflow?               | ✅ Yes        | ❌ No     |
-| Want agents to interact directly with the user?       | ❌ No         | ✅ Yes    |
-| Complex, human-like conversation between specialists? | ❌ Limited    | ✅ Strong |
+| Question                                              | Tool Calling | Handoffs  |
+| ----------------------------------------------------- | ------------ | --------- |
+| Need centralized control over workflow?               | ✅ Yes       | ❌ No     |
+| Want agents to interact directly with the user?       | ❌ No        | ✅ Yes    |
+| Complex, human-like conversation between specialists? | ❌ Limited   | ✅ Strong |
 
 <Tip>
   You can mix both patterns — use **handoffs** for agent switching, and have each agent **call subagents as tools** for specialized tasks.
@@ -49,16 +41,16 @@ Multi-agent systems are useful when:
 
 At the heart of multi-agent design is **context engineering** - deciding what information each agent sees. LangChain gives you fine-grained control over:
 
-* Which parts of the conversation or state are passed to each agent.
-* Specialized prompts tailored to subagents.
-* Inclusion/exclusion of intermediate reasoning.
-* Customizing input/output formats per agent.
+- Which parts of the conversation or state are passed to each agent.
+- Specialized prompts tailored to subagents.
+- Inclusion/exclusion of intermediate reasoning.
+- Customizing input/output formats per agent.
 
 The quality of your system **heavily depends** on context engineering. The goal is to ensure that each agent has access to the correct data it needs to perform its task, whether it’s acting as a tool or as an active agent.
 
 ## Tool calling
 
-In **tool calling**, one agent (the “**controller**”) treats other agents as *tools* to be invoked when needed. The controller manages orchestration, while tool agents perform specific tasks and return results.
+In **tool calling**, one agent (the “**controller**”) treats other agents as _tools_ to be invoked when needed. The controller manages orchestration, while tool agents perform specific tasks and return results.
 
 Flow:
 
@@ -67,7 +59,7 @@ Flow:
 3. The **tool agent** returns results to the controller.
 4. The **controller** decides the next step or finishes.
 
-```mermaid  theme={null}
+```mermaid theme={null}
 graph LR
     A[User] --> B[Controller Agent]
     B --> C[Tool Agent 1]
@@ -87,7 +79,7 @@ graph LR
 
 Below is a minimal example where the main agent is given access to a single subagent via a tool definition:
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createAgent, tool } from "langchain";
 import * as z from "zod";
 
@@ -134,17 +126,17 @@ There are several points where you can control how context is passed between the
 
 There are two main levers to control the input that the main agent passes to a subagent:
 
-* **Modify the prompt** – Adjust the main agent's prompt or the tool metadata (i.e., sub-agent's name and description) to better guide when and how it calls the subagent.
-* **Context injection** – Add input that isn’t practical to capture in a static prompt (e.g., full message history, prior results, task metadata) by adjusting the tool call to pull from the agent’s state.
+- **Modify the prompt** – Adjust the main agent's prompt or the tool metadata (i.e., sub-agent's name and description) to better guide when and how it calls the subagent.
+- **Context injection** – Add input that isn’t practical to capture in a static prompt (e.g., full message history, prior results, task metadata) by adjusting the tool call to pull from the agent’s state.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { createAgent, tool, AgentState, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
 import * as z from "zod";
 
 // Example of passing the full conversation history to the sub agent via the state.
 const callSubagent1 = tool(
-  async ({query}) => {
+  async ({ query }) => {
     const state = getCurrentTaskInput<AgentState>();
     // Apply any logic needed to transform the messages into a suitable input
     const subAgentInput = someLogic(query, state.messages);
@@ -153,7 +145,7 @@ const callSubagent1 = tool(
       // You could also pass other state keys here as needed.
       // Make sure to define these in both the main and subagent's
       // state schemas.
-      exampleStateKey: state.exampleStateKey
+      exampleStateKey: state.exampleStateKey,
     });
     return result.messages.at(-1)?.content;
   },
@@ -168,14 +160,14 @@ const callSubagent1 = tool(
 
 Two common strategies for shaping what the main agent receives back from a subagent:
 
-* **Modify the prompt** – Refine the subagent’s prompt to specify exactly what should be returned.
-  * Useful when outputs are incomplete, too verbose, or missing key details.
-  * A common failure mode is that the subagent performs tool calls or reasoning but does **not include the results** in its final message. Remind it that the controller (and user) only see the final output, so all relevant info must be included there.
-* **Custom output formatting** – adjust or enrich the subagent's response in code before handing it back to the main agent.
-  * Example: pass specific state keys back to the main agent in addition to the final text.
-  * This requires wrapping the result in a [`Command`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) (or equivalent structure) so you can merge custom state with the subagent’s response.
+- **Modify the prompt** – Refine the subagent’s prompt to specify exactly what should be returned.
+  - Useful when outputs are incomplete, too verbose, or missing key details.
+  - A common failure mode is that the subagent performs tool calls or reasoning but does **not include the results** in its final message. Remind it that the controller (and user) only see the final output, so all relevant info must be included there.
+- **Custom output formatting** – adjust or enrich the subagent's response in code before handing it back to the main agent.
+  - Example: pass specific state keys back to the main agent in addition to the final text.
+  - This requires wrapping the result in a [`Command`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.Command.html) (or equivalent structure) so you can merge custom state with the subagent’s response.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { tool, ToolMessage } from "langchain";
 import { Command } from "@langchain/langgraph";
 import * as z from "zod";
@@ -183,7 +175,7 @@ import * as z from "zod";
 const callSubagent1 = tool(
   async ({ query }, config) => {
     const result = await subagent1.invoke({
-      messages: [{ role: "user", content: query }]
+      messages: [{ role: "user", content: query }],
     });
 
     // Return a Command to update multiple state keys
@@ -194,18 +186,18 @@ const callSubagent1 = tool(
         messages: [
           new ToolMessage({
             content: result.messages.at(-1)?.text,
-            tool_call_id: config.toolCall?.id!
-          })
-        ]
-      }
+            tool_call_id: config.toolCall?.id!,
+          }),
+        ],
+      },
     });
   },
   {
     name: "subagent1_name",
     description: "subagent1_description",
     schema: z.object({
-      query: z.string().describe("The query to send to subagent1")
-    })
+      query: z.string().describe("The query to send to subagent1"),
+    }),
   }
 );
 ```
@@ -220,7 +212,7 @@ Flow:
 2. It passes control (and state) to the **next agent**.
 3. The **new agent** interacts directly with the user until it decides to hand off again or finish.
 
-```mermaid  theme={null}
+```mermaid theme={null}
 graph LR
     A[User] --> B[Agent A]
     B --> C[Agent B]
@@ -229,8 +221,12 @@ graph LR
 
 ### Implementation (Coming soon)
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/multi-agent.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/multi-agent.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

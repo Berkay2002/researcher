@@ -1,13 +1,5 @@
 # Use time-travel
 
-<Tip>
-  **LangGraph v1.0**
-
-  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
-
-  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 When working with non-deterministic systems that make model-based decisions (e.g., agents powered by LLMs), it can be useful to examine their decision-making process in detail:
 
 1. <Icon icon="lightbulb" size={16} /> **Understand reasoning**: Analyze the steps that led to a successful result.
@@ -19,9 +11,9 @@ LangGraph provides [time travel](/oss/javascript/langgraph/use-time-travel) func
 To use [time-travel](/oss/javascript/langgraph/use-time-travel) in LangGraph:
 
 1. [Run the graph](#1-run-the-graph) with initial inputs using [`invoke`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#invoke) or [`stream`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#stream) methods.
-2. [Identify a checkpoint in an existing thread](#2-identify-a-checkpoint): Use the [`getStateHistory()`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#getStateHistory) method to retrieve the execution history for a specific `thread_id` and locate the desired `checkpoint_id`.
+2. [Identify a checkpoint in an existing thread](#2-identify-a-checkpoint): Use the @\[`getStateHistory`] method to retrieve the execution history for a specific `thread_id` and locate the desired `checkpoint_id`.
    Alternatively, set a [breakpoint](/oss/javascript/langgraph/interrupts) before the node(s) where you want execution to pause. You can then find the most recent checkpoint recorded up to that breakpoint.
-3. [Update the graph state (optional)](#3-update-the-state-optional): Use the [`updateState`](https://langchain-ai.github.io/langgraphjs/reference/classes/langgraph.CompiledStateGraph.html#updateState) method to modify the graph's state at the checkpoint and resume execution from alternative state.
+3. [Update the graph state (optional)](#3-update-the-state-optional): Use the @\[`updateState`] method to modify the graph's state at the checkpoint and resume execution from alternative state.
 4. [Resume execution from the checkpoint](#4-resume-execution-from-the-checkpoint): Use the `invoke` or `stream` methods with an input of `null` and a configuration containing the appropriate `thread_id` and `checkpoint_id`.
 
 <Tip>
@@ -36,13 +28,13 @@ This example builds a simple LangGraph workflow that generates a joke topic and 
 
 First we need to install the packages required
 
-```bash  theme={null}
+```bash theme={null}
 npm install @langchain/langgraph @langchain/anthropic
 ```
 
 Next, we need to set API keys for Anthropic (the LLM we will use)
 
-```typescript  theme={null}
+```typescript theme={null}
 process.env.ANTHROPIC_API_KEY = "YOUR_API_KEY";
 ```
 
@@ -50,7 +42,7 @@ process.env.ANTHROPIC_API_KEY = "YOUR_API_KEY";
   Sign up for [LangSmith](https://smith.langchain.com) to quickly spot issues and improve the performance of your LangGraph projects. LangSmith lets you use trace data to debug, test, and monitor your LLM apps built with LangGraph.
 </Tip>
 
-```typescript  theme={null}
+```typescript theme={null}
 import { v4 as uuidv4 } from "uuid";
 import * as z from "zod";
 import { StateGraph, START, END } from "@langchain/langgraph";
@@ -63,7 +55,7 @@ const State = z.object({
 });
 
 const model = new ChatAnthropic({
-  model: "claude-sonnet-4-5",
+  model: "claude-sonnet-4-5-20250929",
   temperature: 0,
 });
 
@@ -92,7 +84,7 @@ const graph = workflow.compile({ checkpointer });
 
 ### 1. Run the graph
 
-```typescript  theme={null}
+```typescript theme={null}
 const config = {
   configurable: {
     thread_id: uuidv4(),
@@ -120,7 +112,7 @@ My blue argyle is now living in Bermuda with a red polka dot, posting vacation p
 
 ### 2. Identify a checkpoint
 
-```typescript  theme={null}
+```typescript theme={null}
 // The states are returned in reverse chronological order.
 const states = [];
 for await (const state of graph.getStateHistory(config)) {
@@ -150,7 +142,7 @@ for (const state of states) {
 1f02ac4a-a4dd-665e-bfff-e6c8c44315d9
 ```
 
-```typescript  theme={null}
+```typescript theme={null}
 // This is the state before last (states are listed in chronological order)
 const selectedState = states[1];
 console.log(selectedState.next);
@@ -170,7 +162,7 @@ console.log(selectedState.values);
 
 `updateState` will create a new checkpoint. The new checkpoint will be associated with the same thread, but a new checkpoint ID.
 
-```typescript  theme={null}
+```typescript theme={null}
 const newConfig = await graph.updateState(selectedState.config, {
   topic: "chickens",
 });
@@ -185,21 +177,25 @@ console.log(newConfig);
 
 ### 4. Resume execution from the checkpoint
 
-```typescript  theme={null}
+```typescript theme={null}
 await graph.invoke(null, newConfig);
 ```
 
 **Output:**
 
-```typescript  theme={null}
+```typescript theme={null}
 {
   'topic': 'chickens',
   'joke': 'Why did the chicken join a band?\n\nBecause it had excellent drumsticks!'
 }
 ```
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/use-time-travel.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/use-time-travel.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

@@ -1,41 +1,38 @@
 # Runtime
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 ## Overview
 
 LangChain's `createAgent` runs on LangGraph's runtime under the hood.
 
-LangGraph exposes a [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object with the following information:
+LangGraph exposes a [`Runtime`](https://reference.langchain.com/javascript/modules/langgraph.index.Runtime.html) object with the following information:
 
 1. **Context**: static information like user id, db connections, or other dependencies for an agent invocation
 2. **Store**: a [BaseStore](https://langchain-ai.github.io/langgraphjs/reference/classes/checkpoint.BaseStore.html) instance used for [long-term memory](/oss/javascript/langchain/long-term-memory)
 3. **Stream writer**: an object used for streaming information via the `"custom"` stream mode
 
+<Tip>
+  The runtime context is how you thread data through your agent. Rather than storing things in global state, you can attach values — like a database connection, user session, or configuration — to the context and access them inside tools and middleware. This keeps things stateless, testable, and reusable.
+</Tip>
+
 You can access the runtime information within [tools](#inside-tools) and [middleware](#inside-middleware).
 
 ## Access
 
-When creating an agent with `createAgent`, you can specify a `contextSchema` to define the structure of the `context` stored in the agent [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html).
+When creating an agent with `createAgent`, you can specify a `contextSchema` to define the structure of the `context` stored in the agent [`Runtime`](https://reference.langchain.com/javascript/modules/langgraph.index.Runtime.html).
 
 When invoking the agent, pass the `context` argument with the relevant configuration for the run:
 
-```ts  theme={null}
+```ts theme={null}
 import * as z from "zod";
 import { createAgent } from "langchain";
 
-const contextSchema = z.object({ // [!code highlight]
+const contextSchema = z.object({
+  // [!code highlight]
   userName: z.string(), // [!code highlight]
 }); // [!code highlight]
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [
     /* ... */
   ],
@@ -52,30 +49,32 @@ const result = await agent.invoke(
 
 You can access the runtime information inside tools to:
 
-* Access the context
-* Read or write long-term memory
-* Write to the [custom stream](/oss/javascript/langchain/streaming#custom-updates) (ex, tool progress / updates)
+- Access the context
+- Read or write long-term memory
+- Write to the [custom stream](/oss/javascript/langchain/streaming#custom-updates) (ex, tool progress / updates)
 
-Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside a tool.
+Use the `runtime` parameter to access the [`Runtime`](https://reference.langchain.com/javascript/modules/langgraph.index.Runtime.html) object inside a tool.
 
-```ts  theme={null}
+```ts theme={null}
 import * as z from "zod";
 import { tool } from "langchain";
-import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
+import { type ToolRuntime } from "@langchain/core/tools"; // [!code highlight]
 
 const contextSchema = z.object({
   userName: z.string(),
 });
 
 const fetchUserEmailPreferences = tool(
-  async (_, runtime: Runtime<z.infer<typeof contextSchema>>) => { // [!code highlight]
+  async (_, runtime: ToolRuntime<any, typeof contextSchema>) => {
+    // [!code highlight]
     const userName = runtime.context?.userName; // [!code highlight]
     if (!userName) {
       throw new Error("userName is required");
     }
 
     let preferences = "The user prefers you to write a brief and polite email.";
-    if (runtime.store) { // [!code highlight]
+    if (runtime.store) {
+      // [!code highlight]
       const memory = await runtime.store?.get(["users"], userName); // [!code highlight]
       if (memory) {
         preferences = memory.value.preferences;
@@ -95,11 +94,11 @@ const fetchUserEmailPreferences = tool(
 
 You can access runtime information in middleware to create dynamic prompts, modify messages, or control agent behavior based on user context.
 
-Use the `runtime` parameter to access the [Runtime](https://reference.langchain.com/javascript/interfaces/_langchain_langgraph.index.Runtime.html) object inside middleware.
+Use the `runtime` parameter to access the [`Runtime`](https://reference.langchain.com/javascript/modules/langgraph.index.Runtime.html) object inside middleware.
 
-```ts  theme={null}
+```ts theme={null}
 import * as z from "zod";
-import { createAgent, createMiddleware, type AgentState, SystemMessage } from "langchain";
+import { createAgent, createMiddleware, SystemMessage } from "langchain";
 import { type Runtime } from "@langchain/langgraph"; // [!code highlight]
 
 const contextSchema = z.object({
@@ -109,7 +108,8 @@ const contextSchema = z.object({
 // Dynamic prompt middleware
 const dynamicPromptMiddleware = createMiddleware({
   name: "DynamicPrompt",
-  beforeModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+  contextSchema
+  beforeModel: (state, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
     const userName = runtime.context?.userName;  // [!code highlight]
     if (!userName) {
       throw new Error("userName is required");
@@ -125,18 +125,19 @@ const dynamicPromptMiddleware = createMiddleware({
 // Logging middleware
 const loggingMiddleware = createMiddleware({
   name: "Logging",
-  beforeModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+  contextSchema,
+  beforeModel: (state, runtime) => {  // [!code highlight]
     console.log(`Processing request for user: ${runtime.context?.userName}`);  // [!code highlight]
     return;
   },
-  afterModel: (state: AgentState, runtime: Runtime<z.infer<typeof contextSchema>>) => {  // [!code highlight]
+  afterModel: (state, runtime) => {  // [!code highlight]
     console.log(`Completed request for user: ${runtime.context?.userName}`);  // [!code highlight]
     return;
   }
 });
 
 const agent = createAgent({
-  model: "openai:gpt-4o",
+  model: "gpt-4o",
   tools: [
     /* ... */
   ],
@@ -150,8 +151,12 @@ const result = await agent.invoke(
 );
 ```
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/runtime.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/runtime.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

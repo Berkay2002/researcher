@@ -1,266 +1,1066 @@
 # Context engineering in agents
 
-<Tip>
-  **LangChain v1.0**
+## Overview
 
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
+The hard part of building agents (or any LLM application) is making them reliable enough. While they may work for a prototype, they often fail in real-world use cases.
 
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
+### Why do agents fail?
 
-The hard part of building agents (or any LLM application) is making them reliable enough.
-While they may work for a prototype, they often mess up in more real world and widespread use cases.
+When agents fail, it's usually because the LLM call inside the agent took the wrong action / didn't do what we expected. LLMs fail for one of two reasons:
 
-Why do they mess up?
-
-When agents mess up, it is because the LLM call inside the agent messes up.
-When LLMs mess up, they mess up for one of two reasons:
-
-1. The underlying LLM is just not good enough
+1. The underlying LLM is not capable enough
 2. The "right" context was not passed to the LLM
 
-More often than not - it is actually the second reason that causes agents to not be reliable.
+More often than not - it's actually the second reason that causes agents to not be reliable.
 
-Context engineering is building dynamic systems to provide the right information and tools in the right format such that the LLM can plausibly accomplish the task.
-This is the number one job of AI Engineers (or anyone working on AI systems).
-This lack of "right" context is the number one blocker for more reliable agents, and as such LangChain's agent abstractions are uniquely designed to facilitate context engineering.
+**Context engineering** is providing the right information and tools in the right format so the LLM can accomplish a task. This is the number one job of AI Engineers. This lack of "right" context is the number one blocker for more reliable agents, and LangChain's agent abstractions are uniquely designed to facilitate context engineering.
 
-## The core agent loop
+<Tip>
+  New to context engineering? Start with the [conceptual overview](/oss/javascript/concepts/context) to understand the different types of context and when to use them.
+</Tip>
 
-It's important to understand the core agent loop to understand where context should be accessed and/or updated from.
+### The agent loop
 
-The core agent loop is quite simple:
+A typical agent loop consists of two main steps:
 
-1. Get user input
-2. Call LLM, asking it to either respond or call tools
-3. If it decides to call tools - then go and execute those tools
-4. Repeat steps 2 and 3 until it decides to finish
+1. **Model call** - calls the LLM with a prompt and available tools, returns either a response or a request to execute tools
+2. **Tool execution** - executes the tools that the LLM requested, returns tool results
 
-The agent may have access to a lot of different context throughout this loop.
-What ultimately matters is the context that is ultimately passed to the LLM.
-This consists of the final prompt (or list of messages) and the tools it has access to.
+<div style={{ display: "flex", justifyContent: "center" }}>
+  <img src="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=ac72e48317a9ced68fd1be64e89ec063" alt="Core agent loop diagram" className="rounded-lg" data-og-width="300" width="300" data-og-height="268" height="268" data-path="oss/images/core_agent_loop.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=280&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=a4c4b766b6678ef52a6ed556b1a0b032 280w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=560&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=111869e6e99a52c0eff60a1ef7ddc49c 560w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=840&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=6c1e21de7b53bd0a29683aca09c6f86e 840w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1100&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=88bef556edba9869b759551c610c60f4 1100w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1650&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=9b0bdd138e9548eeb5056dc0ed2d4a4b 1650w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=2500&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=41eb4f053ed5e6b0ba5bad2badf6d755 2500w" />
+</div>
 
-## The model
+This loop continues until the LLM decides to finish.
 
-The model (including specific model parameters) that you use is a key part of the agent loop.
-It drives the whole agent's reasoning logic.
+### What you can control
 
-One reason the agent could mess up is the model you are using is just not good enough.
-In order to build reliable agents, you have to have access to all the possible models.
-LangChain, with its standard model interfaces, supports this - we have over 50 different provider integrations.
+To build reliable agents, you need to control what happens at each step of the agent loop, as well as what happens between steps.
 
-Model choice is also related to context engineering, in two ways.
+| Context Type                                  | What You Control                                                                     | Transient or Persistent |
+| --------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------- |
+| **[Model Context](#model-context)**           | What goes into model calls (instructions, message history, tools, response format)   | Transient               |
+| **[Tool Context](#tool-context)**             | What tools can access and produce (reads/writes to state, store, runtime context)    | Persistent              |
+| **[Life-cycle Context](#life-cycle-context)** | What happens between model and tool calls (summarization, guardrails, logging, etc.) | Persistent              |
 
-First, the way you pass the context to the LLM may depend on what LLM you are using.
-Some model providers are better at JSON, some at XML.
-The context engineering you do may be specific to the model choice.
+<CardGroup>
+  <Card title="Transient context" icon="bolt" iconType="duotone">
+    What the LLM sees for a single call. You can modify messages, tools, or prompts without changing what's saved in state.
+  </Card>
 
-Second, the right model to use in the agent loop may depend on the context you want to pass it.
-As an obvious example - some models have different context windows.
-If the context in an agent builds up, you may want to use one model provider while the context is small, and then once it gets too large for that model's context window you may want to switch to another model.
+  <Card title="Persistent context" icon="database" iconType="duotone">
+    What gets saved in state across turns. Life-cycle hooks and tool writes modify this permanently.
+  </Card>
+</CardGroup>
 
-## Types of context
+### Data sources
 
-There are a few different types of context that can be used to construct the context that is ultimately passed to the LLM.
+Throughout this process, your agent accesses (reads / writes) different sources of data:
 
-**Instructions:** Base instructions from the developer, commonly referred to as the system prompt.
-This may be static or dynamic.
+| Data Source         | Also Known As        | Scope               | Examples                                                                   |
+| ------------------- | -------------------- | ------------------- | -------------------------------------------------------------------------- |
+| **Runtime Context** | Static configuration | Conversation-scoped | User ID, API keys, database connections, permissions, environment settings |
+| **State**           | Short-term memory    | Conversation-scoped | Current messages, uploaded files, authentication status, tool results      |
+| **Store**           | Long-term memory     | Cross-conversation  | User preferences, extracted insights, memories, historical data            |
 
-**Tools:** What tools the agent has access to.
-The names and descriptions and arguments of these are just as important as the text in the prompt.
+### How it works
 
-**Structured output:** What format the agent should respond in.
-The name and description and arguments of these are just as important as the text in the prompt.
+LangChain [middleware](/oss/javascript/langchain/middleware) is the mechanism under the hood that makes context engineering practical for developers using LangChain.
 
-**Session context:** We also call this "short term memory" in the docs.
-In the context of a conversation, this is most easily thought of the list of messages that make up the conversation.
-But there can often be other, more structured information that you may want the agent to access or update throughout the session.
-The agent can read and write this context.
-This context is often put directly into the context that is passed to the LLM.
-Examples include: messages, files.
+Middleware allows you to hook into any step in the agent lifecycle and:
 
-**Long term memory:** This is information that should persist across sessions (conversations).
-Examples include: extracted preferences
+- Update context
+- Jump to a different step in the agent lifecycle
 
-**Runtime configuration context:** This is context that is not the "state" or "memory" of the agent, but rather configuration for a given agent run.
-This is not modified by the agent, and typically isn't passed into the LLM, but is used to guide the agent's behavior or look up other context.
-Examples include: user ID, DB connections
+Throughout this guide, you'll see frequent use of the middleware API as a means to the context engineering end.
 
-## Context engineering with LangChain
+## Model Context
 
-Now we understand the basic agent loop, the importance of the model you use, and the different types of context that exist.
-Let's explore the concrete patterns LangChain provides for context engineering.
+Control what goes into each model call - instructions, available tools, which model to use, and output format. These decisions directly impact reliability and cost.
 
-### Managing instructions (system prompts)
+<CardGroup cols={2}>
+  <Card title="System Prompt" icon="message-lines" href="#system-prompt">
+    Base instructions from the developer to the LLM.
+  </Card>
 
-#### Static instructions
+  <Card title="Messages" icon="comments" href="#messages">
+    The full list of messages (conversation history) sent to the LLM.
+  </Card>
 
-For fixed instructions that don't change, use the @\[`system_prompt`] parameter:
+  <Card title="Tools" icon="wrench" href="#tools">
+    Utilities the agent has access to to take actions.
+  </Card>
 
-```typescript  theme={null}
-import { createAgent } from "langchain";
+  <Card title="Model" icon="brain-circuit" href="#model">
+    The actual model (including configuration) to be called.
+  </Card>
 
-const agent = createAgent({
-  model: "openai:gpt-4o",
-  tools: [...],
-  systemPrompt: "You are a customer support agent. Be helpful, concise, and professional.",
-});
-```
+  <Card title="Response Format" icon="brackets-curly" href="#response-format">
+    Schema specification for the model's final response.
+  </Card>
+</CardGroup>
 
-#### Dynamic instructions
+All of these types of model context can draw from **state** (short-term memory), **store** (long-term memory), or **runtime context** (static configuration).
 
-For instructions that depend on context (user profile, preferences, session data), use the @\[`@dynamic_prompt`] middleware:
+### System Prompt
 
-```typescript  theme={null}
-import * as z from "zod";
-import { createAgent, dynamicSystemPromptMiddleware } from "langchain";
+The system prompt sets the LLM's behavior and capabilities. Different users, contexts, or conversation stages need different instructions. Successful agents draw on memories, preferences, and configuration to provide the right instructions for the current state of the conversation.
 
-const contextSchema = z.object({
-  userId: z.string(),
-});
+<Tabs>
+  <Tab title="State">
+    Access message count or conversation context from state:
 
-const agent = createAgent({
-  model: "openai:gpt-4o",
-  tools: [...],
-  contextSchema,
-  middleware: [
-    dynamicSystemPromptMiddleware((state, runtime) => {
-      const userId = runtime.context.userId;
-      const messageCount = state.messages.length;
+    ```typescript  theme={null}
+    import { createAgent } from "langchain";
 
-      let base = "You are a helpful assistant.";
+    const agent = createAgent({
+      model: "gpt-4o",
+      tools: [...],
+      middleware: [
+        dynamicSystemPromptMiddleware((state) => {
+          // Read from State: check conversation length
+          const messageCount = state.messages.length;
 
-      // Add context-specific instructions
-      if (messageCount > 10) {
-        base += "\nThis is a long conversation - be extra concise.";
-      }
+          let base = "You are a helpful assistant.";
 
-      return base;
+          if (messageCount > 10) {
+            base += "\nThis is a long conversation - be extra concise.";
+          }
+
+          return base;
+        }),
+      ],
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Access user preferences from long-term memory:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createAgent, dynamicSystemPromptMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
+
+    type Context = z.infer<typeof contextSchema>;
+
+    const agent = createAgent({
+      model: "gpt-4o",
+      tools: [...],
+      contextSchema,
+      middleware: [
+        dynamicSystemPromptMiddleware<Context>(async (state, runtime) => {
+          const userId = runtime.context.userId;
+
+          // Read from Store: get user preferences
+          const store = runtime.store;
+          const userPrefs = await store.get(["preferences"], userId);
+
+          let base = "You are a helpful assistant.";
+
+          if (userPrefs) {
+            const style = userPrefs.value?.communicationStyle || "balanced";
+            base += `\nUser prefers ${style} responses.`;
+          }
+
+          return base;
+        }),
+      ],
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Runtime Context">
+    Access user ID or configuration from Runtime Context:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createAgent, dynamicSystemPromptMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userRole: z.string(),
+      deploymentEnv: z.string(),
+    });
+
+    type Context = z.infer<typeof contextSchema>;
+
+    const agent = createAgent({
+      model: "gpt-4o",
+      tools: [...],
+      contextSchema,
+      middleware: [
+        dynamicSystemPromptMiddleware<Context>((state, runtime) => {
+          // Read from Runtime Context: user role and environment
+          const userRole = runtime.context.userRole;
+          const env = runtime.context.deploymentEnv;
+
+          let base = "You are a helpful assistant.";
+
+          if (userRole === "admin") {
+            base += "\nYou have admin access. You can perform all operations.";
+          } else if (userRole === "viewer") {
+            base += "\nYou have read-only access. Guide users to read operations only.";
+          }
+
+          if (env === "production") {
+            base += "\nBe extra careful with any data modifications.";
+          }
+
+          return base;
+        }),
+      ],
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+### Messages
+
+Messages make up the prompt that is sent to the LLM.
+It's critical to manage the content of messages to ensure that the LLM has the right information to respond well.
+
+<Tabs>
+  <Tab title="State">
+    Inject uploaded file context from State when relevant to current query:
+
+    ```typescript  theme={null}
+    import { createMiddleware } from "langchain";
+
+    const injectFileContext = createMiddleware({
+      name: "InjectFileContext",
+      wrapModelCall: (request, handler) => {
+        // request.state is a shortcut for request.state.messages
+        const uploadedFiles = request.state.uploadedFiles || [];  // [!code highlight]
+
+        if (uploadedFiles.length > 0) {
+          // Build context about available files
+          const fileDescriptions = uploadedFiles.map(file =>
+            `- ${file.name} (${file.type}): ${file.summary}`
+          );
+
+          const fileContext = `Files you have access to in this conversation:
+    ${fileDescriptions.join("\n")}
+
+    Reference these files when answering questions.`;
+
+          // Inject file context before recent messages
+          const messages = [  // [!code highlight]
+            ...request.messages  // Rest of conversation
+            { role: "user", content: fileContext }
+          ];
+          request = request.override({ messages });  // [!code highlight]
+        }
+
+        return handler(request);
+      },
+    });
+
+    const agent = createAgent({
+      model: "gpt-4o",
+      tools: [...],
+      middleware: [injectFileContext],
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Inject user's email writing style from Store to guide drafting:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
+
+    const injectWritingStyle = createMiddleware({
+      name: "InjectWritingStyle",
+      contextSchema,
+      wrapModelCall: async (request, handler) => {
+        const userId = request.runtime.context.userId;  // [!code highlight]
+
+        // Read from Store: get user's writing style examples
+        const store = request.runtime.store;  // [!code highlight]
+        const writingStyle = await store.get(["writing_style"], userId);  // [!code highlight]
+
+        if (writingStyle) {
+          const style = writingStyle.value;
+          // Build style guide from stored examples
+          const styleContext = `Your writing style:
+    - Tone: ${style.tone || 'professional'}
+    - Typical greeting: "${style.greeting || 'Hi'}"
+    - Typical sign-off: "${style.signOff || 'Best'}"
+    - Example email you've written:
+    ${style.exampleEmail || ''}`;
+
+          // Append at end - models pay more attention to final messages
+          const messages = [
+            ...request.messages,
+            { role: "user", content: styleContext }
+          ];
+          request = request.override({ messages });  // [!code highlight]
+        }
+
+        return handler(request);
+      },
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Runtime Context">
+    Inject compliance rules from Runtime Context based on user's jurisdiction:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userJurisdiction: z.string(),
+      industry: z.string(),
+      complianceFrameworks: z.array(z.string()),
+    });
+
+    type Context = z.infer<typeof contextSchema>;
+
+    const injectComplianceRules = createMiddleware<Context>({
+      name: "InjectComplianceRules",
+      contextSchema,
+      wrapModelCall: (request, handler) => {
+        // Read from Runtime Context: get compliance requirements
+        const { userJurisdiction, industry, complianceFrameworks } = request.runtime.context;  // [!code highlight]
+
+        // Build compliance constraints
+        const rules = [];
+        if (complianceFrameworks.includes("GDPR")) {
+          rules.push("- Must obtain explicit consent before processing personal data");
+          rules.push("- Users have right to data deletion");
+        }
+        if (complianceFrameworks.includes("HIPAA")) {
+          rules.push("- Cannot share patient health information without authorization");
+          rules.push("- Must use secure, encrypted communication");
+        }
+        if (industry === "finance") {
+          rules.push("- Cannot provide financial advice without proper disclaimers");
+        }
+
+        if (rules.length > 0) {
+          const complianceContext = `Compliance requirements for ${userJurisdiction}:
+    ${rules.join("\n")}`;
+
+          // Append at end - models pay more attention to final messages
+          const messages = [
+            ...request.messages,
+            { role: "user", content: complianceContext }
+          ];
+          request = request.override({ messages });  // [!code highlight]
+        }
+
+        return handler(request);
+      },
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+<Note>
+  **Transient vs Persistent Message Updates:**
+
+The examples above use `wrap_model_call` to make **transient** updates - modifying what messages are sent to the model for a single call without changing what's saved in state.
+
+For **persistent** updates that modify state (like the summarization example in [Life-cycle Context](#summarization)), use life-cycle hooks like `before_model` or `after_model` to permanently update the conversation history. See the [middleware documentation](/oss/javascript/langchain/middleware) for more details.
+</Note>
+
+### Tools
+
+Tools let the model interact with databases, APIs, and external systems. How you define and select tools directly impacts whether the model can complete tasks effectively.
+
+#### Defining tools
+
+Each tool needs a clear name, description, argument names, and argument descriptions. These aren't just metadata—they guide the model's reasoning about when and how to use the tool.
+
+```typescript theme={null}
+import { tool } from "@langchain/core/tools";
+import { z } from "zod";
+
+const searchOrders = tool(
+  async ({ userId, status, limit }) => {
+    // Implementation here
+  },
+  {
+    name: "search_orders",
+    description: `Search for user orders by status.
+
+    Use this when the user asks about order history or wants to check
+    order status. Always filter by the provided status.`,
+    schema: z.object({
+      userId: z.string().describe("Unique identifier for the user"),
+      status: z
+        .enum(["pending", "shipped", "delivered"])
+        .describe("Order status to filter by"),
+      limit: z
+        .number()
+        .default(10)
+        .describe("Maximum number of results to return"),
     }),
-  ],
-});
-
-// Use the agent with context
-const result = await agent.invoke(
-  { messages: [{ role: "user", content: "Help me debug this code" }] },
-  { context: { userId: "user_123" } }
+  }
 );
 ```
 
-<Tip>
-  **When to use each:**
+#### Selecting tools
 
-  * **Static prompts**: Base instructions that never change
-  * **Dynamic prompts**: Personalization, A/B testing, context-dependent behavior
-</Tip>
+Not every tool is appropriate for every situation. Too many tools may overwhelm the model (overload context) and increase errors; too few limit capabilities. Dynamic tool selection adapts the available toolset based on authentication state, user permissions, feature flags, or conversation stage.
 
-### Managing conversation context (messages)
+<Tabs>
+  <Tab title="State">
+    Enable advanced tools only after certain conversation milestones:
 
-Long conversations can exceed context windows or degrade model performance. Use middleware to manage conversation history:
+    ```typescript  theme={null}
+    import { createMiddleware } from "langchain";
 
-#### Trimming messages
+    const stateBasedTools = createMiddleware({
+      name: "StateBasedTools",
+      wrapModelCall: (request, handler) => {
+        // Read from State: check authentication and conversation length
+        const state = request.state;  // [!code highlight]
+        const isAuthenticated = state.authenticated || false;  // [!code highlight]
+        const messageCount = state.messages.length;
 
-```typescript  theme={null}
-import { createMiddleware, RemoveMessage } from "langchain";
-import { REMOVE_ALL_MESSAGES } from "@langchain/langgraph";
+        let filteredTools = request.tools;
 
-const trimMessages = createMiddleware({
-  name: "TrimMessages",
-  beforeModel: (state) => {
-    const messages = state.messages;
+        // Only enable sensitive tools after authentication
+        if (!isAuthenticated) {
+          filteredTools = request.tools.filter(t => t.name.startsWith("public_"));  // [!code highlight]
+        } else if (messageCount < 5) {
+          filteredTools = request.tools.filter(t => t.name !== "advanced_search");  // [!code highlight]
+        }
 
-    if (messages.length <= 10) {
-      return;  // No trimming needed
-    }
+        return handler({ ...request, tools: filteredTools });  // [!code highlight]
+      },
+    });
+    ```
 
-    // Keep system message + last 8 messages
-    return {
-      messages: [
-        new RemoveMessage({ id: REMOVE_ALL_MESSAGES }),
-        messages[0],  // System message
-        ...messages.slice(-8)  // Recent messages
-      ]
-    };
-  },
-});
+  </Tab>
 
-const agent = createAgent({
-  model: "openai:gpt-4o",
-  tools: [...],
-  middleware: [trimMessages],
-});
-```
+  <Tab title="Store">
+    Filter tools based on user preferences or feature flags in Store:
 
-For more sophisticated message management, use the built-in [`SummarizationMiddleware`](/oss/javascript/langchain/middleware#summarization) which automatically summarizes old messages when approaching token limits.
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
 
-See [Before model hook](/oss/javascript/langchain/agents#before-model-hook) for more examples.
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
 
-### Contextual tool execution
+    const storeBasedTools = createMiddleware({
+      name: "StoreBasedTools",
+      contextSchema,
+      wrapModelCall: async (request, handler) => {
+        const userId = request.runtime.context.userId;  // [!code highlight]
 
-Tools can access runtime context, session state, and long-term memory to make context-aware decisions:
+        // Read from Store: get user's enabled features
+        const store = request.runtime.store;  // [!code highlight]
+        const featureFlags = await store.get(["features"], userId);  // [!code highlight]
 
-See [Tools](/oss/javascript/langchain/tools) for comprehensive examples of accessing state, context, and memory in tools.
+        let filteredTools = request.tools;
 
-### Dynamic tool selection
+        if (featureFlags) {
+          const enabledFeatures = featureFlags.value?.enabledTools || [];
+          filteredTools = request.tools.filter(t => enabledFeatures.includes(t.name));  // [!code highlight]
+        }
 
-Control which tools the agent can access based on context, state, or user permissions:
+        return handler({ ...request, tools: filteredTools });  // [!code highlight]
+      },
+    });
+    ```
 
-```typescript  theme={null}
-import { createMiddleware } from "langchain";
+  </Tab>
 
-const permissionBasedTools = createMiddleware({
-  name: "PermissionBasedTools",
-  wrapModelCall: (request, handler) => {
-    const userRole = request.runtime.context.userRole || "viewer";
-    let filteredTools = request.tools;
+  <Tab title="Runtime Context">
+    Filter tools based on user permissions from Runtime Context:
 
-    if (userRole === "admin") {
-      // Admins get all tools
-    } else if (userRole === "editor") {
-      // Editors can't delete
-      filteredTools = request.tools.filter(t => t.name !== "delete_data");
-    } else {
-      // Viewers get read-only tools
-      filteredTools = request.tools.filter(t => t.name.startsWith("read_"));
-    }
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
 
-    return handler({ ...request, tools: filteredTools });
-  },
-});
-```
+    const contextSchema = z.object({
+      userRole: z.string(),
+    });
+
+    const contextBasedTools = createMiddleware({
+      name: "ContextBasedTools",
+      contextSchema,
+      wrapModelCall: (request, handler) => {
+        // Read from Runtime Context: get user role
+        const userRole = request.runtime.context.userRole;  // [!code highlight]
+
+        let filteredTools = request.tools;
+
+        if (userRole === "admin") {
+          // Admins get all tools
+        } else if (userRole === "editor") {
+          filteredTools = request.tools.filter(t => t.name !== "delete_data");  // [!code highlight]
+        } else {
+          filteredTools = request.tools.filter(t => t.name.startsWith("read_"));  // [!code highlight]
+        }
+
+        return handler({ ...request, tools: filteredTools });  // [!code highlight]
+      },
+    });
+    ```
+
+  </Tab>
+</Tabs>
 
 See [Dynamically selecting tools](/oss/javascript/langchain/middleware#dynamically-selecting-tools) for more examples.
 
-### Dynamic model selection
+### Model
 
-Switch models based on conversation complexity, context window needs, or cost optimization:
+Different models have different strengths, costs, and context windows. Select the right model for the task at hand, which
+might change during an agent run.
 
-```typescript  theme={null}
-import { createMiddleware, initChatModel } from "langchain";
+<Tabs>
+  <Tab title="State">
+    Use different models based on conversation length from State:
 
-const adaptiveModel = createMiddleware({
-  name: "AdaptiveModel",
-  wrapModelCall: (request, handler) => {
-    const messageCount = request.messages.length;
-    let model;
+    ```typescript  theme={null}
+    import { createMiddleware, initChatModel } from "langchain";
 
-    if (messageCount > 20) {
-      // Long conversation - use model with larger context window
-      model = initChatModel("anthropic:claude-sonnet-4-5");
-    } else if (messageCount > 10) {
-      // Medium conversation - use mid-tier model
-      model = initChatModel("openai:gpt-4o");
-    } else {
-      // Short conversation - use efficient model
-      model = initChatModel("openai:gpt-4o-mini");
-    }
+    // Initialize models once outside the middleware
+    const largeModel = initChatModel("claude-sonnet-4-5-20250929");
+    const standardModel = initChatModel("gpt-4o");
+    const efficientModel = initChatModel("gpt-4o-mini");
 
-    return handler({ ...request, model });
-  },
+    const stateBasedModel = createMiddleware({
+      name: "StateBasedModel",
+      wrapModelCall: (request, handler) => {
+        // request.messages is a shortcut for request.state.messages
+        const messageCount = request.messages.length;  // [!code highlight]
+        let model;
+
+        if (messageCount > 20) {
+          model = largeModel;
+        } else if (messageCount > 10) {
+          model = standardModel;
+        } else {
+          model = efficientModel;
+        }
+
+        return handler({ ...request, model });  // [!code highlight]
+      },
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Use user's preferred model from Store:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware, initChatModel } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
+
+    // Initialize available models once
+    const MODEL_MAP = {
+      "gpt-4o": initChatModel("gpt-4o"),
+      "gpt-4o-mini": initChatModel("gpt-4o-mini"),
+      "claude-sonnet": initChatModel("claude-sonnet-4-5-20250929"),
+    };
+
+    const storeBasedModel = createMiddleware({
+      name: "StoreBasedModel",
+      contextSchema,
+      wrapModelCall: async (request, handler) => {
+        const userId = request.runtime.context.userId;  // [!code highlight]
+
+        // Read from Store: get user's preferred model
+        const store = request.runtime.store;  // [!code highlight]
+        const userPrefs = await store.get(["preferences"], userId);  // [!code highlight]
+
+        let model = request.model;
+
+        if (userPrefs) {
+          const preferredModel = userPrefs.value?.preferredModel;
+          if (preferredModel && MODEL_MAP[preferredModel]) {
+            model = MODEL_MAP[preferredModel];  // [!code highlight]
+          }
+        }
+
+        return handler({ ...request, model });  // [!code highlight]
+      },
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Runtime Context">
+    Select model based on cost limits or environment from Runtime Context:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware, initChatModel } from "langchain";
+
+    const contextSchema = z.object({
+      costTier: z.string(),
+      environment: z.string(),
+    });
+
+    // Initialize models once outside the middleware
+    const premiumModel = initChatModel("claude-sonnet-4-5-20250929");
+    const standardModel = initChatModel("gpt-4o");
+    const budgetModel = initChatModel("gpt-4o-mini");
+
+    const contextBasedModel = createMiddleware({
+      name: "ContextBasedModel",
+      contextSchema,
+      wrapModelCall: (request, handler) => {
+        // Read from Runtime Context: cost tier and environment
+        const costTier = request.runtime.context.costTier;  // [!code highlight]
+        const environment = request.runtime.context.environment;  // [!code highlight]
+
+        let model;
+
+        if (environment === "production" && costTier === "premium") {
+          model = premiumModel;
+        } else if (costTier === "budget") {
+          model = budgetModel;
+        } else {
+          model = standardModel;
+        }
+
+        return handler({ ...request, model });  // [!code highlight]
+      },
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+See [Dynamic model](/oss/javascript/langchain/agents#dynamic-model) for more examples.
+
+### Response Format
+
+Structured output transforms unstructured text into validated, structured data. When extracting specific fields or returning data for downstream systems, free-form text isn't sufficient.
+
+**How it works:** When you provide a schema as the response format, the model's final response is guaranteed to conform to that schema. The agent runs the model / tool calling loop until the model is done calling tools, then the final response is coerced into the provided format.
+
+#### Defining formats
+
+Schema definitions guide the model. Field names, types, and descriptions specify exactly what format the output should adhere to.
+
+```typescript theme={null}
+import { z } from "zod";
+
+const customerSupportTicket = z
+  .object({
+    category: z
+      .enum(["billing", "technical", "account", "product"])
+      .describe("Issue category"),
+    priority: z
+      .enum(["low", "medium", "high", "critical"])
+      .describe("Urgency level"),
+    summary: z
+      .string()
+      .describe("One-sentence summary of the customer's issue"),
+    customerSentiment: z
+      .enum(["frustrated", "neutral", "satisfied"])
+      .describe("Customer's emotional tone"),
+  })
+  .describe("Structured ticket information extracted from customer message");
+```
+
+#### Selecting formats
+
+Dynamic response format selection adapts schemas based on user preferences, conversation stage, or role—returning simple formats early and detailed formats as complexity increases.
+
+<Tabs>
+  <Tab title="State">
+    Configure structured output based on conversation state:
+
+    ```typescript  theme={null}
+    import { createMiddleware } from "langchain";
+    import { z } from "zod";
+
+    const simpleResponse = z.object({
+      answer: z.string().describe("A brief answer"),
+    });
+
+    const detailedResponse = z.object({
+      answer: z.string().describe("A detailed answer"),
+      reasoning: z.string().describe("Explanation of reasoning"),
+      confidence: z.number().describe("Confidence score 0-1"),
+    });
+
+    const stateBasedOutput = createMiddleware({
+      name: "StateBasedOutput",
+      wrapModelCall: (request, handler) => {
+        // request.state is a shortcut for request.state.messages
+        const messageCount = request.messages.length;  // [!code highlight]
+
+        if (messageCount < 3) {
+          // Early conversation - use simple format
+          responseFormat = simpleResponse; // [!code highlight]
+        } else {
+          // Established conversation - use detailed format
+          responseFormat = detailedResponse; // [!code highlight]
+        }
+
+        return handler({ ...request, responseFormat });
+      },
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Configure output format based on user preferences in Store:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
+
+    const verboseResponse = z.object({
+      answer: z.string().describe("Detailed answer"),
+      sources: z.array(z.string()).describe("Sources used"),
+    });
+
+    const conciseResponse = z.object({
+      answer: z.string().describe("Brief answer"),
+    });
+
+    const storeBasedOutput = createMiddleware({
+      name: "StoreBasedOutput",
+      wrapModelCall: async (request, handler) => {
+        const userId = request.runtime.context.userId;  // [!code highlight]
+
+        // Read from Store: get user's preferred response style
+        const store = request.runtime.store;  // [!code highlight]
+        const userPrefs = await store.get(["preferences"], userId);  // [!code highlight]
+
+        if (userPrefs) {
+          const style = userPrefs.value?.responseStyle || "concise";
+          if (style === "verbose") {
+            request.responseFormat = verboseResponse;  // [!code highlight]
+          } else {
+            request.responseFormat = conciseResponse;  // [!code highlight]
+          }
+        }
+
+        return handler(request);
+      },
+    });
+    ```
+
+  </Tab>
+
+  <Tab title="Runtime Context">
+    Configure output format based on Runtime Context like user role or environment:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createMiddleware } from "langchain";
+
+    const contextSchema = z.object({
+      userRole: z.string(),
+      environment: z.string(),
+    });
+
+    const adminResponse = z.object({
+      answer: z.string().describe("Answer"),
+      debugInfo: z.record(z.any()).describe("Debug information"),
+      systemStatus: z.string().describe("System status"),
+    });
+
+    const userResponse = z.object({
+      answer: z.string().describe("Answer"),
+    });
+
+    const contextBasedOutput = createMiddleware({
+      name: "ContextBasedOutput",
+      wrapModelCall: (request, handler) => {
+        // Read from Runtime Context: user role and environment
+        const userRole = request.runtime.context.userRole;  // [!code highlight]
+        const environment = request.runtime.context.environment;  // [!code highlight]
+
+        if (userRole === "admin" && environment === "production") {
+          responseFormat = adminResponse;  // [!code highlight]
+        } else {
+          responseFormat = userResponse;  // [!code highlight]
+        }
+
+        return handler({ ...request, responseFormat });
+      },
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+## Tool Context
+
+Tools are special in that they both read and write context.
+
+In the most basic case, when a tool executes, it receives the LLM's request parameters and returns a tool message back. The tool does its work and produces a result.
+
+Tools can also fetch important information for the model that allows it to perform and complete tasks.
+
+### Reads
+
+Most real-world tools need more than just the LLM's parameters. They need user IDs for database queries, API keys for external services, or current session state to make decisions. Tools read from state, store, and runtime context to access this information.
+
+<Tabs>
+  <Tab title="State">
+    Read from State to check current session information:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createAgent, tool, type ToolRuntime } from "langchain";
+
+    const checkAuthentication = tool(
+      async (_, runtime: ToolRuntime) => {
+        // Read from State: check current auth status
+        const currentState = runtime.state;
+        const isAuthenticated = currentState.authenticated || false;
+
+        if (isAuthenticated) {
+          return "User is authenticated";
+        } else {
+          return "User is not authenticated";
+        }
+      },
+      {
+        name: "check_authentication",
+        description: "Check if user is authenticated",
+        schema: z.object({}),
+      }
+    );
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Read from Store to access persisted user preferences:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createAgent, tool, type ToolRuntime } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+    });
+
+    const getPreference = tool(
+      async ({ preferenceKey }, runtime: ToolRuntime) => {
+        const userId = runtime.context.userId;
+
+        // Read from Store: get existing preferences
+        const store = runtime.store;
+        const existingPrefs = await store.get(["preferences"], userId);
+
+        if (existingPrefs) {
+          const value = existingPrefs.value?.[preferenceKey];
+          return value ? `${preferenceKey}: ${value}` : `No preference set for ${preferenceKey}`;
+        } else {
+          return "No preferences found";
+        }
+      },
+      {
+        name: "get_preference",
+        description: "Get user preference from Store",
+        schema: z.object({
+          preferenceKey: z.string(),
+        }),
+      }
+    );
+    ```
+
+  </Tab>
+
+  <Tab title="Runtime Context">
+    Read from Runtime Context for configuration like API keys and user IDs:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { tool } from "@langchain/core/tools";
+    import { createAgent } from "langchain";
+
+    const contextSchema = z.object({
+      userId: z.string(),
+      apiKey: z.string(),
+      dbConnection: z.string(),
+    });
+
+    const fetchUserData = tool(
+      async ({ query }, runtime: ToolRuntime<any, typeof contextSchema>) => {
+        // Read from Runtime Context: get API key and DB connection
+        const { userId, apiKey, dbConnection } = runtime.context;
+
+        // Use configuration to fetch data
+        const results = await performDatabaseQuery(dbConnection, query, apiKey);
+
+        return `Found ${results.length} results for user ${userId}`;
+      },
+      {
+        name: "fetch_user_data",
+        description: "Fetch data using Runtime Context configuration",
+        schema: z.object({
+          query: z.string(),
+        }),
+      }
+    );
+
+    const agent = createAgent({
+      model: "gpt-4o",
+      tools: [fetchUserData],
+      contextSchema,
+    });
+    ```
+
+  </Tab>
+</Tabs>
+
+### Writes
+
+Tool results can be used to help an agent complete a given task. Tools can both return results directly to the model
+and update the memory of the agent to make important context available to future steps.
+
+<Tabs>
+  <Tab title="State">
+    Write to State to track session-specific information using Command:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { tool } from "@langchain/core/tools";
+    import { createAgent } from "langchain";
+    import { Command } from "@langchain/langgraph";
+
+    const authenticateUser = tool(
+      async ({ password }) => {
+        // Perform authentication
+        if (password === "correct") {
+          // Write to State: mark as authenticated using Command
+          return new Command({
+            update: { authenticated: true },
+          });
+        } else {
+          return new Command({ update: { authenticated: false } });
+        }
+      },
+      {
+        name: "authenticate_user",
+        description: "Authenticate user and update State",
+        schema: z.object({
+          password: z.string(),
+        }),
+      }
+    );
+    ```
+
+  </Tab>
+
+  <Tab title="Store">
+    Write to Store to persist data across sessions:
+
+    ```typescript  theme={null}
+    import * as z from "zod";
+    import { createAgent, tool, type ToolRuntime } from "langchain";
+
+    const savePreference = tool(
+      async ({ preferenceKey, preferenceValue }, runtime: ToolRuntime<any, typeof contextSchema>) => {
+        const userId = runtime.context.userId;
+
+        // Read existing preferences
+        const store = runtime.store;
+        const existingPrefs = await store.get(["preferences"], userId);
+
+        // Merge with new preference
+        const prefs = existingPrefs?.value || {};
+        prefs[preferenceKey] = preferenceValue;
+
+        // Write to Store: save updated preferences
+        await store.put(["preferences"], userId, prefs);
+
+        return `Saved preference: ${preferenceKey} = ${preferenceValue}`;
+      },
+      {
+        name: "save_preference",
+        description: "Save user preference to Store",
+        schema: z.object({
+          preferenceKey: z.string(),
+          preferenceValue: z.string(),
+        }),
+      }
+    );
+    ```
+
+  </Tab>
+</Tabs>
+
+See [Tools](/oss/javascript/langchain/tools) for comprehensive examples of accessing state, store, and runtime context in tools.
+
+## Life-cycle Context
+
+Control what happens **between** the core agent steps - intercepting data flow to implement cross-cutting concerns like summarization, guardrails, and logging.
+
+As you've seen in [Model Context](#model-context) and [Tool Context](#tool-context), [middleware](/oss/javascript/langchain/middleware) is the mechanism that makes context engineering practical. Middleware allows you to hook into any step in the agent lifecycle and either:
+
+1. **Update context** - Modify state and store to persist changes, update conversation history, or save insights
+2. **Jump in the lifecycle** - Move to different steps in the agent cycle based on context (e.g., skip tool execution if a condition is met, repeat model call with modified context)
+
+<div style={{ display: "flex", justifyContent: "center" }}>
+  <img src="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=eb4404b137edec6f6f0c8ccb8323eaf1" alt="Middleware hooks in the agent loop" className="rounded-lg" data-og-width="500" width="500" data-og-height="560" height="560" data-path="oss/images/middleware_final.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=280&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=483413aa87cf93323b0f47c0dd5528e8 280w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=560&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=41b7dd647447978ff776edafe5f42499 560w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=840&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=e9b14e264f68345de08ae76f032c52d4 840w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1100&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=ec45e1932d1279b1beee4a4b016b473f 1100w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1650&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=3bca5ebf8aa56632b8a9826f7f112e57 1650w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=2500&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=437f141d1266f08a95f030c2804691d9 2500w" />
+</div>
+
+### Example: Summarization
+
+One of the most common life-cycle patterns is automatically condensing conversation history when it gets too long. Unlike the transient message trimming shown in [Model Context](#messages), summarization **persistently updates state** - permanently replacing old messages with a summary that's saved for all future turns.
+
+LangChain offers built-in middleware for this:
+
+```typescript theme={null}
+import { createAgent, summarizationMiddleware } from "langchain";
+
+const agent = createAgent({
+  model: "gpt-4o",
+  tools: [...],
+  middleware: [
+    summarizationMiddleware({
+      model: "gpt-4o-mini",
+      maxTokensBeforeSummary: 4000, // Trigger summarization at 4000 tokens
+      messagesToKeep: 20, // Keep last 20 messages after summary
+    }),
+  ],
 });
 ```
 
-See [Dynamic model](/oss/javascript/langchain/agents#dynamic-model) for more examples.
+When the conversation exceeds the token limit, `SummarizationMiddleware` automatically:
+
+1. Summarizes older messages using a separate LLM call
+2. Replaces them with a summary message in State (permanently)
+3. Keeps recent messages intact for context
+
+The summarized conversation history is permanently updated - future turns will see the summary instead of the original messages.
+
+<Note>
+  For a complete list of built-in middleware, available hooks, and how to create custom middleware, see the [Middleware documentation](/oss/javascript/langchain/middleware).
+</Note>
 
 ## Best practices
 
@@ -269,16 +1069,22 @@ See [Dynamic model](/oss/javascript/langchain/agents#dynamic-model) for more exa
 3. **Monitor performance** - Track model calls, token usage, and latency
 4. **Use built-in middleware** - Leverage [`SummarizationMiddleware`](/oss/javascript/langchain/middleware#summarization), [`LLMToolSelectorMiddleware`](/oss/javascript/langchain/middleware#llm-tool-selector), etc.
 5. **Document your context strategy** - Make it clear what context is being passed and why
+6. **Understand transient vs persistent**: Model context changes are transient (per-call), while life-cycle context changes persist to state
 
 ## Related resources
 
-* [Middleware](/oss/javascript/langchain/middleware) - Complete middleware guide
-* [Tools](/oss/javascript/langchain/tools) - Tool creation and context access
-* [Memory](/oss/javascript/concepts/memory) - Short-term and long-term memory patterns
-* [Agents](/oss/javascript/langchain/agents) - Core agent concepts
+- [Context conceptual overview](/oss/javascript/concepts/context) - Understand context types and when to use them
+- [Middleware](/oss/javascript/langchain/middleware) - Complete middleware guide
+- [Tools](/oss/javascript/langchain/tools) - Tool creation and context access
+- [Memory](/oss/javascript/concepts/memory) - Short-term and long-term memory patterns
+- [Agents](/oss/javascript/langchain/agents) - Core agent concepts
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/context-engineering.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/context-engineering.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for    real-time answers.
+</Tip>

@@ -1,164 +1,101 @@
-# Run a local server
+# Application structure
+
+## Overview
+
+A LangGraph application consists of one or more graphs, a configuration file (`langgraph.json`), a file that specifies dependencies, and an optional `.env` file that specifies environment variables.
+
+This guide shows a typical structure of an application and shows how the required information to deploy an application using the LangSmith is specified.
+
+## Key Concepts
+
+To deploy using the LangSmith, the following information should be provided:
+
+1. A [LangGraph configuration file](#configuration-file-concepts) (`langgraph.json`) that specifies the dependencies, graphs, and environment variables to use for the application.
+2. The [graphs](#graphs) that implement the logic of the application.
+3. A file that specifies [dependencies](#dependencies) required to run the application.
+4. [Environment variables](#environment-variables) that are required for the application to run.
+
+## File structure
+
+Below are examples of directory structures for applications:
+
+```plaintext theme={null}
+my-app/
+├── src # all project code lies within here
+│   ├── utils # optional utilities for your graph
+│   │   ├── tools.ts # tools for your graph
+│   │   ├── nodes.ts # node functions for your graph
+│   │   └── state.ts # state definition of your graph
+│   └── agent.ts # code for constructing your graph
+├── package.json # package dependencies
+├── .env # environment variables
+└── langgraph.json # configuration file for LangGraph
+```
+
+<Note>
+  The directory structure of a LangGraph application can vary depending on the programming language and the package manager used.
+</Note>
+
+<a id="configuration-file-concepts" />
+
+## Configuration file
+
+The `langgraph.json` file is a JSON file that specifies the dependencies, graphs, environment variables, and other settings required to deploy a LangGraph application.
+
+See the [LangGraph configuration file reference](/langsmith/cli#configuration-file) for details on all supported keys in the JSON file.
 
 <Tip>
-  **LangGraph v1.0**
-
-  Welcome to the new LangGraph documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=02-langgraph.yml\&labels=langgraph,js/ts) so we can improve. Archived v0 documentation can be found [here](https://langchain-ai.github.io/langgraphjs/).
-
-  See the [release notes](/oss/javascript/releases/langgraph-v1) and [migration guide](/oss/javascript/migrate/langgraph-v1) for a complete list of changes and instructions on how to upgrade your code.
+  The [LangGraph CLI](/langsmith/cli) defaults to using the configuration file `langgraph.json` in the current directory.
 </Tip>
 
-This guide shows you how to run a LangGraph application locally.
+### Examples
 
-## Prerequisites
+- The dependencies will be loaded from a dependency file in the local directory (e.g., `package.json`).
+- A single graph will be loaded from the file `./your_package/your_file.js` with the function `agent`.
+- The environment variable `OPENAI_API_KEY` is set inline.
 
-Before you begin, ensure you have the following:
-
-* An API key for [LangSmith](https://smith.langchain.com/settings) - free to sign up
-
-## 1. Install the LangGraph CLI
-
-```shell  theme={null}
-npx @langchain/langgraph-cli
+```json theme={null}
+{
+  "dependencies": ["."],
+  "graphs": {
+    "my_agent": "./your_package/your_file.js:agent"
+  },
+  "env": {
+    "OPENAI_API_KEY": "secret-key"
+  }
+}
 ```
 
-## 2. Create a LangGraph app 🌱
+## Dependencies
 
-Create a new app from the [`new-langgraph-project-js` template](https://github.com/langchain-ai/new-langgraphjs-project). This template demonstrates a single-node application you can extend with your own logic.
+A LangGraph application may depend on other TypeScript/JavaScript libraries.
 
-```shell  theme={null}
-npm create langgraph
-```
+You will generally need to specify the following information for dependencies to be set up correctly:
 
-## 3. Install dependencies
+1. A file in the directory that specifies the dependencies (e.g. `package.json`).
 
-In the root of your new LangGraph app, install the dependencies in `edit` mode so your local changes are used by the server:
+2. A `dependencies` key in the [LangGraph configuration file](#configuration-file-concepts) that specifies the dependencies required to run the LangGraph application.
 
-```shell  theme={null}
-cd path/to/your/app
-npm install
-```
+3. Any additional binaries or system libraries can be specified using `dockerfile_lines` key in the [LangGraph configuration file](#configuration-file-concepts).
 
-## 4. Create a `.env` file
+## Graphs
 
-You will find a `.env.example` in the root of your new LangGraph app. Create a `.env` file in the root of your new LangGraph app and copy the contents of the `.env.example` file into it, filling in the necessary API keys:
+Use the `graphs` key in the [LangGraph configuration file](#configuration-file-concepts) to specify which graphs will be available in the deployed LangGraph application.
 
-```bash  theme={null}
-LANGSMITH_API_KEY=lsv2...
-```
+You can specify one or more graphs in the configuration file. Each graph is identified by a name (which should be unique) and a path for either: (1) the compiled graph or (2) a function that makes a graph is defined.
 
-## 5. Launch LangGraph Server 🚀
+## Environment variables
 
-Start the LangGraph API server locally:
+If you're working with a deployed LangGraph application locally, you can configure environment variables in the `env` key of the [LangGraph configuration file](#configuration-file-concepts).
 
-```shell  theme={null}
-npx @langchain/langgraph-cli dev
-```
+For a production deployment, you will typically want to configure the environment variables in the deployment environment.
 
-Sample output:
-
-```
->    Ready!
->
->    - API: [http://localhost:2024](http://localhost:2024/)
->
->    - Docs: http://localhost:2024/docs
->
->    - LangGraph Studio Web UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
-```
-
-The `langgraph dev` command starts LangGraph Server in an in-memory mode. This mode is suitable for development and testing purposes. For production use, deploy LangGraph Server with access to a persistent storage backend. For more information, see the [Hosting overview](/langsmith/hosting).
-
-## 6. Test your application in Studio
-
-[Studio](/langsmith/studio) is a specialized UI that you can connect to LangGraph API server to visualize, interact with, and debug your application locally. Test your graph in Studio by visiting the URL provided in the output of the `langgraph dev` command:
-
-```
->    - LangGraph Studio Web UI: https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
-```
-
-For a LangGraph Server running on a custom host/port, update the baseURL parameter.
-
-<Accordion title="Safari compatibility">
-  Use the `--tunnel` flag with your command to create a secure tunnel, as Safari has limitations when connecting to localhost servers:
-
-  ```shell  theme={null}
-  langgraph dev --tunnel
-  ```
-</Accordion>
-
-## 7. Test the API
-
-<Tabs>
-  <Tab title="Javascript SDK">
-    1. Install the LangGraph JS SDK:
-
-    ```shell  theme={null}
-    npm install @langchain/langgraph-sdk
-    ```
-
-    2. Send a message to the assistant (threadless run):
-
-    ```js  theme={null}
-    const { Client } = await import("@langchain/langgraph-sdk");
-
-    // only set the apiUrl if you changed the default port when calling langgraph dev
-    const client = new Client({ apiUrl: "http://localhost:2024"});
-
-    const streamResponse = client.runs.stream(
-        null, // Threadless run
-        "agent", // Assistant ID
-        {
-            input: {
-                "messages": [
-                    { "role": "user", "content": "What is LangGraph?"}
-                ]
-            },
-            streamMode: "messages-tuple",
-        }
-    );
-
-    for await (const chunk of streamResponse) {
-        console.log(`Receiving new event of type: ${chunk.event}...`);
-        console.log(JSON.stringify(chunk.data));
-        console.log("\n\n");
-    }
-    ```
-  </Tab>
-
-  <Tab title="Rest API">
-    ```bash  theme={null}
-    curl -s --request POST \
-        --url "http://localhost:2024/runs/stream" \
-        --header 'Content-Type: application/json' \
-        --data "{
-            \"assistant_id\": \"agent\",
-            \"input\": {
-                \"messages\": [
-                    {
-                        \"role\": \"human\",
-                        \"content\": \"What is LangGraph?\"
-                    }
-                ]
-            },
-            \"stream_mode\": \"messages-tuple\"
-        }"
-    ```
-  </Tab>
-</Tabs>
-
-## Next steps
-
-Now that you have a LangGraph app running locally, take your journey further by exploring deployment and advanced features:
-
-* [Deployment quickstart](/langsmith/deployment-quickstart): Deploy your LangGraph app using LangSmith.
-
-* [LangSmith](/langsmith/home): Learn about foundational LangSmith concepts.
-
-* [JS/TS SDK Reference](https://reference.langchain.com/javascript/modules/_langchain_langgraph-sdk.html): Explore the JS/TS SDK API Reference.
-
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/local-server.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langgraph/application-structure.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

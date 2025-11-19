@@ -1,13 +1,5 @@
 # Long-term memory
 
-<Tip>
-  **LangChain v1.0**
-
-  Welcome to the new LangChain documentation! If you encounter any issues or have feedback, please [open an issue](https://github.com/langchain-ai/docs/issues/new?template=01-langchain.yml\&labels=langchain,js/ts) so we can improve. Archived v0 documentation can be found [here](https://js.langchain.com/docs/introduction/).
-
-  See the [release notes](/oss/javascript/releases/langchain-v1) and [migration guide](/oss/javascript/migrate/langchain-v1) for a complete list of changes and instructions on how to upgrade your code.
-</Tip>
-
 ## Overview
 
 LangChain agents use [LangGraph persistence](/oss/javascript/langgraph/persistence#memory-store) to enable long-term memory. This is a more advanced topic and requires knowledge of LangGraph to use.
@@ -20,12 +12,12 @@ Each memory is organized under a custom `namespace` (similar to a folder) and a 
 
 This structure enables hierarchical organization of memories. Cross-namespace searching is then supported through content filters.
 
-```typescript  theme={null}
+```typescript theme={null}
 import { InMemoryStore } from "@langchain/langgraph";
 
 const embed = (texts: string[]): number[][] => {
-    // Replace with an actual embedding function or LangChain embeddings object
-    return texts.map(() => [1.0, 2.0]);
+  // Replace with an actual embedding function or LangChain embeddings object
+  return texts.map(() => [1.0, 2.0]);
 };
 
 // InMemoryStore saves data to an in-memory dictionary. Use a DB-backed store in production use.
@@ -34,28 +26,30 @@ const userId = "my-user";
 const applicationContext = "chitchat";
 const namespace = [userId, applicationContext]; // [!code highlight]
 
-await store.put( // [!code highlight]
-    namespace,
-    "a-memory",
-    {
-        rules: [
-            "User likes short, direct language",
-            "User only speaks English & TypeScript",
-        ],
-        "my-key": "my-value",
-    }
+await store.put(
+  // [!code highlight]
+  namespace,
+  "a-memory",
+  {
+    rules: [
+      "User likes short, direct language",
+      "User only speaks English & TypeScript",
+    ],
+    "my-key": "my-value",
+  }
 );
 
 // get the "memory" by ID
 const item = await store.get(namespace, "a-memory"); // [!code highlight]
 
 // search for "memories" within this namespace, filtering on content equivalence, sorted by vector similarity
-const items = await store.search( // [!code highlight]
-    namespace,
-    {
-        filter: { "my-key": "my-value" },
-        query: "language preferences"
-    }
+const items = await store.search(
+  // [!code highlight]
+  namespace,
+  {
+    filter: { "my-key": "my-value" },
+    query: "language preferences",
+  }
 );
 ```
 
@@ -71,17 +65,18 @@ import { InMemoryStore, type Runtime } from "@langchain/langgraph";
 // InMemoryStore saves data to an in-memory dictionary. Use a DB-backed store in production.
 const store = new InMemoryStore(); // [!code highlight]
 const contextSchema = z.object({
-    userId: z.string(),
+  userId: z.string(),
 });
 
 // Write sample data to the store using the put method
-await store.put( // [!code highlight]
-    ["users"], // Namespace to group related data together (users namespace for user data)
-    "user_123", // Key within the namespace (user ID as key)
-    {
-        name: "John Smith",
-        language: "English",
-    } // Data to store for the given user
+await store.put(
+  // [!code highlight]
+  ["users"], // Namespace to group related data together (users namespace for user data)
+  "user_123", // Key within the namespace (user ID as key)
+  {
+    name: "John Smith",
+    language: "English",
+  } // Data to store for the given user
 );
 
 const getUserInfo = tool(
@@ -104,17 +99,17 @@ const getUserInfo = tool(
 );
 
 const agent = createAgent({
-    model: "openai:gpt-4o-mini",
-    tools: [getUserInfo],
-    contextSchema,
-    // Pass store to agent - enables agent to access store when running tools
-    store, // [!code highlight]
+  model: "gpt-4o-mini",
+  tools: [getUserInfo],
+  contextSchema,
+  // Pass store to agent - enables agent to access store when running tools
+  store, // [!code highlight]
 });
 
 // Run the agent
 const result = await agent.invoke(
-    { messages: [{ role: "user", content: "look up user information" }] },
-    { context: { userId: "user_123" } } // [!code highlight]
+  { messages: [{ role: "user", content: "look up user information" }] },
+  { context: { userId: "user_123" } } // [!code highlight]
 );
 
 console.log(result.messages.at(-1)?.content);
@@ -139,17 +134,20 @@ import { InMemoryStore, type Runtime } from "@langchain/langgraph";
 const store = new InMemoryStore(); // [!code highlight]
 
 const contextSchema = z.object({
-    userId: z.string(),
+  userId: z.string(),
 });
 
 // Schema defines the structure of user information for the LLM
 const UserInfo = z.object({
-    name: z.string(),
+  name: z.string(),
 });
 
 // Tool that allows agent to update user information (useful for chat applications)
 const saveUserInfo = tool(
-  async (userInfo: z.infer<typeof UserInfo>, runtime: Runtime<z.infer<typeof contextSchema>>) => {
+  async (
+    userInfo: z.infer<typeof UserInfo>,
+    runtime: Runtime<z.infer<typeof contextSchema>>
+  ) => {
     const userId = runtime.context?.userId;
     if (!userId) {
       throw new Error("userId is required");
@@ -166,17 +164,17 @@ const saveUserInfo = tool(
 );
 
 const agent = createAgent({
-    model: "openai:gpt-4o-mini",
-    tools: [saveUserInfo],
-    contextSchema,
-    store, // [!code highlight]
+  model: "gpt-4o-mini",
+  tools: [saveUserInfo],
+  contextSchema,
+  store, // [!code highlight]
 });
 
 // Run the agent
 await agent.invoke(
-    { messages: [{ role: "user", content: "My name is John Smith" }] },
-    // userId passed in context to identify whose information is being updated
-    { context: { userId: "user_123" } } // [!code highlight]
+  { messages: [{ role: "user", content: "My name is John Smith" }] },
+  // userId passed in context to identify whose information is being updated
+  { context: { userId: "user_123" } } // [!code highlight]
 );
 
 // You can access the store directly to get the value
@@ -184,8 +182,12 @@ const result = await store.get(["users"], "user_123");
 console.log(result?.value); // Output: { name: "John Smith" }
 ```
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/long-term-memory.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/langchain/long-term-memory.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>

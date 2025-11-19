@@ -23,17 +23,18 @@ To upgrade,
   npm install langchain @langchain/core
   ```
 
-  ```bash pnpm theme={null}
-  pnpm install langchain @langchain/core
-  ```
+```bash pnpm theme={null}
+pnpm install langchain @langchain/core
+```
 
-  ```bash yarn theme={null}
-  yarn add langchain @langchain/core
-  ```
+```bash yarn theme={null}
+yarn add langchain @langchain/core
+```
 
-  ```bash bun theme={null}
-  bun add langchain @langchain/core
-  ```
+```bash bun theme={null}
+bun add langchain @langchain/core
+```
+
 </CodeGroup>
 
 For a complete list of changes, see the [migration guide](/oss/javascript/migrate/langchain-v1).
@@ -42,19 +43,17 @@ For a complete list of changes, see the [migration guide](/oss/javascript/migrat
 
 `createAgent` is the standard way to build agents in LangChain 1.0. It provides a simpler interface than the prebuilt `createReactAgent` exported from LangGraph while offering greater customization potential by using middleware.
 
-```ts  theme={null}
+```ts theme={null}
 import { createAgent } from "langchain";
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5",
+  model: "claude-sonnet-4-5-20250929",
   tools: [getWeather],
   systemPrompt: "You are a helpful assistant.",
 });
 
 const result = await agent.invoke({
-  messages: [
-    { role: "user", content: "What is the weather in Tokyo?" },
-  ],
+  messages: [{ role: "user", content: "What is the weather in Tokyo?" }],
 });
 
 console.log(result.content);
@@ -63,7 +62,7 @@ console.log(result.content);
 Under the hood, `createAgent` is built on the basic agent loop -- calling a model, letting it choose tools to execute, and then finishing when it calls no more tools:
 
 <div style={{ display: "flex", justifyContent: "center" }}>
-  <img src="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=ac72e48317a9ced68fd1be64e89ec063" alt="Core agent loop diagram" height="300" className="rounded-lg" data-og-width="300" data-og-height="268" data-path="oss/images/core_agent_loop.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=280&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=a4c4b766b6678ef52a6ed556b1a0b032 280w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=560&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=111869e6e99a52c0eff60a1ef7ddc49c 560w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=840&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=6c1e21de7b53bd0a29683aca09c6f86e 840w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1100&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=88bef556edba9869b759551c610c60f4 1100w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1650&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=9b0bdd138e9548eeb5056dc0ed2d4a4b 1650w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=2500&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=41eb4f053ed5e6b0ba5bad2badf6d755 2500w" />
+  <img src="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=ac72e48317a9ced68fd1be64e89ec063" alt="Core agent loop diagram" className="rounded-lg" data-og-width="300" width="300" data-og-height="268" height="268" data-path="oss/images/core_agent_loop.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=280&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=a4c4b766b6678ef52a6ed556b1a0b032 280w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=560&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=111869e6e99a52c0eff60a1ef7ddc49c 560w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=840&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=6c1e21de7b53bd0a29683aca09c6f86e 840w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1100&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=88bef556edba9869b759551c610c60f4 1100w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=1650&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=9b0bdd138e9548eeb5056dc0ed2d4a4b 1650w, https://mintcdn.com/langchain-5e9cc07a/Tazq8zGc0yYUYrDl/oss/images/core_agent_loop.png?w=2500&fit=max&auto=format&n=Tazq8zGc0yYUYrDl&q=85&s=41eb4f053ed5e6b0ba5bad2badf6d755 2500w" />
 </div>
 
 For more information, see [Agents](/oss/javascript/langchain/agents).
@@ -78,11 +77,11 @@ Great agents require [context engineering](/oss/javascript/langchain/context-eng
 
 LangChain provides a few [prebuilt middlewares](/oss/javascript/langchain/middleware#built-in-middleware) for common patterns, including:
 
-* `summarizationMiddleware`: Condense conversation history when it gets too long
-* `humanInTheLoopMiddleware`: Require approval for sensitive tool calls
-* `piiRedactionMiddleware`: Redact sensitive information before sending to the model
+- `summarizationMiddleware`: Condense conversation history when it gets too long
+- `humanInTheLoopMiddleware`: Require approval for sensitive tool calls
+- `piiRedactionMiddleware`: Redact sensitive information before sending to the model
 
-```ts  theme={null}
+```ts theme={null}
 import {
   createAgent,
   summarizationMiddleware,
@@ -91,12 +90,12 @@ import {
 } from "langchain";
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5",
+  model: "claude-sonnet-4-5-20250929",
   tools: [readEmail, sendEmail],
   middleware: [
     piiRedactionMiddleware({ patterns: ["email", "phone", "ssn"] }),
     summarizationMiddleware({
-      model: "anthropic:claude-sonnet-4-5",
+      model: "claude-sonnet-4-5-20250929",
       maxTokensBeforeSummary: 500,
     }),
     humanInTheLoopMiddleware({
@@ -106,7 +105,7 @@ const agent = createAgent({
         },
       },
     }),
-  ] as const,
+  ],
 });
 ```
 
@@ -125,35 +124,33 @@ Build custom middleware by implementing any of these hooks using the `createMidd
 | `afterModel`    | After each LLM response  | Validate output, apply guardrails       |
 | `afterAgent`    | After agent completes    | Save results, cleanup                   |
 
-<img src="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=eb4404b137edec6f6f0c8ccb8323eaf1" alt="Middleware flow diagram" data-og-width="500" width="500" data-og-height="560" height="560" data-path="oss/images/middleware_final.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=280&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=483413aa87cf93323b0f47c0dd5528e8 280w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=560&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=41b7dd647447978ff776edafe5f42499 560w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=840&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=e9b14e264f68345de08ae76f032c52d4 840w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1100&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=ec45e1932d1279b1beee4a4b016b473f 1100w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1650&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=3bca5ebf8aa56632b8a9826f7f112e57 1650w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=2500&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=437f141d1266f08a95f030c2804691d9 2500w" />
+<div style={{ display: "flex", justifyContent: "center" }}>
+  <img src="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=eb4404b137edec6f6f0c8ccb8323eaf1" alt="Middleware flow diagram" className="rounded-lg" data-og-width="500" width="500" data-og-height="560" height="560" data-path="oss/images/middleware_final.png" data-optimize="true" data-opv="3" srcset="https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=280&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=483413aa87cf93323b0f47c0dd5528e8 280w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=560&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=41b7dd647447978ff776edafe5f42499 560w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=840&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=e9b14e264f68345de08ae76f032c52d4 840w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1100&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=ec45e1932d1279b1beee4a4b016b473f 1100w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=1650&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=3bca5ebf8aa56632b8a9826f7f112e57 1650w, https://mintcdn.com/langchain-5e9cc07a/RAP6mjwE5G00xYsA/oss/images/middleware_final.png?w=2500&fit=max&auto=format&n=RAP6mjwE5G00xYsA&q=85&s=437f141d1266f08a95f030c2804691d9 2500w" />
+</div>
 
 Example custom middleware:
 
-```ts  theme={null}
+```ts theme={null}
 import { createMiddleware } from "langchain";
 
 const contextSchema = z.object({
   userExpertise: z.enum(["beginner", "expert"]).default("beginner"),
-})
+});
 
 const expertiseBasedToolMiddleware = createMiddleware({
   wrapModelCall: async (request, handler) => {
     const userLevel = request.runtime.context.userExpertise;
     if (userLevel === "expert") {
       const tools = [advancedSearch, dataAnalysis];
-      return handler(
-        request.replace("openai:gpt-5", tools)
-      );
+      return handler(request.replace("openai:gpt-5", tools));
     }
     const tools = [simpleSearch, basicCalculator];
-    return handler(
-      request.replace("openai:gpt-5-nano", tools)
-    );
+    return handler(request.replace("openai:gpt-5-nano", tools));
   },
 });
 
 const agent = createAgent({
-  model: "anthropic:claude-sonnet-4-5",
+  model: "claude-sonnet-4-5-20250929",
   tools: [simpleSearch, advancedSearch, basicCalculator, dataAnalysis],
   middleware: [expertiseBasedToolMiddleware],
   contextSchema,
@@ -190,11 +187,11 @@ You don't need to learn LangGraph to use these features—they work out of the b
 
 `createAgent` has improved structured output generation:
 
-* **Main loop integration**: Structured output is now generated in the main loop instead of requiring an additional LLM call
-* **Structured output strategy**: Models can choose between calling tools or using provider-side structured output generation
-* **Cost reduction**: Eliminates extra expense from additional LLM calls
+- **Main loop integration**: Structured output is now generated in the main loop instead of requiring an additional LLM call
+- **Structured output strategy**: Models can choose between calling tools or using provider-side structured output generation
+- **Cost reduction**: Eliminates extra expense from additional LLM calls
 
-```ts  theme={null}
+```ts theme={null}
 import { createAgent } from "langchain";
 import * as z from "zod";
 
@@ -204,15 +201,13 @@ const weatherSchema = z.object({
 });
 
 const agent = createAgent({
-  model: "openai:gpt-4o-mini",
+  model: "gpt-4o-mini",
   tools: [getWeather],
   responseFormat: weatherSchema,
 });
 
 const result = await agent.invoke({
-  messages: [
-    { role: "user", content: "What is the weather in Tokyo?" },
-  ],
+  messages: [{ role: "user", content: "What is the weather in Tokyo?" }],
 });
 
 console.log(result.structuredResponse);
@@ -220,33 +215,33 @@ console.log(result.structuredResponse);
 
 **Error handling**: Control error handling via the `handleErrors` parameter to `ToolStrategy`:
 
-* **Parsing errors**: Model generates data that doesn't match desired structure
-* **Multiple tool calls**: Model generates 2+ tool calls for structured output schemas
+- **Parsing errors**: Model generates data that doesn't match desired structure
+- **Multiple tool calls**: Model generates 2+ tool calls for structured output schemas
 
-***
+---
 
 ## Standard content blocks
 
 <Note>
   1.0 releases are available for most packages. Only the following currently support new content blocks:
 
-  * `langchain`
-  * `@langchain/core`
-  * `@langchain/anthropic`
-  * `@langchain/openai`
+- `langchain`
+- `@langchain/core`
+- `@langchain/anthropic`
+- `@langchain/openai`
 
-  Broader support for content blocks is planned.
+Broader support for content blocks is planned.
 </Note>
 
 ### Benefits
 
-* **Provider agnostic**: Access reasoning traces, citations, built-in tools (web search, code interpreters, etc.), and other features using the same API regardless of provider
-* **Type safe**: Full type hints for all content block types
-* **Backward compatible**: Standard content can be [loaded lazily](/oss/javascript/langchain/messages#standard-content-blocks), so there are no associated breaking changes
+- **Provider agnostic**: Access reasoning traces, citations, built-in tools (web search, code interpreters, etc.), and other features using the same API regardless of provider
+- **Type safe**: Full type hints for all content block types
+- **Backward compatible**: Standard content can be [loaded lazily](/oss/javascript/langchain/messages#standard-content-blocks), so there are no associated breaking changes
 
 For more information, see our guide on [content blocks](/oss/javascript/langchain/messages#message-content)
 
-***
+---
 
 ## Simplified package
 
@@ -260,10 +255,11 @@ Legacy functionality has moved to [`@langchain/classic`](https://www.npmjs.com/p
 
 #### What's in `@langchain/classic`
 
-* Legacy chains and chain implementations
-* The indexing API
-* [`@langchain/community`](https://www.npmjs.com/package/@langchain/community) exports
-* Other deprecated functionality
+- Legacy chains and chain implementations
+- Retrievers
+- The indexing API
+- [`@langchain/community`](https://www.npmjs.com/package/@langchain/community) exports
+- Other deprecated functionality
 
 If you use any of this functionality, install [`@langchain/classic`](https://www.npmjs.com/package/@langchain/classic):
 
@@ -272,22 +268,23 @@ If you use any of this functionality, install [`@langchain/classic`](https://www
   npm install @langchain/classic
   ```
 
-  ```bash pnpm theme={null}
-  pnpm install @langchain/classic
-  ```
+```bash pnpm theme={null}
+pnpm install @langchain/classic
+```
 
-  ```bash yarn theme={null}
-  yarn add @langchain/classic
-  ```
+```bash yarn theme={null}
+yarn add @langchain/classic
+```
 
-  ```bash bun theme={null}
-  bun add @langchain/classic
-  ```
+```bash bun theme={null}
+bun add @langchain/classic
+```
+
 </CodeGroup>
 
 Then update your imports:
 
-```typescript  theme={null}
+```typescript theme={null}
 import { ... } from "langchain"; // [!code --]
 import { ... } from "@langchain/classic"; // [!code ++]
 
@@ -329,11 +326,15 @@ Please report any issues discovered with 1.0 on [GitHub](https://github.com/lang
 
 ## See also
 
-* [Versioning](/oss/javascript/versioning) - Understanding version numbers
-* [Release policy](/oss/javascript/release-policy) - Detailed release policies
+- [Versioning](/oss/javascript/versioning) - Understanding version numbers
+- [Release policy](/oss/javascript/release-policy) - Detailed release policies
 
-***
+---
 
 <Callout icon="pen-to-square" iconType="regular">
-  [Edit the source of this page on GitHub](https://github.com/langchain-ai/docs/edit/main/src/oss/javascript/releases/langchain-v1.mdx)
+  [Edit the source of this page on GitHub.](https://github.com/langchain-ai/docs/edit/main/src/oss/javascript/releases/langchain-v1.mdx)
 </Callout>
+
+<Tip icon="terminal" iconType="regular">
+  [Connect these docs programmatically](/use-these-docs) to Claude, VSCode, and more via MCP for real-time answers.
+</Tip>
