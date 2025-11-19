@@ -8,10 +8,6 @@
     "deny": [],
     "ask": []
   },
-  "enabledMcpjsonServers": [
-    "context7",
-    "playwright",
-    "shadcn"
-  ],
+  "enabledMcpjsonServers": ["context7", "playwright", "shadcn"],
   "enableAllProjectMcpServers": true
 }
