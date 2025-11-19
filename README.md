@@ -25,7 +25,25 @@ This project was developed as part of the TNM114 course at Linköping University
 
 The core of the application is a Directed Cyclic Graph (DCG) that manages the lifecycle of a research request.
 
-![Main Graph Workflow](report/fig-main-graph.png)
+```mermaid
+flowchart TD
+    User[User Message] --> Routing[Routing Decision]
+    Routing -->|New research| Clarification[Clarification/Verification]
+    Routing -->|Follow-up| FollowUp[Follow-up Answer]
+    
+    Clarification --> Brief[Research Brief]
+    Brief --> Supervisor[Supervisor Delegation]
+    Supervisor --> Parallel{Parallel Researchers}
+    Parallel --> Compression[Compression + Sources]
+    Compression --> Report[Final Report]
+    Report --> Response[Final Response]
+    
+    FollowUp --> Response
+
+    classDef default fill:#f0f0ff,stroke:#333,stroke-width:1px;
+    classDef diamond fill:#f0f0ff,stroke:#7b68ee,stroke-width:1px;
+    class Parallel diamond;
+```
 
 ### Workflow Steps
 1.  **Routing**: Determines if the user input is a new request or a follow-up.
@@ -34,7 +52,23 @@ The core of the application is a Directed Cyclic Graph (DCG) that manages the li
 4.  **Research & Supervision**: The Supervisor node delegates sub-topics to Researcher nodes. These nodes execute targeted searches and refine their findings.
 5.  **Report Generation**: Aggregates all findings into a cohesive, cited report.
 
-![Control Flow](report/fig-graph-flow.png)
+```mermaid
+flowchart LR
+    Start((start)) --> Route[route_request]
+    Route -->|FOLLOW_UP| Answer[answer_followup]
+    Route -->|NEW_RESEARCH| Clarify[clarify_with_user]
+    
+    Clarify -->|clarify?| Question[(Clarifying Question)]
+    Clarify -->|proceed| Brief[write_research_brief]
+    
+    Brief --> Supervisor[subgraph supervisor]
+    Supervisor --> Report[final_report_generation]
+    Report --> End((end))
+
+    classDef default fill:#f0f0ff,stroke:#7b68ee,stroke-width:1px;
+    classDef circle fill:#fff,stroke:#7b68ee,stroke-width:1px;
+    class Start,End circle;
+```
 
 ## Getting Started
 
