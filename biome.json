@@ -5,17 +5,17 @@
     "clientKind": "git",
     "useIgnoreFile": true
   },
-  "files": {
-    "ignoreUnknown": true,
-    "includes": ["**"],
-    "experimentalScannerIgnores": [
-      "node_modules",
-      ".next",
-      "dist",
-      "build",
-      "src/components/ui"
-    ]
-  },
+    "files": {
+      "ignoreUnknown": true,
+      "includes": ["**"],
+      "ignore": [
+        "node_modules",
+        ".next",
+        "dist",
+        "build",
+        "src/components/ui"
+      ]
+    },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
@@ -41,5 +41,5 @@
       }
     }
   },
-  "extends": ["ultracite/core", "ultracite/react", "ultracite/next"]
+  "extends": ["ultracite", "ultracite/core", "ultracite/next"]
 }

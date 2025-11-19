@@ -44,7 +44,7 @@ import {
   useArtifactContext,
   useArtifactOpen,
 } from "./artifact";
-import { ContentBlocksPreview } from "./ContentBlocksPreview";
+import { ContentBlocksPreview } from "./content-blocks-preview";
 import ThreadHistory from "./history";
 import { AssistantMessage, AssistantMessageLoading } from "./messages/ai";
 import { HumanMessage } from "./messages/human";

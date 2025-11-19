@@ -15,6 +15,10 @@ import { createLLM } from "@/server/shared/configs/llm";
 
 /**
  * Available search API providers
+ *
+ * @param tavily - Tavily search API
+ * @param exa - Exa search API
+ * @param none - No search API
  */
 export const SearchAPISchema = z.enum(["tavily", "exa", "none"]);
 
@@ -29,6 +33,8 @@ export const SearchAPI = {
 // ============================================================================
 // Configuration Constants
 // ============================================================================
+
+const GEMINI_3_TEMPERATURE = 1.0;
 
 const DEFAULT_MAX_STRUCTURED_OUTPUT_RETRIES = 3;
 const MAX_STRUCTURED_OUTPUT_RETRIES_LIMIT = 10;
@@ -66,6 +72,10 @@ const DEFAULT_ROUTING_MODEL_MAX_TOKENS = 2048;
 
 /**
  * Configuration for Model Context Protocol (MCP) servers
+ *
+ * @param url - URL of the MCP server
+ * @param tools - Array of tools to be used by the MCP server
+ * @param auth_required - Whether authentication is required for the MCP server
  */
 export const MCPConfigSchema = z.object({
   url: z.string().optional().nullable(),
@@ -81,6 +91,11 @@ export type MCPConfig = z.infer<typeof MCPConfigSchema>;
 
 /**
  * Main configuration class for the Deep Research agent
+ *
+ * @param max_structured_output_retries - Maximum number of retries for structured output
+ * @param allow_clarification - Whether to allow clarification
+ * @param max_concurrent_research_units - Maximum number of concurrent research units
+ * @param search_api - Search API to use
  */
 export const ConfigurationSchema = z.object({
   // General Configuration
@@ -120,12 +135,12 @@ export const ConfigurationSchema = z.object({
     .max(MAX_CONTENT_LENGTH_LIMIT)
     .default(DEFAULT_MAX_CONTENT_LENGTH),
 
-  research_model: z.string().default("gemini-2.5-pro"),
+  research_model: z.string().default("gemini-3-pro-preview"),
   research_model_max_tokens: z
     .number()
     .default(DEFAULT_RESEARCH_MODEL_MAX_TOKENS),
 
-  researcher_model: z.string().default("gemini-2.5-pro"),
+  researcher_model: z.string().default("gemini-3-pro-preview"),
   researcher_model_max_tokens: z
     .number()
     .default(DEFAULT_RESEARCHER_MODEL_MAX_TOKENS),
@@ -135,10 +150,17 @@ export const ConfigurationSchema = z.object({
     .number()
     .default(DEFAULT_COMPRESSION_MODEL_MAX_TOKENS),
 
-  final_report_model: z.string().default("gemini-2.5-pro"),
+  final_report_model: z.string().default("gemini-3-pro-preview"),
   final_report_model_max_tokens: z
     .number()
     .default(DEFAULT_FINAL_REPORT_MODEL_MAX_TOKENS),
+
+  // Gemini 3 Specific Configuration
+  gemini_3_thinking_level: z.enum(["low", "medium", "high"]).optional().default("high"),
+  gemini_3_media_resolution: z
+    .enum(["media_resolution_low", "media_resolution_medium", "media_resolution_high"])
+    .optional()
+    .default("media_resolution_high"),
 
   // Clarification Configuration
   clarification_model: z.string().default("gemini-flash-latest"),
@@ -190,6 +212,9 @@ export type Configuration = z.infer<typeof ConfigurationSchema>;
 
 /**
  * Extract configuration from RunnableConfig
+ *
+ * @param config - The RunnableConfig to extract configuration from
+ * @returns Partial Configuration instance
  */
 export function fromRunnableConfig(
   config?: RunnableConfig
@@ -214,6 +239,9 @@ export function fromRunnableConfig(
 
 /**
  * Create a Configuration instance from a RunnableConfig with defaults
+ *
+ * @param config - The RunnableConfig to create a Configuration from
+ * @returns Configuration instance with defaults
  */
 export function getConfiguration(config?: RunnableConfig): Configuration {
   const partial = fromRunnableConfig(config);
@@ -222,6 +250,8 @@ export function getConfiguration(config?: RunnableConfig): Configuration {
 
 /**
  * Get Tavily API key from environment
+ *
+ * @returns Tavily API key from environment
  */
 export function getTavilyApiKey(): string | undefined {
   return TAVILY_API_KEY;
@@ -229,6 +259,8 @@ export function getTavilyApiKey(): string | undefined {
 
 /**
  * Get Exa API key from environment
+ *
+ * @returns Exa API key from environment
  */
 export function getExaApiKey(): string | undefined {
   return EXA_API_KEY;
@@ -241,65 +273,113 @@ export function getExaApiKey(): string | undefined {
 /**
  * Create a configured LLM instance for research tasks
  *
- * @param modelName - The model name (e.g., "gemini-2.5-pro", "gemini-flash-latest")
+ * @param modelName - The model name (e.g., "gemini-3-pro-preview")
  * @param temperature - The temperature for generation
  * @param maxTokens - Maximum tokens for output
+ * @param thinkingLevel - The thinking level for Gemini 3 Pro
+ * @param mediaResolution - The media resolution for Gemini 3 Pro
  * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createResearchLLM(
   modelName: string,
   temperature: number,
-  maxTokens?: number
+  maxTokens?: number,
+  thinkingLevel?: "low" | "medium" | "high",
+  mediaResolution?: "media_resolution_low" | "media_resolution_medium" | "media_resolution_high"
 ) {
   return createLLM(modelName, temperature, {
     maxOutputTokens: maxTokens,
+    thinkingLevel,
+    mediaResolution,
   });
 }
 
 /**
  * Create supervisor model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createSupervisorModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
   const SUPERVISOR_TEMPERATURE = 0.3;
+  const temperature =
+    configuration.research_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : SUPERVISOR_TEMPERATURE;
 
   return createResearchLLM(
     configuration.research_model,
-    SUPERVISOR_TEMPERATURE,
-    configuration.research_model_max_tokens
+    temperature,
+    configuration.research_model_max_tokens,
+    configuration.research_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_thinking_level
+      : undefined,
+    configuration.research_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_media_resolution
+      : undefined
   );
 }
 
 /**
  * Create researcher model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createResearcherModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
   const RESEARCHER_TEMPERATURE = 0.3;
+  const temperature =
+    configuration.researcher_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : RESEARCHER_TEMPERATURE;
 
   return createResearchLLM(
     configuration.researcher_model,
-    RESEARCHER_TEMPERATURE,
-    configuration.researcher_model_max_tokens
+    temperature,
+    configuration.researcher_model_max_tokens,
+    configuration.researcher_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_thinking_level
+      : undefined,
+    configuration.researcher_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_media_resolution
+      : undefined
   );
 }
 
 /**
  * Create final report model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createFinalReportModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
   const FINAL_REPORT_TEMPERATURE = 0.3;
+  const temperature =
+    configuration.final_report_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : FINAL_REPORT_TEMPERATURE;
 
   return createResearchLLM(
     configuration.final_report_model,
-    FINAL_REPORT_TEMPERATURE,
-    configuration.final_report_model_max_tokens
+    temperature,
+    configuration.final_report_model_max_tokens,
+    configuration.final_report_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_thinking_level
+      : undefined,
+    configuration.final_report_model === "gemini-3-pro-preview"
+      ? configuration.gemini_3_media_resolution
+      : undefined
   );
 }
 
 /**
  * Create research brief model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createResearchBriefModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
@@ -313,6 +393,9 @@ export function createResearchBriefModel(config?: RunnableConfig) {
 
 /**
  * Create clarification model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createClarificationModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
@@ -326,6 +409,9 @@ export function createClarificationModel(config?: RunnableConfig) {
 
 /**
  * Create compression model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createCompressionModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);
@@ -340,6 +426,9 @@ export function createCompressionModel(config?: RunnableConfig) {
 
 /**
  * Create summarization model instance from configuration
+ *
+ * @param config - The configuration for the model
+ * @returns Configured ChatGoogleGenerativeAI instance with tracing
  */
 export function createSummarizationModel(config?: RunnableConfig) {
   const configuration = getConfiguration(config);

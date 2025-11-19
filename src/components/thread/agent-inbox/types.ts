@@ -23,19 +23,19 @@ export type Email = {
   status?: "in-queue" | "processing" | "hitl" | "done";
 };
 
-export interface ThreadValues {
+export type ThreadValues = {
   email: Email;
   messages: BaseMessage[];
   triage: {
     logic: string;
     response: string;
   };
-}
+};
 
 export type ThreadData<
-  ThreadValues extends Record<string, any> = Record<string, any>,
+  TThreadValues extends Record<string, unknown> = Record<string, unknown>,
 > = {
-  thread: Thread<ThreadValues>;
+  thread: Thread<TThreadValues>;
 } & (
   | {
       status: "interrupted";
@@ -51,7 +51,7 @@ export type ThreadStatusWithAll = ThreadStatus | "all";
 
 export type SubmitType = "accept" | "response" | "edit";
 
-export interface AgentInbox {
+export type AgentInbox = {
   /**
    * A unique identifier for the inbox.
    */
@@ -72,4 +72,4 @@ export interface AgentInbox {
    * Whether or not the inbox is selected.
    */
   selected: boolean;
-}
+};

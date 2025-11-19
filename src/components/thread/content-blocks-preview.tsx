@@ -1,17 +1,16 @@
-/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: <Ignore> */
 /** biome-ignore-all lint/style/useBlockStatements: <Ignore> */
 import type { ContentBlock } from "@langchain/core/messages";
 import type React from "react";
 import { cn } from "@/lib/utils";
-import { MultimodalPreview } from "./MultimodalPreview";
+import { MultimodalPreview } from "./multimodal-preview";
 
-interface ContentBlocksPreviewProps {
+type ContentBlocksPreviewProps = {
   blocks: (ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File)[];
   onRemove: (idx: number) => void;
   size?: "sm" | "md" | "lg";
   className?: string;
-}
+};
 
 /**
  * Renders a preview of content blocks with optional remove functionality.

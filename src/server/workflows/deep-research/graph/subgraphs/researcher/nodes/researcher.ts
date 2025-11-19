@@ -3,6 +3,10 @@
  *
  * Individual researcher agent that conducts focused research on a specific topic.
  * Uses LLM with tool calling to search and gather information.
+ *
+ * @param state - The current state of the researcher
+ * @param config - The configuration for the researcher
+ * @returns A partial state update for the researcher
  */
 
 import { AIMessage } from "@langchain/core/messages";
@@ -26,6 +30,10 @@ type ResearcherState = typeof ResearcherStateAnnotation.State;
 
 /**
  * Researcher node that conducts research using agent with middleware
+ *
+ * @param state - The current state of the researcher
+ * @param config - The configuration for the researcher
+ * @returns A partial state update for the researcher
  */
 export async function researcher(
   state: ResearcherState,
@@ -44,7 +52,7 @@ export async function researcher(
 
   // Prepare middleware
   // biome-ignore lint/suspicious/noExplicitAny: <Matches langchain middleware return type>
-  const middleware: AgentMiddleware<undefined, undefined, any>[] = [];
+  const middleware: AgentMiddleware<any, any, any>[] = [];
 
   if (configuration.use_tool_call_limit) {
     middleware.push(

@@ -4,6 +4,10 @@
  * Handles follow-up questions about existing research reports using the
  * existing report as context and optionally using search tools for
  * verification or updates.
+ *
+ * @param state - The current state of the agent
+ * @param config - The configuration for the answer follow-up
+ * @returns A partial state update for the agent
  */
 
 import {
@@ -35,6 +39,9 @@ const URL_LINE_REGEX = /^URL:\s*(.+)$/im;
 /**
  * Extract citation information from the final report
  * Returns the highest citation number used and a list of citation entries
+ *
+ * @param finalReport - The final report to extract citations from
+ * @returns An object containing the highest citation number and a list of citation entries
  */
 function extractCitationsFromReport(finalReport: string | null): {
   maxCitationNumber: number;
@@ -70,6 +77,9 @@ function extractCitationsFromReport(finalReport: string | null): {
 /**
  * Extract sources from tool messages (for NEW searches in follow-ups)
  * Returns array of SourceMetadata with pristine URLs
+ *
+ * @param messages - The messages to extract sources from
+ * @returns An array of SourceMetadata objects
  */
 function extractSourcesFromToolMessages(messages: unknown[]): SourceMetadata[] {
   const sources: SourceMetadata[] = [];
@@ -109,6 +119,10 @@ function extractSourcesFromToolMessages(messages: unknown[]): SourceMetadata[] {
 
 /**
  * Answer follow-up questions about existing research using an agent with search tools
+ *
+ * @param state - The current state of the agent
+ * @param config - The configuration for the follow-up answer
+ * @returns A partial state update for the agent
  */
 export async function answerFollowup(
   state: AgentState,
@@ -151,7 +165,7 @@ export async function answerFollowup(
 
   // Prepare middleware
   // biome-ignore lint/suspicious/noExplicitAny: <Matches langchain middleware return type>
-  const middleware: AgentMiddleware<undefined, undefined, any>[] = [];
+  const middleware: AgentMiddleware<any, any, any>[] = [];
 
   if (configuration.use_tool_call_limit) {
     // Limit search tool usage for follow-ups (they should primarily use existing report)

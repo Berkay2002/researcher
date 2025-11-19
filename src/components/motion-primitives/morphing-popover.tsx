@@ -18,7 +18,7 @@ import {
   useState,
 } from "react";
 import { cn } from "@/lib/utils";
-import useClickOutside from "./useClickOutside";
+import useClickOutside from "./use-click-outside";
 
 const TRANSITION: Transition = {
   type: "spring" as const,

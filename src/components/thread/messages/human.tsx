@@ -3,7 +3,7 @@
 
 import type { Message } from "@langchain/langgraph-sdk";
 import { useState } from "react";
-import { MultimodalPreview } from "@/components/thread/MultimodalPreview";
+import { MultimodalPreview } from "@/components/thread/multimodal-preview";
 import { Textarea } from "@/components/ui/textarea";
 import { isBase64ContentBlock } from "@/lib/multimodal-utils";
 import { cn } from "@/lib/utils";

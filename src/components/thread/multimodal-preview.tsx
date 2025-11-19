@@ -1,4 +1,3 @@
-/** biome-ignore-all lint/nursery/useConsistentTypeDefinitions: <Ignore> */
 /** biome-ignore-all lint/complexity/noExcessiveCognitiveComplexity: <Ignore> */
 /** biome-ignore-all lint/style/noMagicNumbers: <Ignore> */
 /** biome-ignore-all lint/style/noNestedTernary: <Ignore> */
@@ -9,13 +8,13 @@ import Image from "next/image";
 import type React from "react";
 import { cn } from "@/lib/utils";
 
-export interface MultimodalPreviewProps {
+export type MultimodalPreviewProps = {
   block: ContentBlock.Multimodal.Image | ContentBlock.Multimodal.File;
   removable?: boolean;
   onRemove?: () => void;
   className?: string;
   size?: "sm" | "md" | "lg";
-}
+};
 
 export const MultimodalPreview: React.FC<MultimodalPreviewProps> = ({
   block,

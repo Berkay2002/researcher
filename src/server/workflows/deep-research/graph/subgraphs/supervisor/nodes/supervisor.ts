@@ -8,6 +8,7 @@
 import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { tool } from "@langchain/core/tools";
+import type { AgentMiddleware } from "langchain";
 import { createAgent, modelCallLimitMiddleware } from "langchain";
 import {
   createSupervisorModel,
@@ -23,6 +24,9 @@ import { getTodayStr, thinkTool } from "../../../../utils";
 
 /**
  * Create ConductResearch tool for delegating research
+ *
+ * @param research_topic - The topic to delegate research on
+ * @returns A string indicating the research has been delegated
  */
 const conductResearchTool = tool(
   ({ research_topic }: { research_topic: string }): string =>
@@ -37,6 +41,8 @@ const conductResearchTool = tool(
 
 /**
  * Create ResearchComplete tool for indicating completion
+ *
+ * @returns A string indicating the research has been marked as complete
  */
 const researchCompleteTool = tool((): string => "Research marked as complete", {
   name: "ResearchComplete",
@@ -46,6 +52,10 @@ const researchCompleteTool = tool((): string => "Research marked as complete", {
 
 /**
  * Supervisor node that manages research delegation using agent with middleware
+ *
+ * @param state - The current state of the supervisor
+ * @param config - The configuration for the supervisor
+ * @returns A partial state update for the supervisor
  */
 export async function supervisor(
   state: SupervisorState,
@@ -80,7 +90,7 @@ export async function supervisor(
 
   // Prepare middleware
   // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
-  const middleware: any[] = [];
+  const middleware: AgentMiddleware<any, any, any>[] = [];
 
   if (configuration.use_model_call_limit) {
     middleware.push(

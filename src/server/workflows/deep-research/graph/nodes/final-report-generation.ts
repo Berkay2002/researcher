@@ -20,6 +20,10 @@ import type { AgentState } from "../state";
  * well-structured, comprehensive final report using the configured report generation model.
  * The model fallback middleware automatically handles token limit errors by retrying
  * with fallback models.
+ *
+ * @param state - The current state of the agent
+ * @param config - The configuration for the final report generation
+ * @returns A partial state update for the agent
  */
 export async function finalReportGeneration(
   state: AgentState,
@@ -37,7 +41,7 @@ export async function finalReportGeneration(
 
   // Step 3: Prepare middleware for model fallback
   // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
-  const middleware: AgentMiddleware<undefined, undefined, any>[] = [];
+  const middleware: AgentMiddleware<any, any, any>[] = [];
 
   if (
     configuration.use_model_fallback &&
