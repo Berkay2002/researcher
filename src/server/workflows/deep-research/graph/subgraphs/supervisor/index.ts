@@ -4,6 +4,7 @@
  * Creates a subgraph for the supervisor that delegates research to specialized researchers.
  */
 
+import { AIMessage } from "@langchain/core/messages";
 import { StateGraph } from "@langchain/langgraph";
 import { SupervisorStateAnnotation } from "../../state";
 import { supervisor } from "./nodes/supervisor";
@@ -26,9 +27,11 @@ function shouldExecuteTools(
 
   // Check if last message has tool calls
   // Support both standard tool_calls and legacy additional_kwargs
-  const toolCalls = lastMessage.tool_calls && lastMessage.tool_calls.length > 0 
-    ? lastMessage.tool_calls 
-    : lastMessage.additional_kwargs?.tool_calls;
+  const lastAiMessage = lastMessage as AIMessage;
+  const toolCalls =
+    lastAiMessage.tool_calls && lastAiMessage.tool_calls.length > 0
+      ? lastAiMessage.tool_calls
+      : lastMessage.additional_kwargs?.tool_calls;
 
   if (!toolCalls || toolCalls.length === 0) {
     return "__end__";
