@@ -52,15 +52,15 @@
 
 \PaperTitle{SynGraph: An Agentic Workflow for Deep Research}
 
-\Authors{Berkay [Surname]\textsuperscript{1}}
-\Keywords{LangGraph --- Deep Research --- Multi-Agent Systems (MAS)}
+\Authors{Berkay Orhan\textsuperscript{1}}
+\Keywords{LangChain --- Deep Research --- Multi-Agent Systems (MAS)}
 \newcommand{\keywordname}{Keywords}
 
 %----------------------------------------------------------------------------------------
 % ABSTRACT (no # characters here!)
 %----------------------------------------------------------------------------------------
 \Abstract{%
-\textit{SynGraph} is a modular, agentic workflow for deep research that leverages a hierarchical LangGraph architecture to conduct end-to-end investigations. The system orchestrates a supervisor-worker pattern where a top-level graph manages request routing, clarification, and synthesis, while parallel researcher subgraphs execute targeted information retrieval. By integrating Google's Gemini 2.5 Pro for reasoning and Gemini Flash for high-throughput tasks, alongside Tavily and Exa for comprehensive web and semantic search, SynGraph achieves a balance of depth and speed. We present the architectural design, including typed state management and middleware-enforced budgets, and discuss how this approach mitigates common LLM hallucinations through rigorous citation tracking and iterative reflection.\\[4pt]
+\textit{SynGraph} is a modular, agentic workflow for deep research that leverages a hierarchical LangGraph architecture to conduct end-to-end investigations. The system orchestrates a supervisor-worker pattern where a top-level graph manages request routing, clarification, and synthesis, while parallel researcher subgraphs execute targeted information retrieval. By integrating Google's Gemini 2.5 Pro for reasoning and Gemini Flash for high-throughput tasks, alongside Tavily and Exa for comprehensive web and semantic search, SynGraph achieves a balance of depth and speed. I present the architectural design, including typed state management and middleware-enforced budgets, and discuss how this approach mitigates common LLM hallucinations through rigorous citation tracking and iterative reflection.\\[4pt]
 \textbf{Source code}: \url{https://github.com/berkay2002/researcher} \vskip -6pt ~ \\
 \textbf{Authors}\\
 \textsuperscript{1}\textit{Berkay Orhan, \texttt{beror658@student.liu.se}} \\
@@ -79,7 +79,7 @@
 
 \section{Introduction}
 
-Large language models (LLMs) have demonstrated remarkable capabilities in summarisation and question answering, yet they often struggle with multi-step research tasks that require sustained planning, deep information retrieval, and synthesis across disparate sources. Single-shot generation strategies frequently succumb to hallucinations or superficiality when faced with complex queries. To address these limitations, we introduce \textit{SynGraph}, an agentic workflow built on LangGraph \cite{wu2024langgraph} that formalises the research process as a structured, stateful program.
+Large language models (LLMs) have demonstrated remarkable capabilities in summarisation and question answering, yet they often struggle with multi-step research tasks that require sustained planning, deep information retrieval, and synthesis across disparate sources. Single-shot generation strategies frequently succumb to hallucinations or superficiality when faced with complex queries. To address these limitations, I introduce \textit{SynGraph}, an agentic workflow built on LangGraph \cite{wu2024langgraph} that formalises the research process as a structured, stateful program.
 
 The backend of \textit{SynGraph} implements a retrieval-augmented generation (RAG) workflow \cite{lewis2020retrieval} that goes beyond simple vector search. It employs a directed cyclic graph to steer request routing, clarification, research execution, and report writing. This architecture coordinates multiple Gemini models—leveraging the reasoning power of Gemini 2.5 Pro and the speed of Gemini Flash—with distinct search providers to ensure both timeliness and semantic depth. By maintaining a strictly typed state and enforcing clear separation of concerns through subgraphs, SynGraph provides an auditable, configurable, and robust platform for academic and technical research.
 
@@ -148,7 +148,7 @@ Model fallback & Retry if failed \\
 
 \textbf{Limitations.} Despite the robust architecture, the system faces inherent challenges. Latency can be high during deep research cycles due to the sequential nature of some reflection steps and the sheer volume of tokens processed. Additionally, while the task-tracking tool helps track progress, complex queries may still result in redundant searches across parallel agents. The current implementation also lacks a persistent caching layer for search results, which could reduce costs for repetitive queries.
 
-\textbf{Opportunities.} Future work will focus on integrating the Model Context Protocol (MCP) to allow dynamic attachment of domain-specific tools (e.g., internal databases, code repositories). We also plan to implement a more sophisticated rate limiter backed by persistent storage to handle higher concurrency levels. Finally, exposing the "interrupt" events in a dedicated UI would allow for more granular human-in-the-loop control during the research process.
+\textbf{Opportunities.} Future work will focus on integrating the Model Context Protocol (MCP) to allow dynamic attachment of domain-specific tools (e.g., internal databases, code repositories). I also plan to implement a more sophisticated rate limiter backed by persistent storage to handle higher concurrency levels. Finally, the existing frontend interface could be further enhanced to provide even more granular control over the research process during interrupts.
 
 \section{Conclusion}
 

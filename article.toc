@@ -1,0 +1,11 @@
+\babel@toc {english}{}\relax 
+\contentsline {section}{\numberline {1}Introduction}{1}{section.1}%
+\contentsline {section}{\numberline {2}Architecture Overview}{1}{section.2}%
+\contentsline {section}{\numberline {3}Tooling and Services}{2}{section.3}%
+\contentsline {section}{\numberline {4}Workflow Execution}{2}{section.4}%
+\contentsline {section}{\numberline {5}State and Data Management}{2}{section.5}%
+\contentsline {section}{\numberline {6}Operational Considerations}{3}{section.6}%
+\contentsline {section}{\numberline {7}Discussion}{3}{section.7}%
+\contentsline {section}{\numberline {8}Conclusion}{3}{section.8}%
+\contentsline {section}{Acknowledgments}{3}{section*.4}%
+\contentsfinish 
