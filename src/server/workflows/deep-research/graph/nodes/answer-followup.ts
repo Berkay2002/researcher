@@ -146,6 +146,9 @@ export async function answerFollowup(
       messages: [
         new AIMessage({
           content: "No question found to answer.",
+          response_metadata: {
+            model_name: configuration.followup_model,
+          },
         }),
       ],
     };
@@ -250,6 +253,9 @@ ${existingCitations.citationList}
         aiMessages.at(-1)!
       : new AIMessage({
           content: "I was unable to answer your follow-up question.",
+          response_metadata: {
+            model_name: configuration.followup_model,
+          },
         });
 
   // If there are NEW sources from searches, append them with pristine URLs
@@ -274,7 +280,10 @@ ${existingCitations.citationList}
     finalMessage = new AIMessage({
       content,
       additional_kwargs: finalMessage.additional_kwargs,
-      response_metadata: finalMessage.response_metadata,
+      response_metadata: {
+        ...finalMessage.response_metadata,
+        model_name: configuration.followup_model,
+      },
     });
   }
 

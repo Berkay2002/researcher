@@ -16,8 +16,8 @@ const envSchema = z.object({
     .default("development"),
 
   // LangSmith for tracing (optional)
-  LANGCHAIN_TRACING_V2: z.string().optional(),
-  LANGCHAIN_API_KEY: z.string().optional(),
+  LANGCHAIN_TRACING_V2: z.string().min(1, "LangChain tracing v2 is required"),
+  LANGCHAIN_API_KEY: z.string().min(1, "LangChain API key is required"),
   LANGCHAIN_PROJECT: z.string().optional(),
 });
 

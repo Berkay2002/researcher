@@ -110,10 +110,10 @@ export const LLM_INSTANCES = {
   ),
 
   // Gemini 2.5 Flash for well-defined tasks
-  generation: createLLM("gemini-flash-latest", DEFAULT_TEMPERATURE),
+  generation: createLLM("gemini-3-pro-preview", GEMINI_3_TEMPERATURE),
 
   // Low temperature for consistent evaluation
-  quality: createLLM("gemini-flash-latest", QUALITY_TEMPERATURE),
+  quality: createLLM("gemini-3-pro-preview", GEMINI_3_TEMPERATURE),
 } as const;
 
 /**

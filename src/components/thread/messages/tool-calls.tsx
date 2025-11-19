@@ -21,30 +21,30 @@ export function ToolCalls({
         const hasArgs = Object.keys(args).length > 0;
         return (
           <div
-            className="overflow-hidden rounded-lg border border-gray-200"
+            className="overflow-hidden rounded-lg border border-border bg-card"
             key={idx}
           >
-            <div className="border-gray-200 border-b bg-gray-50 px-4 py-2">
-              <h3 className="font-medium text-gray-900">
+            <div className="border-b border-border bg-muted/50 px-4 py-2">
+              <h3 className="font-medium text-foreground">
                 {tc.name}
                 {tc.id && (
-                  <code className="ml-2 rounded bg-gray-100 px-2 py-1 text-sm">
+                  <code className="ml-2 rounded bg-muted px-2 py-1 text-sm">
                     {tc.id}
                   </code>
                 )}
               </h3>
             </div>
             {hasArgs ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <tbody className="divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-border">
+                <tbody className="divide-y divide-border">
                   {Object.entries(args).map(([key, value], argIdx) => (
                     <tr key={argIdx}>
-                      <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-sm">
+                      <td className="whitespace-nowrap px-4 py-2 font-medium text-foreground text-sm">
                         {key}
                       </td>
-                      <td className="px-4 py-2 text-gray-500 text-sm">
+                      <td className="px-4 py-2 text-muted-foreground text-sm">
                         {isComplexValue(value) ? (
-                          <code className="break-all rounded bg-gray-50 px-2 py-1 font-mono text-sm">
+                          <code className="break-all rounded bg-muted px-2 py-1 font-mono text-sm">
                             {JSON.stringify(value, null, 2)}
                           </code>
                         ) : (
@@ -56,7 +56,9 @@ export function ToolCalls({
                 </tbody>
               </table>
             ) : (
-              <code className="block p-3 text-sm">{"{}"}</code>
+              <code className="block p-3 text-sm text-muted-foreground">
+                {"{}"}
+              </code>
             )}
           </div>
         );
@@ -95,21 +97,21 @@ export function ToolResult({ message }: { message: ToolMessage }) {
 
   return (
     <div className="mx-auto grid max-w-3xl grid-rows-[1fr_auto] gap-2">
-      <div className="overflow-hidden rounded-lg border border-gray-200">
-        <div className="border-gray-200 border-b bg-gray-50 px-4 py-2">
+      <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="border-b border-border bg-muted/50 px-4 py-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             {message.name ? (
-              <h3 className="font-medium text-gray-900">
+              <h3 className="font-medium text-foreground">
                 Tool Result:{" "}
-                <code className="rounded bg-gray-100 px-2 py-1">
+                <code className="rounded bg-muted px-2 py-1">
                   {message.name}
                 </code>
               </h3>
             ) : (
-              <h3 className="font-medium text-gray-900">Tool Result</h3>
+              <h3 className="font-medium text-foreground">Tool Result</h3>
             )}
             {message.tool_call_id && (
-              <code className="ml-2 rounded bg-gray-100 px-2 py-1 text-sm">
+              <code className="ml-2 rounded bg-muted px-2 py-1 text-sm">
                 {message.tool_call_id}
               </code>
             )}
@@ -117,7 +119,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
         </div>
         <motion.div
           animate={{ height: "auto" }}
-          className="min-w-full bg-gray-100"
+          className="min-w-full bg-card"
           initial={false}
           transition={{ duration: 0.3 }}
         >
@@ -131,8 +133,8 @@ export function ToolResult({ message }: { message: ToolMessage }) {
                 transition={{ duration: 0.2 }}
               >
                 {isJsonContent ? (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <tbody className="divide-y divide-gray-200">
+                  <table className="min-w-full divide-y divide-border">
+                    <tbody className="divide-y divide-border">
                       {(Array.isArray(parsedContent)
                         ? isExpanded
                           ? parsedContent
@@ -144,12 +146,12 @@ export function ToolResult({ message }: { message: ToolMessage }) {
                           : [item[0], item[1]];
                         return (
                           <tr key={argIdx}>
-                            <td className="whitespace-nowrap px-4 py-2 font-medium text-gray-900 text-sm">
+                            <td className="whitespace-nowrap px-4 py-2 font-medium text-foreground text-sm">
                               {key}
                             </td>
-                            <td className="px-4 py-2 text-gray-500 text-sm">
+                            <td className="px-4 py-2 text-muted-foreground text-sm">
                               {isComplexValue(value) ? (
-                                <code className="break-all rounded bg-gray-50 px-2 py-1 font-mono text-sm">
+                                <code className="break-all rounded bg-muted px-2 py-1 font-mono text-sm">
                                   {JSON.stringify(value, null, 2)}
                                 </code>
                               ) : (
@@ -162,7 +164,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
                     </tbody>
                   </table>
                 ) : (
-                  <code className="block text-sm">{displayedContent}</code>
+                  <code className="block text-sm text-foreground">{displayedContent}</code>
                 )}
               </motion.div>
             </AnimatePresence>
@@ -172,7 +174,7 @@ export function ToolResult({ message }: { message: ToolMessage }) {
               Array.isArray(parsedContent) &&
               parsedContent.length > 5)) && (
             <motion.button
-              className="flex w-full cursor-pointer items-center justify-center border-gray-200 border-t-[1px] py-2 text-gray-500 transition-all duration-200 ease-in-out hover:bg-gray-50 hover:text-gray-600"
+              className="flex w-full cursor-pointer items-center justify-center border-t-[1px] border-border py-2 text-muted-foreground transition-all duration-200 ease-in-out hover:bg-muted/50 hover:text-foreground"
               initial={{ scale: 1 }}
               onClick={() => setIsExpanded(!isExpanded)}
               whileHover={{ scale: 1.02 }}

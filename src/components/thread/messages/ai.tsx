@@ -186,7 +186,13 @@ export function AssistantMessage({
   const isToolResult = message?.type === "tool";
   const nodeName = getNodeName(meta);
   const modelName = getModelName(message);
-  console.log("AssistantMessage - Model Name:", modelName); // Debug log
+  console.log("AssistantMessage Debug:", {
+    id: message?.id,
+    contentString,
+    isToolResult,
+    modelName,
+    contentLength: contentString.length,
+  });
 
   if (isToolResult && hideToolCalls) {
     return null;

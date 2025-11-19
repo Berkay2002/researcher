@@ -125,7 +125,7 @@ export const ConfigurationSchema = z.object({
     .default(DEFAULT_MAX_REACT_TOOL_CALLS),
 
   // Model Configuration
-  summarization_model: z.string().default("gemini-flash-latest"),
+  summarization_model: z.string().default("gemini-3-pro-preview"),
   summarization_model_max_tokens: z
     .number()
     .default(DEFAULT_SUMMARIZATION_MODEL_MAX_TOKENS),
@@ -145,7 +145,7 @@ export const ConfigurationSchema = z.object({
     .number()
     .default(DEFAULT_RESEARCHER_MODEL_MAX_TOKENS),
 
-  compression_model: z.string().default("gemini-flash-latest"),
+  compression_model: z.string().default("gemini-3-pro-preview"),
   compression_model_max_tokens: z
     .number()
     .default(DEFAULT_COMPRESSION_MODEL_MAX_TOKENS),
@@ -163,13 +163,13 @@ export const ConfigurationSchema = z.object({
     .default("media_resolution_high"),
 
   // Clarification Configuration
-  clarification_model: z.string().default("gemini-flash-latest"),
+  clarification_model: z.string().default("gemini-3-pro-preview"),
   clarification_model_max_tokens: z
     .number()
     .default(DEFAULT_CLARIFICATION_MODEL_MAX_TOKENS),
 
   // Research Brief Configuration
-  research_brief_model: z.string().default("gemini-flash-latest"),
+  research_brief_model: z.string().default("gemini-3-pro-preview"),
   research_brief_model_max_tokens: z
     .number()
     .default(DEFAULT_RESEARCH_BRIEF_MODEL_MAX_TOKENS),
@@ -197,8 +197,8 @@ export const ConfigurationSchema = z.object({
     .describe(
       "Minimum confidence score (0-1) required for automatic routing. Below this, user will be asked to clarify."
     ),
-  routing_model: z.string().default("gemini-flash-latest"),
-  followup_model: z.string().default("gemini-flash-latest"),
+  routing_model: z.string().default("gemini-3-pro-preview"),
+  followup_model: z.string().default("gemini-3-pro-preview"),
   followup_model_max_tokens: z
     .number()
     .default(DEFAULT_FOLLOWUP_MODEL_MAX_TOKENS),
@@ -386,7 +386,9 @@ export function createResearchBriefModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.research_brief_model,
-    0, // Use 0 temperature for consistent research brief generation
+    configuration.research_brief_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : 0, // Use 0 temperature for consistent research brief generation
     configuration.research_brief_model_max_tokens
   );
 }
@@ -402,7 +404,9 @@ export function createClarificationModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.clarification_model,
-    0, // Use 0 temperature for consistent clarification analysis
+    configuration.clarification_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : 0, // Use 0 temperature for consistent clarification analysis
     configuration.clarification_model_max_tokens
   );
 }
@@ -419,7 +423,9 @@ export function createCompressionModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.compression_model,
-    COMPRESSION_TEMPERATURE,
+    configuration.compression_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : COMPRESSION_TEMPERATURE,
     configuration.compression_model_max_tokens
   );
 }
@@ -435,7 +441,9 @@ export function createSummarizationModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.summarization_model,
-    0, // Use 0 temperature for consistent summarization
+    configuration.summarization_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : 0, // Use 0 temperature for consistent summarization
     configuration.summarization_model_max_tokens
   );
 }
@@ -448,7 +456,9 @@ export function createRoutingModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.routing_model,
-    0, // Use 0 temperature for consistent routing decisions
+    configuration.routing_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : 0, // Use 0 temperature for consistent routing decisions
     DEFAULT_ROUTING_MODEL_MAX_TOKENS
   );
 }
@@ -462,7 +472,9 @@ export function createFollowupModel(config?: RunnableConfig) {
 
   return createResearchLLM(
     configuration.followup_model,
-    FOLLOWUP_TEMPERATURE,
+    configuration.followup_model === "gemini-3-pro-preview"
+      ? GEMINI_3_TEMPERATURE
+      : FOLLOWUP_TEMPERATURE,
     configuration.followup_model_max_tokens
   );
 }

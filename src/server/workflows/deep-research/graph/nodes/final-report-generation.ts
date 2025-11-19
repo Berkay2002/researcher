@@ -111,7 +111,12 @@ export async function finalReportGeneration(
     return {
       final_report: finalReportContent,
       messages: response.messages || [
-        new AIMessage({ content: finalReportContent }),
+        new AIMessage({
+          content: finalReportContent,
+          response_metadata: {
+            model_name: configuration.final_report_model,
+          },
+        }),
       ],
       ...clearedState,
     };
@@ -124,6 +129,9 @@ export async function finalReportGeneration(
       messages: [
         new AIMessage({
           content: "Report generation failed due to an error",
+          response_metadata: {
+            model_name: configuration.final_report_model,
+          },
         }),
       ],
       ...clearedState,
