@@ -39,10 +39,6 @@ flowchart TD
     Report --> Response[Final Response]
     
     FollowUp --> Response
-
-    classDef default fill:#f0f0ff,stroke:#333,stroke-width:1px;
-    classDef diamond fill:#f0f0ff,stroke:#7b68ee,stroke-width:1px;
-    class Parallel diamond;
 ```
 
 ### Workflow Steps
@@ -64,10 +60,6 @@ flowchart LR
     Brief --> Supervisor[subgraph supervisor]
     Supervisor --> Report[final_report_generation]
     Report --> End((end))
-
-    classDef default fill:#f0f0ff,stroke:#7b68ee,stroke-width:1px;
-    classDef circle fill:#fff,stroke:#7b68ee,stroke-width:1px;
-    class Start,End circle;
 ```
 
 ## Getting Started
