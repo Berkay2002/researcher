@@ -8,8 +8,6 @@
 import { AIMessage } from "@langchain/core/messages";
 import type { RunnableConfig } from "@langchain/core/runnables";
 import { tool } from "@langchain/core/tools";
-import type { AgentMiddleware } from "langchain";
-import { createAgent, modelCallLimitMiddleware } from "langchain";
 import {
   createSupervisorModel,
   getConfiguration,
@@ -51,7 +49,7 @@ const researchCompleteTool = tool((): string => "Research marked as complete", {
 });
 
 /**
- * Supervisor node that manages research delegation using agent with middleware
+ * Supervisor node that manages research delegation using model with tools
  *
  * @param state - The current state of the supervisor
  * @param config - The configuration for the supervisor
@@ -62,7 +60,7 @@ export async function supervisor(
   config?: RunnableConfig
 ): Promise<Partial<SupervisorState>> {
   const configuration = getConfiguration(config);
-  const { research_brief } = state;
+  const { research_brief, supervisor_messages } = state;
 
   // Validate research_brief is present
   if (!research_brief) {
@@ -75,6 +73,7 @@ export async function supervisor(
   const model = createSupervisorModel(config);
 
   const tools = [conductResearchTool, researchCompleteTool, thinkTool];
+  const modelWithTools = model.bindTools(tools);
 
   // Prepare system prompt
   const systemPrompt = leadResearcherPrompt
@@ -88,28 +87,7 @@ export async function supervisor(
       String(configuration.max_concurrent_research_units)
     );
 
-  // Prepare middleware
-  // biome-ignore lint/suspicious/noExplicitAny: <Different middleware types have different schemas>
-  const middleware: AgentMiddleware<any, any, any>[] = [];
-
-  if (configuration.use_model_call_limit) {
-    middleware.push(
-      modelCallLimitMiddleware({
-        threadLimit: configuration.max_researcher_iterations,
-        runLimit: Math.ceil(configuration.max_researcher_iterations / 2), // Allow multiple runs per thread
-        exitBehavior: "end",
-      })
-    );
-  }
-
-  // Create agent with middleware
-  const agent = createAgent({
-    model,
-    tools,
-    middleware,
-  });
-
-  // Build initial messages
+  // Build messages history with system prompt and user brief
   const messages = [
     {
       role: "system" as const,
@@ -119,23 +97,22 @@ export async function supervisor(
       role: "user" as const,
       content: research_brief,
     },
+    ...supervisor_messages,
   ];
 
-  // Invoke agent
+  // Invoke model
   try {
-    const response = await agent.invoke({ messages }, config);
+    const response = await modelWithTools.invoke(messages, config);
 
     return {
-      supervisor_messages: response.messages || [
-        new AIMessage({ content: "Research completed." }),
-      ],
+      supervisor_messages: [response],
     };
   } catch (error) {
     const err = error as Error;
     const DEBUG_BRIEF_LENGTH = 100;
     // Log the full error for debugging
     // biome-ignore lint/suspicious/noConsole: Debugging supervisor errors
-    console.error("Supervisor agent error:", {
+    console.error("Supervisor model error:", {
       message: err.message,
       stack: err.stack,
       model,

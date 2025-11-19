@@ -25,27 +25,36 @@ function shouldExecuteTools(
   }
 
   // Check if last message has tool calls
-  const toolCalls = lastMessage.additional_kwargs?.tool_calls;
+  // Support both standard tool_calls and legacy additional_kwargs
+  const toolCalls = lastMessage.tool_calls && lastMessage.tool_calls.length > 0 
+    ? lastMessage.tool_calls 
+    : lastMessage.additional_kwargs?.tool_calls;
 
   if (!toolCalls || toolCalls.length === 0) {
     return "__end__";
   }
 
+  // Helper to safely get tool name
+  const getToolName = (call: any) => call.name || call.function?.name;
+
   // Check if ResearchComplete was called
   const hasResearchComplete = toolCalls.some(
-    (call) => call.function.name === "ResearchComplete"
+    (call: any) => getToolName(call) === "ResearchComplete"
   );
 
   if (hasResearchComplete) {
     return "__end__";
   }
 
-  // Check if ConductResearch was called
-  const hasConductResearch = toolCalls.some(
-    (call) => call.function.name === "ConductResearch"
+  // Check if ConductResearch or think_tool was called
+  const hasActionableTool = toolCalls.some(
+    (call: any) => {
+      const name = getToolName(call);
+      return name === "ConductResearch" || name === "think_tool";
+    }
   );
 
-  if (hasConductResearch) {
+  if (hasActionableTool) {
     return "supervisor_tools";
   }
 

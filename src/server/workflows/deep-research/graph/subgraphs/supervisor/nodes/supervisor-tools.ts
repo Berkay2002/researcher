@@ -33,13 +33,16 @@ export async function supervisorTools(
 
   const toolCalls = lastMessage.tool_calls;
 
-  // Filter for ConductResearch calls only (ignore think_tool)
+  // Separate tool calls
   const researchCalls = toolCalls.filter(
     (call: { name: string }) => call.name === "ConductResearch"
   );
+  const thinkCalls = toolCalls.filter(
+    (call: { name: string }) => call.name === "think_tool"
+  );
 
   // Limit parallel research to max_concurrent_research_units
-  const limitedCalls = researchCalls.slice(
+  const limitedResearchCalls = researchCalls.slice(
     0,
     configuration.max_concurrent_research_units
   );
@@ -47,8 +50,8 @@ export async function supervisorTools(
   // Create researcher subgraph
   const researcherGraph = createResearcherGraph();
 
-  // Execute all research tasks in parallel
-  const researchPromises = limitedCalls.map(
+  // Execute research tasks in parallel
+  const researchPromises = limitedResearchCalls.map(
     async (toolCall: {
       id?: string;
       name: string;
@@ -90,24 +93,44 @@ export async function supervisorTools(
     }
   );
 
-  const results = await Promise.all(researchPromises);
+  // Execute think tasks
+  const thinkResults = thinkCalls.map(
+    (toolCall: {
+      id?: string;
+      name: string;
+      args: Record<string, unknown>;
+    }) => {
+      const { reflection } = toolCall.args as { reflection: string };
+      return {
+        toolMessage: new ToolMessage({
+          tool_call_id: toolCall.id || "",
+          content: `Reflection recorded: ${reflection}`,
+        }),
+        rawNotes: [],
+        sources: [],
+      };
+    }
+  );
+
+  const researchResults = await Promise.all(researchPromises);
+  const allResults = [...researchResults, ...thinkResults];
 
   // Extract tool messages and raw notes
-  const toolMessages = results.map(
+  const toolMessages = allResults.map(
     (r: {
       toolMessage: ToolMessage;
       rawNotes: string[];
       sources: SourceMetadata[];
     }) => r.toolMessage
   );
-  const allRawNotes = results.flatMap(
+  const allRawNotes = allResults.flatMap(
     (r: {
       toolMessage: ToolMessage;
       rawNotes: string[];
       sources: SourceMetadata[];
     }) => r.rawNotes
   );
-  const allSources = results.flatMap(
+  const allSources = allResults.flatMap(
     (r: {
       toolMessage: ToolMessage;
       rawNotes: string[];
@@ -115,8 +138,8 @@ export async function supervisorTools(
     }) => r.sources
   );
 
-  // Collect notes from compressed research
-  const notes = results
+  // Collect notes from compressed research (only from research results)
+  const notes = researchResults
     .map((r: { toolMessage: ToolMessage; rawNotes: string[] }) => {
       const content = r.toolMessage.content;
       // Handle both string and array content types
