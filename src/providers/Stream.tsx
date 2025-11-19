@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getApiKey } from "@/lib/api-key";
 import type { SourceMetadata } from "@/server/workflows/deep-research/graph/state";
+import { cn, ensureAbsoluteUrl } from "@/lib/utils";
 import { useThreads } from "./Thread";
 
 export type StateType = {
@@ -95,7 +96,7 @@ const StreamSession = ({
   const [threadId, setThreadId] = useQueryState("threadId");
   const { getThreads, setThreads } = useThreads();
   const streamValue = useTypedStream({
-    apiUrl,
+    apiUrl: ensureAbsoluteUrl(apiUrl),
     apiKey: apiKey ?? undefined,
     assistantId,
     threadId: threadId ?? null,
@@ -117,7 +118,7 @@ const StreamSession = ({
   });
 
   useEffect(() => {
-    checkGraphStatus(apiUrl, apiKey).then((ok) => {
+    checkGraphStatus(ensureAbsoluteUrl(apiUrl), apiKey).then((ok) => {
       if (!ok) {
         toast.error("Failed to connect to LangGraph server", {
           description: () => (
@@ -173,8 +174,8 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   // Determine final values to use, prioritizing URL params then env vars
-  const finalApiUrl = apiUrl || envApiUrl;
-  const finalAssistantId = assistantId || envAssistantId;
+  const finalApiUrl = ensureAbsoluteUrl(apiUrl || envApiUrl || "");
+  const finalAssistantId = assistantId || envAssistantId || "";
 
   // Show the form if we: don't have an API URL, or don't have an assistant ID
   if (!(finalApiUrl && finalAssistantId)) {
@@ -276,7 +277,7 @@ export const StreamProvider: React.FC<{ children: ReactNode }> = ({
   }
 
   return (
-    <StreamSession apiKey={apiKey} apiUrl={apiUrl} assistantId={assistantId}>
+    <StreamSession apiKey={apiKey} apiUrl={finalApiUrl} assistantId={finalAssistantId}>
       {children}
     </StreamSession>
   );

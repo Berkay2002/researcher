@@ -112,6 +112,45 @@ function NodeBadge({ nodeName }: { nodeName: string }) {
   );
 }
 
+/**
+ * Extract model name from message response_metadata
+ */
+function getModelName(message: Message | undefined): string | null {
+  if (!message) return null;
+
+  // Check response_metadata
+  if ("response_metadata" in message) {
+    // biome-ignore lint/suspicious/noExplicitAny: <Ignore>
+    const meta = message.response_metadata as Record<string, any> | undefined;
+    if (meta) {
+      if (typeof meta.model_name === "string") return meta.model_name;
+      if (typeof meta.model === "string") return meta.model;
+    }
+  }
+
+  // Check additional_kwargs
+  if ("additional_kwargs" in message) {
+    // biome-ignore lint/suspicious/noExplicitAny: <Ignore>
+    const kwargs = message.additional_kwargs as Record<string, any> | undefined;
+    if (kwargs) {
+      if (typeof kwargs.model_name === "string") return kwargs.model_name;
+      if (typeof kwargs.model === "string") return kwargs.model;
+    }
+  }
+
+  // Check tags for "model:name" format
+  // The backend adds `model:${model}` to tags
+  if ("tags" in message && Array.isArray((message as any).tags)) {
+    const tags = (message as any).tags as string[];
+    const modelTag = tags.find((t) => t.startsWith("model:"));
+    if (modelTag) {
+      return modelTag.split(":")[1];
+    }
+  }
+
+  return null;
+}
+
 export function AssistantMessage({
   message,
   isLoading,
@@ -146,6 +185,8 @@ export function AssistantMessage({
     message.tool_calls.length > 0;
   const isToolResult = message?.type === "tool";
   const nodeName = getNodeName(meta);
+  const modelName = getModelName(message);
+  console.log("AssistantMessage - Model Name:", modelName); // Debug log
 
   if (isToolResult && hideToolCalls) {
     return null;
@@ -204,6 +245,7 @@ export function AssistantMessage({
                 handleRegenerate={() => handleRegenerate(parentCheckpoint)}
                 isAiMessage={true}
                 isLoading={isLoading}
+                modelName={modelName}
               />
             </div>
           </>

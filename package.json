@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "dev:langgraph": "npx @langchain/langgraph-cli dev",
     "dev:all": "concurrently \"npm run dev\" \"npm run dev:langgraph\"",
     "build": "next build --webpack",

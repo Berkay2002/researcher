@@ -40,9 +40,25 @@ export function createLLM(
     // Enable stream usage by default for better observability
     streamUsage: true,
     // Add metadata for better tracing visibility
-    tags: TRACING_ENABLED
-      ? [`model:${model}`, `temperature:${temperature}`]
-      : undefined,
+    tags: [`model:${model}`, `temperature:${temperature}`],
+    safetySettings: [
+      {
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_NONE",
+      },
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH",
+        threshold: "BLOCK_NONE",
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold: "BLOCK_NONE",
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold: "BLOCK_NONE",
+      },
+    ],
     ...otherOptions,
   };
 

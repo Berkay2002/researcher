@@ -121,6 +121,7 @@ export function CommandBar({
   handleSubmitEdit,
   handleRegenerate,
   isLoading,
+  modelName,
 }: {
   content: string;
   isHumanMessage?: boolean;
@@ -130,7 +131,9 @@ export function CommandBar({
   handleSubmitEdit?: () => void;
   handleRegenerate?: () => void;
   isLoading: boolean;
+  modelName?: string | null;
 }) {
+  console.log("CommandBar - Received Model Name:", modelName); // Debug log
   if (isHumanMessage && isAiMessage) {
     throw new Error(
       "Can only set one of isHumanMessage or isAiMessage to true, not both."
@@ -187,6 +190,11 @@ export function CommandBar({
 
   return (
     <div className="flex items-center gap-2">
+      {modelName && (
+        <span className="mr-2 font-medium text-muted-foreground text-xs">
+          {modelName}
+        </span>
+      )}
       <ContentCopyable content={content} disabled={isLoading} />
       {isAiMessage && !!handleRegenerate && (
         <TooltipIconButton

@@ -78,7 +78,12 @@ export async function clarifyWithUser(
   if (response.need_clarification) {
     // Step 4: Route based on clarification analysis
     // End with clarifying question for user
-    const questionMessage = new AIMessage({ content: response.question });
+    const questionMessage = new AIMessage({
+      content: response.question,
+      response_metadata: {
+        model_name: configuration.clarification_model,
+      },
+    });
     return new Command({
       goto: "__end__",
       update: {
@@ -90,6 +95,9 @@ export async function clarifyWithUser(
   // Proceed to research with verification message
   const verificationMessage = new AIMessage({
     content: response.verification,
+    response_metadata: {
+      model_name: configuration.clarification_model,
+    },
   });
   // biome-ignore lint/suspicious/noConsole: <Needed for debugging>
   console.log("Returning verification message:", verificationMessage.content);

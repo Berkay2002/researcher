@@ -92,7 +92,7 @@ export function HumanMessage({
       ) : (
         <>
           {/* Render images and files if no text */}
-          {Array.isArray(message.content) && message.content.length > 0 && (
+          {Array.isArray(message.content) && message.content?.length > 0 && (
             <div className="flex flex-wrap items-end justify-end gap-2">
               {message.content.reduce<React.ReactNode[]>((acc, block, idx) => {
                 if (isBase64ContentBlock(block)) {
