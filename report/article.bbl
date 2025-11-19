@@ -56,6 +56,139 @@
       \verb https://blog.langchain.com/building-langgraph/
       \endverb
     \endentry
+    \entry{exa_api}{online}{}
+      \name{author}{1}{}{%
+        {{hash=9d6ec601ca6b9f9938affe06c9697c83}{%
+           family={Exa},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{fullhash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{bibnamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authorbibnamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authornamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authorfullhash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Exa: The Search Engine for AI}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://exa.ai/
+      \endverb
+      \verb{url}
+      \verb https://exa.ai/
+      \endverb
+    \endentry
+    \entry{google_ai_studio_thinking}{online}{}
+      \name{author}{1}{}{%
+        {{hash=0cc5324cdf6c8569950d33b609e43b4e}{%
+           family={{Google AI Studio}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{fullhash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{bibnamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authorbibnamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authornamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authorfullhash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Thinking Capabilities in Gemini Models}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://ai.google.dev/gemini-api/docs/thinking
+      \endverb
+      \verb{url}
+      \verb https://ai.google.dev/gemini-api/docs/thinking
+      \endverb
+    \endentry
+    \entry{google2025gemini25}{report}{}
+      \name{author}{1}{}{%
+        {{hash=0f98f9c132af315a916cf1272843fc7b}{%
+           family={{Google DeepMind}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Google DeepMind}%
+      }
+      \strng{namehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{fullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{bibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorbibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authornamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorfullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \field{extraname}{1}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradate}{1}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Released June 2025}
+      \field{title}{Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities}
+      \field{type}{Technical Report}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+      \endverb
+      \verb{url}
+      \verb https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+      \endverb
+    \endentry
+    \entry{google2025gemini3modelcard}{report}{}
+      \name{author}{1}{}{%
+        {{hash=0f98f9c132af315a916cf1272843fc7b}{%
+           family={{Google DeepMind}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Google DeepMind}%
+      }
+      \strng{namehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{fullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{bibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorbibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authornamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorfullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \field{extraname}{2}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradate}{2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Gemini 3 Pro Model Card}
+      \field{type}{Model Card}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf
+      \endverb
+      \verb{url}
+      \verb https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf
+      \endverb
+    \endentry
     \entry{langgraph_docs_app_structure}{online}{}
       \name{author}{1}{}{%
         {{hash=8de59538e5206b848891f2b0e1898dfb}{%
@@ -381,6 +514,38 @@
       \field{year}{2023}
       \verb{eprint}
       \verb 2303.11366
+      \endverb
+    \endentry
+    \entry{tavily_api}{online}{}
+      \name{author}{1}{}{%
+        {{hash=c3c6dfa613ece0da454008480014c86d}{%
+           family={Tavily},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{fullhash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{bibnamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authorbibnamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authornamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authorfullhash}{c3c6dfa613ece0da454008480014c86d}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Tavily API: Search Engine for AI Agents}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://tavily.com/
+      \endverb
+      \verb{url}
+      \verb https://tavily.com/
       \endverb
     \endentry
   \enddatalist
@@ -422,6 +587,139 @@
       \verb https://blog.langchain.com/building-langgraph/
       \endverb
     \endentry
+    \entry{exa_api}{online}{}
+      \name{author}{1}{}{%
+        {{hash=9d6ec601ca6b9f9938affe06c9697c83}{%
+           family={Exa},
+           familyi={E\bibinitperiod}}}%
+      }
+      \strng{namehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{fullhash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{bibnamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authorbibnamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authornamehash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \strng{authorfullhash}{9d6ec601ca6b9f9938affe06c9697c83}
+      \field{sortinit}{E}
+      \field{sortinithash}{8da8a182d344d5b9047633dfc0cc9131}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Exa: The Search Engine for AI}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://exa.ai/
+      \endverb
+      \verb{url}
+      \verb https://exa.ai/
+      \endverb
+    \endentry
+    \entry{google_ai_studio_thinking}{online}{}
+      \name{author}{1}{}{%
+        {{hash=0cc5324cdf6c8569950d33b609e43b4e}{%
+           family={{Google AI Studio}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \strng{namehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{fullhash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{bibnamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authorbibnamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authornamehash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \strng{authorfullhash}{0cc5324cdf6c8569950d33b609e43b4e}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Thinking Capabilities in Gemini Models}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://ai.google.dev/gemini-api/docs/thinking
+      \endverb
+      \verb{url}
+      \verb https://ai.google.dev/gemini-api/docs/thinking
+      \endverb
+    \endentry
+    \entry{google2025gemini25}{report}{}
+      \name{author}{1}{}{%
+        {{hash=0f98f9c132af315a916cf1272843fc7b}{%
+           family={{Google DeepMind}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Google DeepMind}%
+      }
+      \strng{namehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{fullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{bibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorbibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authornamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorfullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \field{extraname}{1}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradate}{1}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{note}{Released June 2025}
+      \field{title}{Gemini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agentic Capabilities}
+      \field{type}{Technical Report}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+      \endverb
+      \verb{url}
+      \verb https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf
+      \endverb
+    \endentry
+    \entry{google2025gemini3modelcard}{report}{}
+      \name{author}{1}{}{%
+        {{hash=0f98f9c132af315a916cf1272843fc7b}{%
+           family={{Google DeepMind}},
+           familyi={G\bibinitperiod}}}%
+      }
+      \list{institution}{1}{%
+        {Google DeepMind}%
+      }
+      \strng{namehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{fullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{bibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorbibnamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authornamehash}{0f98f9c132af315a916cf1272843fc7b}
+      \strng{authorfullhash}{0f98f9c132af315a916cf1272843fc7b}
+      \field{extraname}{2}
+      \field{sortinit}{G}
+      \field{sortinithash}{32d67eca0634bf53703493fb1090a2e8}
+      \field{extradate}{2}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Gemini 3 Pro Model Card}
+      \field{type}{Model Card}
+      \field{year}{2025}
+      \verb{urlraw}
+      \verb https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf
+      \endverb
+      \verb{url}
+      \verb https://storage.googleapis.com/deepmind-media/Model-Cards/Gemini-3-Pro-Model-Card.pdf
+      \endverb
+    \endentry
     \entry{langgraph_docs_app_structure}{online}{}
       \name{author}{1}{}{%
         {{hash=8de59538e5206b848891f2b0e1898dfb}{%
@@ -747,6 +1045,38 @@
       \field{year}{2023}
       \verb{eprint}
       \verb 2303.11366
+      \endverb
+    \endentry
+    \entry{tavily_api}{online}{}
+      \name{author}{1}{}{%
+        {{hash=c3c6dfa613ece0da454008480014c86d}{%
+           family={Tavily},
+           familyi={T\bibinitperiod}}}%
+      }
+      \strng{namehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{fullhash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{bibnamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authorbibnamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authornamehash}{c3c6dfa613ece0da454008480014c86d}
+      \strng{authorfullhash}{c3c6dfa613ece0da454008480014c86d}
+      \field{sortinit}{T}
+      \field{sortinithash}{9af77f0292593c26bde9a56e688eaee9}
+      \field{extradatescope}{labelyear}
+      \field{labeldatesource}{}
+      \true{uniqueprimaryauthor}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Tavily API: Search Engine for AI Agents}
+      \field{urlday}{20}
+      \field{urlmonth}{10}
+      \field{urlyear}{2025}
+      \field{year}{2025}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://tavily.com/
+      \endverb
+      \verb{url}
+      \verb https://tavily.com/
       \endverb
     \endentry
   \enddatalist

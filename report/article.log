@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.11.19)  19 NOV 2025 18:15
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.11.19)  19 NOV 2025 21:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -953,31 +953,31 @@ Package csquotes Info: ... found 'babel' package.
 Package csquotes Info: Adjusting default style.
 Package csquotes Info: Redefining alias 'default' -> 'english'.
 LaTeX Font Info:    Trying to load font information for OT1+ptm on input line 7
-0.
+5.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ptm.fd
 File: ot1ptm.fd 2001/06/04 font definitions for OT1/ptm.
 ) (./article.aux)
 \openout1 = `article.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 70.
-LaTeX Font Info:    ... okay on input line 70.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 75.
+LaTeX Font Info:    ... okay on input line 75.
 
 (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -1039,19 +1039,19 @@ Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: float package is loaded.
 Package caption Info: hyperref package is loaded.
 Package caption Info: End \AtBeginDocument code.
-LaTeX Info: Redefining \microtypecontext on input line 70.
-Package microtype Info: Applying patch `item' on input line 70.
-Package microtype Info: Applying patch `toc' on input line 70.
-Package microtype Info: Applying patch `eqnum' on input line 70.
-Package microtype Info: Applying patch `footnote' on input line 70.
-Package microtype Info: Applying patch `verbatim' on input line 70.
+LaTeX Info: Redefining \microtypecontext on input line 75.
+Package microtype Info: Applying patch `item' on input line 75.
+Package microtype Info: Applying patch `toc' on input line 75.
+Package microtype Info: Applying patch `eqnum' on input line 75.
+Package microtype Info: Applying patch `footnote' on input line 75.
+Package microtype Info: Applying patch `verbatim' on input line 75.
 Package microtype Info: Generating PDF output.
 Package microtype Info: Character protrusion enabled (level 2).
 Package microtype Info: Using default protrusion set `alltext'.
 Package microtype Info: Automatic font expansion enabled (level 2),
 (microtype)             stretch: 20, shrink: 20, step: 1, non-selected.
 Package microtype Info: Using default expansion set `alltext-nott'.
-LaTeX Info: Redefining \showhyphens on input line 70.
+LaTeX Info: Redefining \showhyphens on input line 75.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
@@ -1059,7 +1059,7 @@ Package microtype Info: No adjustment of character kerning.
 File: mt-ptm.cfg 2006/04/20 v1.7 microtype config. file: Times (RS)
 )
 LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 7
-0.
+5.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
@@ -1069,115 +1069,115 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/m/scsl' undefined
-(Font)              using `OT1/pcr/m/sc' instead on input line 70.
+(Font)              using `OT1/pcr/m/sc' instead on input line 75.
 
 LaTeX Font Info:    Font shape `OT1/pcr/b/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 75.
 
 LaTeX Font Warning: Font shape `OT1/pcr/b/scsl' undefined
-(Font)              using `OT1/pcr/b/sc' instead on input line 70.
+(Font)              using `OT1/pcr/b/sc' instead on input line 75.
 
 LaTeX Font Info:    Font shape `OT1/pcr/bx/n' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/n' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/n' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/bx/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/it' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/it' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/b/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/bx/sl' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 75.
 
 LaTeX Font Warning: Font shape `OT1/pcr/bx/scsl' undefined
-(Font)              using `OT1/pcr/bx/sc' instead on input line 70.
+(Font)              using `OT1/pcr/bx/sc' instead on input line 75.
 
 LaTeX Font Info:    Font shape `OT1/pcr/bx/sc' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/sc' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/sc' tried instead on input line 75.
 
 LaTeX Font Warning: Font shape `OT1/pcr/sbx/sc' undefined
-(Font)              using `OT1/pcr/sb/sc' instead on input line 70.
+(Font)              using `OT1/pcr/sb/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sb/n' undefined
-(Font)              using `OT1/pcr/m/n' instead on input line 70.
+(Font)              using `OT1/pcr/m/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sb/it' undefined
-(Font)              using `OT1/pcr/sb/n' instead on input line 70.
+(Font)              using `OT1/pcr/sb/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sb/sl' undefined
-(Font)              using `OT1/pcr/sb/it' instead on input line 70.
+(Font)              using `OT1/pcr/sb/it' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sb/scit' undefined
-(Font)              using `OT1/pcr/sb/sc' instead on input line 70.
+(Font)              using `OT1/pcr/sb/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sb/sc' undefined
-(Font)              using `OT1/pcr/sb/n' instead on input line 70.
+(Font)              using `OT1/pcr/sb/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/sbc/sc' undefined
-(Font)              using `OT1/pcr/c/sc' instead on input line 70.
+(Font)              using `OT1/pcr/c/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/c/n' undefined
-(Font)              using `OT1/pcr/m/n' instead on input line 70.
+(Font)              using `OT1/pcr/m/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/c/it' undefined
-(Font)              using `OT1/pcr/c/n' instead on input line 70.
+(Font)              using `OT1/pcr/c/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/c/sl' undefined
-(Font)              using `OT1/pcr/c/it' instead on input line 70.
+(Font)              using `OT1/pcr/c/it' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/c/scit' undefined
-(Font)              using `OT1/pcr/c/sc' instead on input line 70.
+(Font)              using `OT1/pcr/c/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/c/sc' undefined
-(Font)              using `OT1/pcr/c/n' instead on input line 70.
+(Font)              using `OT1/pcr/c/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/lc/sc' undefined
-(Font)              using `OT1/pcr/l/sc' instead on input line 70.
+(Font)              using `OT1/pcr/l/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/l/n' undefined
-(Font)              using `OT1/pcr/m/n' instead on input line 70.
+(Font)              using `OT1/pcr/m/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/l/it' undefined
-(Font)              using `OT1/pcr/l/n' instead on input line 70.
+(Font)              using `OT1/pcr/l/n' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/l/sl' undefined
-(Font)              using `OT1/pcr/l/it' instead on input line 70.
+(Font)              using `OT1/pcr/l/it' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/l/scit' undefined
-(Font)              using `OT1/pcr/l/sc' instead on input line 70.
+(Font)              using `OT1/pcr/l/sc' instead on input line 75.
 
 
 LaTeX Font Warning: Font shape `OT1/pcr/l/sc' undefined
-(Font)              using `OT1/pcr/l/n' instead on input line 70.
+(Font)              using `OT1/pcr/l/n' instead on input line 75.
 
 LaTeX Font Info:    Font shape `OT1/pcr/m/ui' in size <10> not available
-(Font)              Font shape `OT1/pcr/m/it' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/m/it' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/m/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/m/sl' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/bx/ui' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/it' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/it' tried instead on input line 75.
 LaTeX Font Info:    Font shape `OT1/pcr/b/it' in size <10> not available
-(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 70.
+(Font)              Font shape `OT1/pcr/b/sl' tried instead on input line 75.
 
 LaTeX Font Warning: Font shape `OT1/pcr/m/In' undefined
-(Font)              using `OT1/pcr/m/n' instead on input line 70.
+(Font)              using `OT1/pcr/m/n' instead on input line 75.
 
 Package biblatex Info: Trying to load language 'english' -> 'english-apa'...
 Package biblatex Info: ... file 'english-apa.lbx' found.
@@ -1214,15 +1214,15 @@ Package biblatex Info: Trying to load bibliographic data...
 Package biblatex Info: ... file 'article.bbl' found.
 
 (./article.bbl)
-Package biblatex Info: Reference section=0 on input line 70.
-Package biblatex Info: Reference segment=0 on input line 70.
-Package hyperref Info: Link coloring ON on input line 70.
+Package biblatex Info: Reference section=0 on input line 75.
+Package biblatex Info: Reference segment=0 on input line 75.
+Package hyperref Info: Link coloring ON on input line 75.
  (./article.out) (./article.out)
 \@outlinefile=\write5
 \openout5 = `article.out'.
 
 LaTeX Font Info:    Trying to load font information for OT1+phv on input line 7
-3.
+8.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1phv.fd
 File: ot1phv.fd 2020/03/25 scalable font definitions for OT1/phv.
@@ -1232,7 +1232,7 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Trying to load font information for OT1+ztmcm on input line
- 73.
+ 78.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/ot1ztmcm.fd
 File: ot1ztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OT1/ztmcm.
@@ -1242,29 +1242,29 @@ Package microtype Info: Loading generic protrusion settings for font family
 (microtype)             For optimal results, create family-specific settings.
 (microtype)             See the microtype manual for details.
 LaTeX Font Info:    Trying to load font information for OML+ztmcm on input line
- 73.
+ 78.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omlztmcm.fd
 File: omlztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OML/ztmcm.
 )
 LaTeX Font Info:    Trying to load font information for OMS+ztmcm on input line
- 73.
+ 78.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omsztmcm.fd
 File: omsztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OMS/ztmcm.
 )
 LaTeX Font Info:    Trying to load font information for OMX+ztmcm on input line
- 73.
+ 78.
 
 (/usr/share/texlive/texmf-dist/tex/latex/psnfss/omxztmcm.fd
 File: omxztmcm.fd 2000/01/03 Fontinst v1.801 font definitions for OMX/ztmcm.
 )
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <9> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 
 (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-msa.cfg
 File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
@@ -1273,15 +1273,15 @@ File: mt-msa.cfg 2006/02/04 v1.1 microtype config. file: AMS symbols (a) (RS)
 File: mt-msb.cfg 2005/06/01 v1.0 microtype config. file: AMS symbols (b) (RS)
 )
 LaTeX Font Info:    Font shape `OT1/phv/m/it' in size <10> not available
-(Font)              Font shape `OT1/phv/m/sl' tried instead on input line 73.
+(Font)              Font shape `OT1/phv/m/sl' tried instead on input line 78.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <10> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <7.4> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <6> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 73.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 78.
 
-Underfull \hbox (badness 10000) in paragraph at lines 73--73
+Underfull \hbox (badness 10000) in paragraph at lines 78--78
 
  []
 
@@ -1290,74 +1290,63 @@ Underfull \hbox (badness 10000) in paragraph at lines 73--73
 \openout6 = `article.toc'.
 
 
-Overfull \hbox (8.03246pt too wide) in paragraph at lines 84--85
-[]\OT1/ptm/m/n/10 (-20) The back-end of \OT1/ptm/m/it/10 (-20) Syn-Graph \OT1/p
-tm/m/n/10 (-20) im-ple-ments a retrieval-augmented
+Underfull \hbox (badness 2302) in paragraph at lines 89--90
+[]\OT1/ptm/m/n/10 (+20) The back-end of \OT1/ptm/m/it/10 (+20) Syn-Graph \OT1/p
+tm/m/n/10 (+20) im-ple-ments a retrieval-
  []
 
-
-Overfull \hbox (3.21532pt too wide) in paragraph at lines 88--89
-\OT1/ptm/m/n/10 (-20) SynGraph cou-ples Google's Gem-ini fam-ily with mod-ern s
-earch
- []
-
-
-Overfull \hbox (22.38571pt too wide) in paragraph at lines 90--91
-[]\OT1/ptm/m/n/10 (-20) The ar-chi-tec-ture fol-lows a supervisor-worker pat-te
-rn []LangChain,
- []
-
-<fig-main-graph.png, id=66, 2195.20125pt x 356.0803pt>
-File: fig-main-graph.png Graphic file (type png)
-<use fig-main-graph.png>
-Package pdftex.def Info: fig-main-graph.png  used on input line 95.
-(pdftex.def)             Requested size: 500.484pt x 81.17953pt.
 [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texlive/texmf-
 dist/fonts/enc/dvips/base/8r.enc}
 
 
 ]
-<fig-graph-flow.png, id=90, 762.59906pt x 1671.24374pt>
+<fig-main-graph.png, id=87, 2195.20125pt x 356.0803pt>
+File: fig-main-graph.png Graphic file (type png)
+<use fig-main-graph.png>
+Package pdftex.def Info: fig-main-graph.png  used on input line 100.
+(pdftex.def)             Requested size: 500.484pt x 81.17953pt.
+<fig-graph-flow.png, id=97, 762.59906pt x 1671.24374pt>
 File: fig-graph-flow.png Graphic file (type png)
 <use fig-graph-flow.png>
-Package pdftex.def Info: fig-graph-flow.png  used on input line 115.
+Package pdftex.def Info: fig-graph-flow.png  used on input line 120.
 (pdftex.def)             Requested size: 170.71652pt x 374.12654pt.
 
-Overfull \hbox (9.30275pt too wide) in paragraph at lines 122--123
-\OT1/ptm/m/n/10 (-20) Typed state an-no-ta-tions make ev-ery mu-ta-tion ex-plic
-it []LangChain,
+Underfull \hbox (badness 2343) in paragraph at lines 127--128
+\OT1/ptm/m/n/10 (+20) Typed state an-no-ta-tions make ev-ery mu-ta-tion ex-plic
+it
  []
 
 
-Overfull \hbox (4.51582pt too wide) in paragraph at lines 122--123
-\OT1/ptm/m/n/10 (-20) logs and fields that should be over-writ-ten, en-sur-ing 
-that prompts
+Underfull \hbox (badness 1242) in paragraph at lines 127--128
+\OT1/ptm/m/n/10 (+20) en-sur-ing that prompts stay fo-cused while tool out-puts
+
  []
 
-[2 <./fig-main-graph.png> <./fig-graph-flow.png>]
-Overfull \hbox (0.89377pt too wide) in paragraph at lines 169--169
-[][]\OT1/ptm/m/n/10 (-20) LangChain. (2025b). \OT1/ptm/m/it/10 (-20) Con-text e
-n-gi-neer-ing in agents (langchain
- []
-
-
-Overfull \hbox (16.59726pt too wide) in paragraph at lines 169--169
-\OT1/ptm/m/n/10 (-20) Goyal, N., K[]uttler, H., Lewis, M., Yih, W.[]t., Rockt[]
-aschel,
+[2 <./fig-graph-flow.png>]
+Underfull \hbox (badness 8113) in paragraph at lines 174--174
+[][]\OT1/ptm/m/n/10 (+20) LangChain. (2025b). \OT1/ptm/m/it/10 (+20) Con-text e
+n-gi-neer-ing in agents
  []
 
 
-Overfull \hbox (6.3504pt too wide) in paragraph at lines 169--169
-\OT1/ptm/m/n/10 (-20) T., Riedel, S., & Kiela, D. (2021). Retrieval-augmented
+Underfull \hbox (badness 5245) in paragraph at lines 174--174
+\OT1/ptm/m/it/10 (+20) (langchain doc-u-men-ta-tion)\OT1/ptm/m/n/10 (+20) . Re-
+trieved Oc-to-ber
+ []
+
+[3 <./fig-main-graph.png>]
+Underfull \hbox (badness 1342) in paragraph at lines 174--174
+\OT1/ptm/m/n/10 (+20) Goyal, N., K[]uttler, H., Lewis, M., Yih, W.[]t.,
  []
 
 
-Overfull \hbox (2.99057pt too wide) in paragraph at lines 169--169
-\OT1/ptm/m/n/10 (-20) agent with dy-namic mem-ory and self-reflection. \OT1/ptm
-/m/it/10 (-20) arXiv
+Underfull \hbox (badness 2158) in paragraph at lines 174--174
+\OT1/ptm/m/n/10 (+20) Retrieval-augmented gen-er-a-tion for knowledge-
  []
 
-[3] 
+[4
+
+] 
 enddocument/afterlastpage: lastpage setting LastPage.
 (./article.aux)
  ***********
@@ -1375,13 +1364,13 @@ Package logreq Info: Writing requests to 'article.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 27649 strings out of 476182
- 494472 string characters out of 5795594
- 1949975 words of memory out of 5000000
- 48933 multiletter control sequences out of 15000+600000
- 610203 words of font info for 279 fonts, out of 8000000 for 9000
+ 27722 strings out of 476182
+ 496144 string characters out of 5795594
+ 1947975 words of memory out of 5000000
+ 48970 multiletter control sequences out of 15000+600000
+ 612477 words of font info for 300 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 94i,12n,93p,1004b,5052s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 94i,13n,93p,1004b,5052s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/share/texlive/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></usr/share
 /texlive/texmf-dist/fonts/type1/urw/courier/ucrro8a.pfb></usr/share/texlive/tex
 mf-dist/fonts/type1/urw/helvetic/uhvb8a.pfb></usr/share/texlive/texmf-dist/font
@@ -1389,10 +1378,10 @@ s/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/
 helvetic/uhvro8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8
 a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/sha
 re/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on article.pdf (3 pages, 219090 bytes).
+Output written on article.pdf (4 pages, 224625 bytes).
 PDF statistics:
- 174 PDF objects out of 1000 (max. 8388607)
- 138 compressed objects within 2 object streams
- 26 named destinations out of 1000 (max. 500000)
- 82015 words of extra memory for PDF output out of 89155 (max. 10000000)
+ 198 PDF objects out of 1000 (max. 8388607)
+ 161 compressed objects within 2 object streams
+ 32 named destinations out of 1000 (max. 500000)
+ 86111 words of extra memory for PDF output out of 89155 (max. 10000000)
 
